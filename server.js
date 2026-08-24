@@ -14,7 +14,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Fixed lobbies 1 to 6
 const LOBBIES = {};
 for (let i = 1; i <= 6; i++) {
   LOBBIES[i] = {
@@ -124,6 +123,16 @@ io.on('connection', (socket) => {
 
   socket.on('player_update', (data) => {
     if (!joinedLobbyId) return;
+    const lobby = LOBBIES[joinedLobbyId];
+    if (lobby) {
+      const p = lobby.slots.find(s => s && s.socketId === socket.id);
+      if (p) {
+        p.x = data.x;
+        p.y = data.y;
+        p.z = data.z;
+        p.yaw = data.yaw;
+      }
+    }
     socket.to(`lobby_${joinedLobbyId}`).emit('remote_player_update', {
       id: socket.id,
       ...data

@@ -20,7 +20,7 @@ for (let i = 1; i <= 6; i++) {
   LOBBIES[i] = {
     id: i,
     started: false,
-    slots: [null, null, null, null], // 4 slots
+    slots: [null, null, null, null],
     doorState: [false, false, false, false]
   };
 }
@@ -45,7 +45,6 @@ io.on('connection', (socket) => {
   let joinedLobbyId = null;
   let mySlotIdx = -1;
 
-  // Send lobby list immediately on connect
   socket.emit('lobby_list', getLobbiesSummary());
 
   socket.on('join_slot', ({ lobbyId, name }) => {
@@ -53,9 +52,8 @@ io.on('connection', (socket) => {
     if (!lobby) return socket.emit('error_msg', 'Invalid Lobby Number.');
     if (lobby.started) return socket.emit('error_msg', 'Mission already in progress.');
 
-    // Find first open slot
     const openIdx = lobby.slots.findIndex(s => s === null);
-    if (openIdx === -1) return socket.emit('error_msg', `Lobby ${lobbyId} is completely full (4/4).`);
+    if (openIdx === -1) return socket.emit('error_msg', `Lobby ${lobbyId} is full (4/4).`);
 
     joinedLobbyId = lobbyId;
     mySlotIdx = openIdx;
@@ -93,19 +91,34 @@ io.on('connection', (socket) => {
     lobby.slots[mySlotIdx].ready = !lobby.slots[mySlotIdx].ready;
     io.emit('lobby_list', getLobbiesSummary());
 
-    // Check if all seated players are ready (minimum 1 player)
-    const activePlayers = lobby.slots.filter(Boolean);
-    const allReady = activePlayers.length > 0 && activePlayers.every(p => p.ready);
+    // Auto-launch strictly when all 4 slots are filled and all 4 are ready
+    const filledSlots = lobby.slots.filter(Boolean);
+    const allFourFilled = filledSlots.length === 4;
+    const allFourReady = allFourFilled && filledSlots.every(p => p.ready);
 
-    if (allReady) {
-      lobby.started = true;
-      io.to(`lobby_${joinedLobbyId}`).emit('game_start', {
-        lobbyId: joinedLobbyId,
-        players: lobby.slots.filter(Boolean)
-      });
-      io.emit('lobby_list', getLobbiesSummary());
+    if (allFourReady) {
+      launchGame(joinedLobbyId);
     }
   });
+
+  // Force start button for testing or starting with fewer players
+  socket.on('force_start_game', () => {
+    if (!joinedLobbyId) return;
+    const lobby = LOBBIES[joinedLobbyId];
+    if (!lobby || lobby.started) return;
+    launchGame(joinedLobbyId);
+  });
+
+  function launchGame(lobbyId) {
+    const lobby = LOBBIES[lobbyId];
+    if (!lobby) return;
+    lobby.started = true;
+    io.to(`lobby_${lobbyId}`).emit('game_start', {
+      lobbyId,
+      players: lobby.slots.filter(Boolean)
+    });
+    io.emit('lobby_list', getLobbiesSummary());
+  }
 
   socket.on('leave_slot', () => {
     handleLeave();

@@ -29,16 +29,16 @@
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
     
-    /* Left Analog Virtual Joystick Base */
-    #joystick-base { position: absolute; bottom: 125px; left: 24px; width: 130px; height: 130px; background: rgba(43,24,16,0.4); border: 2px solid rgba(212,175,55,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; touch-action: none; }
-    #joystick-knob { width: 55px; height: 55px; background: radial-gradient(circle, #d4af37 0%, #8b5a2b 80%); border: 2px solid #fff; border-radius: 50%; position: absolute; box-shadow: 0 4px 10px rgba(0,0,0,0.6); pointer-events: none; }
+    /* Lowered Joystick (Sits perfectly above Round Display) */
+    #joystick-base { position: absolute; bottom: 75px; left: 24px; width: 120px; height: 120px; background: rgba(43,24,16,0.4); border: 2px solid rgba(212,175,55,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; touch-action: none; }
+    #joystick-knob { width: 50px; height: 50px; background: radial-gradient(circle, #d4af37 0%, #8b5a2b 80%); border: 2px solid #fff; border-radius: 50%; position: absolute; box-shadow: 0 4px 10px rgba(0,0,0,0.6); pointer-events: none; }
 
     /* Compact, Low-Profile Look Pad */
-    #look-pad { position: absolute; bottom: 20px; right: 20px; width: 44vw; height: 18vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 12px; touch-action: none; }
+    #look-pad { position: absolute; bottom: 20px; right: 20px; width: 44vw; height: 22vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 12px; touch-action: none; }
     
-    /* Action Buttons (Nade & Mine) moved into the cleared space above look-pad */
-    #btn-nade { position: absolute; bottom: 125px; right: 20px; width: 48px; height: 48px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 10px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-    #btn-clay { position: absolute; bottom: 125px; right: 78px; width: 48px; height: 48px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 10px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    /* Smaller Action Buttons Tucked Nicely Inside Top-Left of Look Pad Space */
+    #btn-nade { position: absolute; bottom: 155px; right: 24px; width: 42px; height: 42px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 9px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #btn-clay { position: absolute; bottom: 155px; right: 72px; width: 42px; height: 42px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 9px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
     #weapon-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
     .w-btn { width: 36px; height: 36px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
@@ -114,8 +114,8 @@
 
     <div id="look-pad" class="touch-interactive"></div>
 
-    <button id="btn-nade" class="touch-interactive dash-btn">NADE</button>
-    <button id="btn-clay" class="touch-interactive dash-btn">MINE</button>
+    <button id="btn-nade" class="touch-interactive">NADE</button>
+    <button id="btn-clay" class="touch-interactive">MINE</button>
 
     <div id="weapon-bar" class="touch-interactive">
       <div class="w-btn" onclick="switchWeapon(1)">1</div>
@@ -870,7 +870,7 @@
           const dx = t.clientX - joystickCenter.x;
           const dy = t.clientY - joystickCenter.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = 40;
+          const maxDist = 38;
           const angle = Math.atan2(dy, dx);
           
           const clampedDist = Math.min(dist, maxDist);
@@ -878,10 +878,10 @@
           const knobY = Math.sin(angle) * clampedDist;
           joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
 
-          keys.w = (dy < -12) ? 1 : 0;
-          keys.s = (dy > 12) ? 1 : 0;
-          keys.a = (dx < -12) ? 1 : 0;
-          keys.d = (dx > 12) ? 1 : 0;
+          keys.w = (dy < -10) ? 1 : 0;
+          keys.s = (dy > 10) ? 1 : 0;
+          keys.a = (dx < -10) ? 1 : 0;
+          keys.d = (dx > 10) ? 1 : 0;
         }
       }
     });

@@ -504,15 +504,11 @@
     machineGroup.position.set(0,0,5);
     scene.add(machineGroup);
 
-    // --- FIX: Rotate robot interior wrapper 180 degrees so its front face is universally forward ---
-    const robotVisualWrapper = GRP();
-    machineGroup.add(robotVisualWrapper);
-    robotVisualWrapper.rotation.y = Math.PI;
-
-    let mainWheelMesh=MESH(CG(1,1,0.5,32),SM({color:0x111111}),0,1,0);mainWheelMesh.rotation.z=Math.PI/2;robotVisualWrapper.add(mainWheelMesh);
-    const chassis=MESH(BG(2.2,2.2,1.8),SM({color:0x4a3324}),0,3.6,0);robotVisualWrapper.add(chassis);chassis.userData={materialType:"robot_mercenary"};
+    // --- CLEAN BASE ROTATION: No wrapper flips, standard forward axis alignment ---
+    let mainWheelMesh=MESH(CG(1,1,0.5,32),SM({color:0x111111}),0,1,0);mainWheelMesh.rotation.z=Math.PI/2;machineGroup.add(mainWheelMesh);
+    const chassis=MESH(BG(2.2,2.2,1.8),SM({color:0x4a3324}),0,3.6,0);machineGroup.add(chassis);chassis.userData={materialType:"robot_mercenary"};
     function createAwesomeGuns(){const g=GRP(),bg=CG(0.14,0.14,2.8,16);bg.rotateX(Math.PI/2);const l=MESH(bg,SM({color:0x3a2e25,metalness:0.6,roughness:0.4}),-0.8,3.6,1.1),r=l.clone();r.position.x=0.8;const bkg=CG(0.18,0.18,0.5,12);bkg.rotateX(Math.PI/2);const bL=MESH(bkg,SM({color:0xffd700,metalness:0.9,roughness:0.2}),-0.8,3.6,2.3),bR=bL.clone();bR.position.x=0.8;g.add(l,r,bL,bR);return g}
-    robotVisualWrapper.add(createAwesomeGuns());robotVisualWrapper.add(MESH(BG(2.3,0.35,1.9),BM({color:0x8b0000}),0,4.5,0));
+    machineGroup.add(createAwesomeGuns());machineGroup.add(MESH(BG(2.3,0.35,1.9),BM({color:0x8b0000}),0,4.5,0));
     const arcadeScreenTexture=new T.CanvasTexture(sCanvas);chassis.add(MESH(PG(1.6,1.6),BM({map:arcadeScreenTexture}),0,0.1,0.91));
 
     let robotAIState={status:'roam',target:new V3(0,0,0),speed:0.08};function getNewUpperLevelTarget(){return new V3((Math.random()-0.5)*30,0,-100+(Math.random()-0.5)*80)}
@@ -641,21 +637,6 @@
       }
     });
 
-    socket.on('host_apply_zombie_hit', data => {
-      if (!isHost) return;
-      const tz = activeZombies[data.zombieIndex];
-      if (tz && !tz.deadAndShrinking) {
-        setZombieStage(tz, tz.stage - data.damage);
-        if (tz.deadAndShrinking) {
-          socket.emit('award_points', { socketId: data.shooterId, amount: data.isHeadshot ? 20 : 10 });
-          rebuildZombieHitboxes();
-          checkRoundEnd();
-        } else {
-          socket.emit('award_points', { socketId: data.shooterId, amount: 10 });
-        }
-      }
-    });
-
     socket.on('client_mystery_box_sync', data => {
       mysteryBoxActive = data.active;
       mysteryBoxReadyToCollect = data.readyToCollect;
@@ -687,7 +668,7 @@
     socket.on('client_robot_sync', data => {
       if (isHost) return;
       machineGroup.position.set(data.x, data.y, data.z);
-      machineGroup.rotation.y = data.yaw;
+      machineGroup.rotation.y = data.yaw; // Perfectly syncs the robot's aiming heading across all screens!
     });
 
     function throwGrenade(){
@@ -710,7 +691,7 @@
       else if(z<-25&&z>-65){x=Math.max(-4.5,Math.min(4.5,x))}
       else if(z<=-65&&z>=-215){x=Math.max(-73.5,Math.min(73.5,x));if(z>-66.5&&(x<-4.5||x>4.5))z=-66.5;if(z<-213.5&&(x<-4.5||x>4.5))z=-213.5;z=Math.max(-215,Math.min(-65,z))}
       else if(z<-215&&z>-255){x=Math.max(-4.5,Math.min(4.5,x))}
-      else if(z<=-255&&z>=-405){x=Math.max(-73.5,Math.min(73.5,x));if(z>-256.5&&(x<-4.5||x>4.5))z=-256.5;if(z<-403.5)z=-403.5;z=Math.max(-405,Math.min(-255,z))}
+      else if(z<=-255&&z>=-405){x=Math.max(-73.5,Math.min(73.5,x));if(z>-256.5&&(x<-4.5||x>4.5))z=-256.5;z=Math.max(-403.5)z=-403.5;z=Math.max(-405,Math.min(-255,z))}
       p.x=x;p.z=z;return p;
     }
 
@@ -1100,7 +1081,7 @@
       if(robotMercState.active){robotMercState.durationTimer-=0.016;if(robotMercState.durationTimer<=0){robotMercState.active=false;robotMercState.level++;speakRobotVoice(`Contract completed! Upgraded to level ${robotMercState.level}, marine!`);txtDiv.innerHTML=`GOODY CONTRACT COMPLETED! UPGRADED TO LEVEL ${toRoman(robotMercState.level)}!`}}
       else if(robotMercState.isBeingOverrun){robotMercState.overrunProgress+=0.01;machineGroup.position.y-=0.02;if(robotMercState.overrunProgress>=1){scene.remove(machineGroup);robotMercState.isBeingOverrun=false}}
       for(let i=activeGrenades.length-1;i>=0;i--){let n=activeGrenades[i];n.fuse-=0.016;n.velocity.y-=0.015;n.mesh.position.add(n.velocity);let fb=(playerRig.position.y<-45)?-79.8:0;if(n.mesh.position.y<=fb+0.2){n.mesh.position.y=fb+0.2;n.velocity.set(0,0,0)}if(n.fuse<=0){triggerExplosion(n.mesh.position,8.5+grenadeUpgradeLevel*2,3+grenadeUpgradeLevel);scene.remove(n.mesh);activeGrenades.splice(i,1)}}
-      activeClaymores.forEach((c,idx)=>{activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(c.position)<4){triggerExplosion(c.position,7.5+claymoreUpgradeLevel*2,3+claymoreUpgradeLevel);scene.remove(c.group);activeClaymores.splice(idx,1)}})});
+      activeClaymores.forEach((c,idx)=>{activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(z.position)<4){triggerExplosion(c.position,7.5+claymoreUpgradeLevel*2,3+claymoreUpgradeLevel);scene.remove(c.group);activeClaymores.splice(idx,1)}})});
       upgReactorRing.rotation.x+=0.05;
       
       if(!isHost){
@@ -1187,7 +1168,7 @@
           activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.emergenceStage===3){let d=machineGroup.position.distanceTo(z.meshParts.group.position);if(d<minD){minD=d;nz=z}}});
           if(nz){
             let ld=new V3().subVectors(nz.meshParts.group.position,machineGroup.position);ld.y=0;ld.normalize();
-            machineGroup.rotation.y=Math.atan2(ld.x,ld.z);
+            machineGroup.rotation.y = Math.atan2(ld.x, ld.z);
           }
           else if(rd.length()>0.8){rd.normalize();machineGroup.position.addScaledVector(rd,0.45);machineGroup.rotation.y=Math.atan2(rd.x,rd.z);mainWheelMesh.rotation.x+=0.3}
           else machineGroup.rotation.y=playerYaw;

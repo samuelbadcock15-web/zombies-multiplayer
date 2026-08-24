@@ -33,7 +33,6 @@
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
     
-    /* Classic D-Pad Restored (Bottom Left, perfectly above Round display) */
     #dpad { position: absolute; bottom: 65px; left: 20px; width: 120px; height: 120px; }
     .dpad-btn { position: absolute; width: 40px; height: 40px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 8px; color: #d4af37; font-size: 18px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
     #dpad-up { top: 0; left: 40px; }
@@ -121,7 +120,6 @@
   </div>
 
   <div id="mobile-controls">
-    <!-- Classic D-Pad Restored -->
     <div id="dpad" class="touch-interactive">
       <div class="dpad-btn" id="dpad-up">▲</div>
       <div class="dpad-btn" id="dpad-down">▼</div>
@@ -602,28 +600,6 @@
       rebuildZombieHitboxes();
     });
 
-    socket.on('sync_hole_dig', data => {
-      const h = allBurrowHoles[data.holeIndex];
-      if (h) {
-        h.dirtCount = data.dirtCount;
-        h.layers.forEach((l, idx) => {
-          l.visible = idx < h.dirtCount;
-        });
-        playProceduralDigSound();
-      }
-    });
-
-    socket.on('sync_hole_fill', data => {
-      const h = allBurrowHoles[data.holeIndex];
-      if (h) {
-        h.dirtCount = data.dirtCount;
-        h.layers.forEach((l, idx) => {
-          l.visible = idx < h.dirtCount;
-        });
-        playProceduralDigSound();
-      }
-    });
-
     socket.on('host_apply_zombie_hit', data => {
       if (!isHost) return;
       const tz = activeZombies[data.zombieIndex];
@@ -935,6 +911,8 @@
     window.addEventListener('mouseup',e=>{if(e.button===0)isLmbHeldDown=false});
     
     const keys={w:0,a:0,s:0,d:0,shift:0};
+    window.addEventListener('keydown',e=>{if(isGameOver)return;if(e.code==='KeyW')keys.w=1;if(e.code==='KeyS')keys.s=1;if(e.code==='KeyA')keys.a=1;if(e.code==='KeyD')keys.d=1;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=1;if(e.code==='Digit1')switchWeapon(1);if(e.code==='Digit2')switchWeapon(2);if(e.code==='Digit3')switchWeapon(3);if(e.code==='Digit4')switchWeapon(4);if(e.code==='Digit5')switchWeapon(5);if(e.code==='KeyG')throwGrenade();if(e.code==='KeyC')placeClaymore()});
+    window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=0;if(e.code==='KeyS')keys.s=0;if(e.code==='KeyA')keys.a=0;if(e.code==='KeyD')keys.d=0;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=0});
 
     function setupTouchButton(id, keyName) {
       const el = $(id);
@@ -945,9 +923,6 @@
     setupTouchButton('dpad-down', 's');
     setupTouchButton('dpad-left', 'a');
     setupTouchButton('dpad-right', 'd');
-
-    window.addEventListener('keydown',e=>{if(isGameOver)return;if(e.code==='KeyW')keys.w=1;if(e.code==='KeyS')keys.s=1;if(e.code==='KeyA')keys.a=1;if(e.code==='KeyD')keys.d=1;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=1;if(e.code==='Digit1')switchWeapon(1);if(e.code==='Digit2')switchWeapon(2);if(e.code==='Digit3')switchWeapon(3);if(e.code==='Digit4')switchWeapon(4);if(e.code==='Digit5')switchWeapon(5);if(e.code==='KeyG')throwGrenade();if(e.code==='KeyC')placeClaymore()});
-    window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=0;if(e.code==='KeyS')keys.s=0;if(e.code==='KeyA')keys.a=0;if(e.code==='KeyD')keys.d=0;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=0});
 
     $('btn-nade').addEventListener('touchstart', e => { e.preventDefault(); throwGrenade(); });
     $('btn-clay').addEventListener('touchstart', e => { e.preventDefault(); placeClaymore(); });

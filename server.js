@@ -57,6 +57,9 @@ io.on('connection', socket => {
     lobby.playerCount++;
     socketToPlayerMap[socket.id] = { lobbyId: lobby.id, slotIndex: slotIdx };
 
+    // Join the specific Socket.IO room for this lobby
+    socket.join(lobby.id);
+
     socket.emit('slot_joined', {
       lobbyId: lobby.id,
       slotNumber: playerInfo.slotNumber,
@@ -85,16 +88,15 @@ io.on('connection', socket => {
         lobby.started = true;
         const hostSocketId = lobby.slots[0].socketId;
         
-        lobby.slots.forEach(s => {
-          io.to(s.socketId).emit('game_start', {
-            hostSocketId: hostSocketId,
-            players: lobby.slots.map(pl => ({
-              socketId: pl.socketId,
-              slotNumber: pl.slotNumber,
-              name: pl.name,
-              color: pl.color
-            }))
-          });
+        // Emit game_start to everyone inside this room
+        io.to(lobby.id).emit('game_start', {
+          hostSocketId: hostSocketId,
+          players: lobby.slots.map(pl => ({
+            socketId: pl.socketId,
+            slotNumber: pl.slotNumber,
+            name: pl.name,
+            color: pl.color
+          }))
         });
         
         broadcastLobbyList();
@@ -108,7 +110,9 @@ io.on('connection', socket => {
   });
 
   socket.on('player_update', data => {
-    socket.broadcast.emit('remote_player_update', {
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    socket.to(loc.lobbyId).emit('remote_player_update', {
       id: socket.id,
       x: data.x,
       y: data.y,
@@ -128,15 +132,22 @@ io.on('connection', socket => {
   });
 
   socket.on('host_zombie_sync', zombies => {
-    socket.broadcast.emit('client_zombie_sync', zombies);
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    socket.to(loc.lobbyId).emit('client_zombie_sync', zombies);
   });
 
   socket.on('host_round_sync', r => {
-    socket.broadcast.emit('client_round_sync', r);
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    socket.to(loc.lobbyId).emit('client_round_sync', r);
   });
 
+  // Fixed Door Unlocking to broadcast to everyone in the room (including host)
   socket.on('unlock_door', doorIndex => {
-    socket.broadcast.emit('door_unlocked', { doorIndex });
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    io.to(loc.lobbyId).emit('door_unlocked', { doorIndex });
   });
 
   socket.on('player_bitten', targetSocketId => {
@@ -145,11 +156,15 @@ io.on('connection', socket => {
 
   // Burrow hole synchronization handlers for dirt
   socket.on('sync_hole_dig', data => {
-    socket.broadcast.emit('sync_hole_dig', data);
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    socket.to(loc.lobbyId).emit('sync_hole_dig', data);
   });
 
   socket.on('fill_hole', data => {
-    socket.broadcast.emit('sync_hole_fill', data);
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    socket.to(loc.lobbyId).emit('sync_hole_fill', data);
   });
 
   socket.on('disconnect', () => {
@@ -168,6 +183,7 @@ function leaveCurrentLobby(socket) {
     lobby.playerCount = Math.max(0, lobby.playerCount - 1);
     if (lobby.playerCount === 0) lobby.started = false;
   }
+  socket.leave(loc.lobbyId);
   delete socketToPlayerMap[socket.id];
   socket.broadcast.emit('player_left', socket.id);
 }

@@ -14,13 +14,11 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Fixed lobbies 1 to 6
 const LOBBIES = {};
 for (let i = 1; i <= 6; i++) {
   LOBBIES[i] = {
     id: i,
     started: false,
-    hostSocketId: null,
     slots: [null, null, null, null],
     doorState: [false, false, false, false]
   };
@@ -60,10 +58,6 @@ io.on('connection', (socket) => {
     joinedLobbyId = lobbyId;
     mySlotIdx = openIdx;
 
-    if (!lobby.hostSocketId) {
-      lobby.hostSocketId = socket.id;
-    }
-
     lobby.slots[openIdx] = {
       socketId: socket.id,
       name: (name || `Marine ${openIdx + 1}`).toUpperCase().trim(),
@@ -74,8 +68,7 @@ io.on('connection', (socket) => {
       y: 3,
       z: 15,
       yaw: 0,
-      pitch: 0,
-      weapon: 1
+      pitch: 0
     };
 
     socket.join(`lobby_${lobbyId}`);
@@ -98,7 +91,6 @@ io.on('connection', (socket) => {
     lobby.slots[mySlotIdx].ready = !lobby.slots[mySlotIdx].ready;
     io.emit('lobby_list', getLobbiesSummary());
 
-    // CoD Zombies rule: strictly launch when all 4 slots are filled and all 4 are ready
     const filledSlots = lobby.slots.filter(Boolean);
     const allFourFilled = filledSlots.length === 4;
     const allFourReady = allFourFilled && filledSlots.every(p => p.ready);
@@ -114,12 +106,12 @@ io.on('connection', (socket) => {
     lobby.started = true;
     const activePlayers = lobby.slots.filter(Boolean);
     
-    // Slot 1 is always the designated authoritative host
-    lobby.hostSocketId = activePlayers[0].socketId;
+    // Slot 1 is always the Host
+    const hostSocketId = activePlayers[0].socketId;
 
     io.to(`lobby_${lobbyId}`).emit('game_start', {
       lobbyId,
-      hostId: lobby.hostSocketId,
+      hostSocketId,
       players: activePlayers
     });
     io.emit('lobby_list', getLobbiesSummary());
@@ -129,7 +121,6 @@ io.on('connection', (socket) => {
     if (!joinedLobbyId) return;
     socket.to(`lobby_${joinedLobbyId}`).emit('remote_player_update', {
       id: socket.id,
-      slotNumber: mySlotIdx + 1,
       ...data
     });
   });
@@ -148,11 +139,13 @@ io.on('connection', (socket) => {
     if (!joinedLobbyId) return;
     const lobby = LOBBIES[joinedLobbyId];
     if (!lobby) return;
-    io.to(lobby.hostSocketId).emit('host_apply_zombie_hit', {
-      ...data,
-      shooterId: socket.id,
-      shooterSlot: mySlotIdx + 1
-    });
+    const host = lobby.slots.find(s => s !== null);
+    if (host) {
+      io.to(host.socketId).emit('host_apply_zombie_hit', {
+        ...data,
+        shooterId: socket.id
+      });
+    }
   });
 
   socket.on('unlock_door', (doorIndex) => {
@@ -165,12 +158,8 @@ io.on('connection', (socket) => {
       const lobby = LOBBIES[joinedLobbyId];
       if (lobby) {
         lobby.slots[mySlotIdx] = null;
-        const remaining = lobby.slots.filter(Boolean);
-        if (remaining.length === 0) {
+        if (lobby.slots.every(s => s === null)) {
           lobby.started = false;
-          lobby.hostSocketId = null;
-        } else if (lobby.hostSocketId === socket.id) {
-          lobby.hostSocketId = remaining[0].socketId;
         }
         socket.leave(`lobby_${joinedLobbyId}`);
         io.to(`lobby_${joinedLobbyId}`).emit('player_left', socket.id);

@@ -8,6 +8,7 @@ const io = new Server(server);
 
 app.use(expressApp.static(__dirname));
 
+// 6 Lobbies: 2 lobbies of 2-player, 2 lobbies of 3-player, 2 lobbies of 4-player
 const lobbies = [
   { id: 1, maxPlayers: 2, slots: [null, null], playerCount: 0, started: false },
   { id: 2, maxPlayers: 2, slots: [null, null], playerCount: 0, started: false },
@@ -119,6 +120,7 @@ io.on('connection', socket => {
     });
   });
 
+  // Handle Zombie Hits & Securely Grant Points back to the specific shooter (Host or Non-Host)
   socket.on('zombie_hit', data => {
     io.emit('host_apply_zombie_hit', {
       zombieIndex: data.zombieIndex,
@@ -167,6 +169,7 @@ io.on('connection', socket => {
     socket.to(loc.lobbyId).emit('sync_hole_fill', data);
   });
 
+  // Global Machine & Event Sync Relays
   socket.on('host_mystery_box_sync', data => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;

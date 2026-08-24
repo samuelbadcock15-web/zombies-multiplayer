@@ -39,7 +39,7 @@
     #weapon-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
     .w-btn { width: 36px; height: 36px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
 
-    /* Audio Initialization Banner */
+    /* Audio Unlock Gate */
     #audio-overlay { position: fixed; inset: 0; background: rgba(12,8,6,0.96); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
     .audio-btn { background: #d4af37; color: #140d0a; border: none; padding: 18px 36px; font-size: 20px; font-weight: 900; font-family: monospace; cursor: pointer; border-radius: 6px; box-shadow: 0 0 20px rgba(212,175,55,0.5); text-transform: uppercase; }
     .audio-btn:hover { background: #ffd700; }
@@ -72,7 +72,6 @@
 <body>
   <div id="damage-overlay"></div>
 
-  <!-- Browser Audio Unlock Gate -->
   <div id="audio-overlay">
     <div style="font-size:28px;color:#d4af37;font-weight:900;margin-bottom:15px;letter-spacing:2px;">HAUNTED MANSION VAULT</div>
     <div style="color:#b8860b;margin-bottom:25px;font-size:14px;">4-PLAYER CO-OP OUTBREAK EDITION</div>
@@ -140,6 +139,7 @@
     const socket = io();
     let myLobbyId = null, mySlotNumber = null, myColor = null, isHost = false, gameActive = false, myId = null;
     const remotePlayers = {}; // socketId -> { mesh, data }
+    const activeRemotePlayerData = {}; // socketId -> { x, y, z, yaw }
 
     const $ = i => document.getElementById(i), T = THREE, V3 = T.Vector3, BG = (w,h,d)=>new T.BoxGeometry(w,h,d), CG = (rt,rb,h,s=16)=>new T.CylinderGeometry(rt,rb,h,s), PG = (w,h)=>new T.PlaneGeometry(w,h), SG = (r,s=16,p=16)=>new T.SphereGeometry(r,s,p), SM = m=>new T.MeshStandardMaterial(m), BM = m=>new T.MeshBasicMaterial(m), GRP = ()=>new T.Group();
     const MESH = (g,m,x=0,y=0,z=0,rx=0,ry=0)=>{ let o=new T.Mesh(g,m); o.position.set(x,y,z); if(rx)o.rotation.x=rx; if(ry)o.rotation.y=ry; return o; };
@@ -151,7 +151,6 @@
 
     const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-    // Audio & Pointer Unlock Gate
     $('btn-enter-game').onclick = () => {
       initAudio();
       if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
@@ -159,7 +158,6 @@
       $('lobby-screen').style.display = 'flex';
     };
 
-    // --- LOBBY SYSTEM ---
     socket.on('lobby_list', lobbies => {
       if (myLobbyId) {
         const currentLobby = lobbies.find(l => l.id === myLobbyId);
@@ -252,7 +250,7 @@
     let ammoReserves={1:200,2:0,3:0,4:0,5:0},weaponUpgradeLevels={1:0,2:0,3:0,4:0,5:0},hasAutomaticPistol=false,hasRifle=false,hasAutoRifle=false,hasRayPistol=false,isLmbHeldDown=false,lastShotTime=0,autoFireRateMs=120,grenadeCount=2,grenadeUpgradeLevel=0,claymoreCount=2,claymoreUpgradeLevel=0;
     const activeGrenades=[],activeClaymores=[];
     let robotMercState={active:false,health:100,maxHealth:100,durationTimer:0,level:1,isBeingOverrun:false,overrunProgress:0,lastProximitySpeechTime:0};
-    const unhiredLines=["Penumbra industries veteran at your service, marine! 500 credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits and watch these phantoms scatter!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
+    const unhiredLines=["Penumbra industries veteran at your service, marine! Five hundred credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits and watch these phantoms scatter!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
     const hiredLines=["Heavy metal activated! Locking and loading for Vanguard Company!","Get to the extraction point! I've got your flank covered, marine!","Come on! Let's party! No ghoul gets past these dual barrels!","Vanguard ship is waiting in the clouds! Stay frosty and keep pumping lead!"];
     let lastUnhiredLineIdx=-1,lastHiredLineIdx=-1;
 
@@ -598,9 +596,17 @@
       p.x=x;p.z=z;return p;
     }
 
+    // Multiplayer Zombie Aggro: Targets whichever player is closest in 3D distance
     function updateZombies(now){
       if(isGameOver||!isHost)return;
       let chg=false;
+
+      // Compile active player positions (Host + Remote players)
+      let allPlayers = [{ pos: playerRig.position }];
+      Object.values(remotePlayers).forEach(rp => {
+        if(rp.mesh) allPlayers.push({ pos: rp.mesh.position });
+      });
+
       for(let i=activeZombies.length-1;i>=0;i--){
         const zb=activeZombies[i],parts=zb.meshParts;
         if(zb.deadAndShrinking){scene.remove(parts.group);activeZombies.splice(i,1);chg=true;continue}
@@ -610,12 +616,22 @@
           else if(zb.emergenceStage===1){parts.body.visible=true;parts.body.position.y=zb.stageProgress*1.1;if(zb.stageProgress>=1){zb.emergenceStage=2;zb.stageProgress=0;chg=true}}
           else if(zb.emergenceStage===2){parts.arms.visible=true;parts.arms.position.y=zb.stageProgress*1.1;if(zb.stageProgress>=1){zb.emergenceStage=3;chg=true}}
         }else{
-          let tgt=playerRig.position.clone();
-          if(robotMercState.active){let rp=machineGroup.position;if(parts.group.position.distanceTo(rp)<parts.group.position.distanceTo(playerRig.position)+5)tgt=rp.clone()}
+          // Find closest player for aggro
+          let nearestPlayerPos = playerRig.position.clone();
+          let minDist = parts.group.position.distanceTo(playerRig.position);
+          allPlayers.forEach(pl => {
+            let d = parts.group.position.distanceTo(pl.pos);
+            if(d < minDist){ minDist = d; nearestPlayerPos = pl.pos.clone(); }
+          });
+
           let zp=parts.group.position;
-          if(zp.z>-25&&tgt.z<-25)tgt.set(0,zp.y,-25);else if(zp.z<-25&&zp.z>-65&&tgt.z<-65)tgt.set(0,zp.y,-65);else if(zp.z<-65&&zp.z>-215&&tgt.z<-215)tgt.set(0,zp.y,-215);else if(zp.z<-215&&zp.z>-255&&tgt.z<-255)tgt.set(0,zp.y,-255);else if(zp.z<-65&&zp.z>-65&&zp.z>-215)tgt.set(0,zp.y,-65);
-          let d=new V3().subVectors(tgt,zp);d.y=0;d.normalize();
-          let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
+          if(zp.z>-25&&nearestPlayerPos.z<-25)nearestPlayerPos.set(0,zp.y,-25);
+          else if(zp.z<-25&&zp.z>-65&&nearestPlayerPos.z<-65)nearestPlayerPos.set(0,zp.y,-65);
+          else if(zp.z<-65&&zp.z>-215&&nearestPlayerPos.z<-215)nearestPlayerPos.set(0,zp.y,-215);
+          else if(zp.z<-215&&zp.z>-255&&nearestPlayerPos.z<-255)nearestPlayerPos.set(0,zp.y,-255);
+
+          let d=new V3().subVectors(nearestPlayerPos,zp);d.y=0;d.normalize();
+          let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));parts.group.lookAt(nearestPlayerPos.x,parts.group.position.y,nearestPlayerPos.z);
         }
         
         let flatZombiePos = new V3(parts.group.position.x, playerRig.position.y, parts.group.position.z);
@@ -740,7 +756,7 @@
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
     }
 
-    // Teammates 3D Model Construction
+    // Teammate 3D Model Construction
     function createTeammateMesh(colorHex, name) {
       const g = GRP();
       const suitMat = SM({ color: 0x2b332b, roughness: 0.7 });
@@ -798,6 +814,7 @@
       if (isHost) startRound(1);
     });
 
+    // Remote Player Update with + Math.PI correction to fix backward-facing bug
     socket.on('remote_player_update', data => {
       if (remotePlayers[data.id]) {
         const rp = remotePlayers[data.id];

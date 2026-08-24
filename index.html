@@ -501,6 +501,25 @@
     function createBurrowHole(sz,x,y,z){const hg=GRP();hg.position.set(x,y+0.02,z);const pb=MESH(CG(sz,sz,0.05,24),pitVoidMaterial);pb.userData={materialType:"pit_void"};hg.add(pb);const dl=[];for(let i=0;i<4;i++){let lm=MESH(CG(sz-i*0.2,sz-(i-1)*0.1,0.15,16),dirtMaterial,0,i*0.12,0);lm.userData={materialType:"dirt"};hg.add(lm);dl.push(lm)}scene.add(hg);pb.userData.holeIndex=allBurrowHoles.length;holeInteractiveMeshes.push(pb);allBurrowHoles.push({group:hg,hitMesh:pb,layers:dl,dirtCount:4,maxDirt:4,globalX:x,globalY:y,globalZ:z})}
     createBurrowHole(3,-12,0,10);createBurrowHole(3,12,0,-10);createBurrowHole(3.5,-30,0,-110);createBurrowHole(3.5,30,0,-170);createBurrowHole(3.5,-45,0,-300);createBurrowHole(3.5,45,0,-360);createBurrowHole(4,-45,-79.8,-345);createBurrowHole(4,45,-79.8,-315);
 
+    function clearHoleDirtLayer(i){
+      const h=allBurrowHoles[i];
+      if(h.dirtCount>0){
+        h.dirtCount--;
+        h.layers[h.dirtCount].visible=false;
+        playProceduralDigSound();
+      }
+    }
+
+    function fillHoleWithDirt(i){
+      const h=allBurrowHoles[i];
+      if(h.dirtCount<h.maxDirt){
+        h.layers[h.dirtCount].visible=true;
+        h.dirtCount++;
+        addPoints(5);
+        txtDiv.innerHTML="SEALED THE VAULT! +5 CREDITS.";
+      }
+    }
+
     const activeZombies=[],zombieInteractiveMeshes=[];
     function createZombieMesh(){
       const zg=GRP(),sm=SM({color:0x5a7360,roughness:0.8}),ct=SM({color:0x4a2323,roughness:0.6}),cb=SM({color:0x222834,roughness:0.7}),bm=SM({color:0x1a1a1a,roughness:0.9}),em=BM({color:0xff3300});

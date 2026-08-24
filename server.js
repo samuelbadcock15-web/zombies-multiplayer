@@ -14,7 +14,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Configure Lobbies: 3 x 3-player lobbies (1-3) and 3 x 4-player lobbies (4-6)
 const LOBBIES = {};
 for (let i = 1; i <= 6; i++) {
   const maxCapacity = i <= 3 ? 3 : 4;
@@ -24,7 +23,8 @@ for (let i = 1; i <= 6; i++) {
     started: false,
     hostSocketId: null,
     slots: new Array(maxCapacity).fill(null),
-    doorState: [false, false, false, false]
+    doorState: [false, false, false, false],
+    robotState: { active: false, health: 100, level: 1 }
   };
 }
 
@@ -58,14 +58,12 @@ io.on('connection', (socket) => {
     if (lobby.started) return socket.emit('error_msg', 'Mission already in progress.');
 
     const openIdx = lobby.slots.findIndex(s => s === null);
-    if (openIdx === -1) return socket.emit('error_msg', `Lobby ${lobbyId} is full (${lobby.maxPlayers}/${lobby.maxPlayers}).`);
+    if (openIdx === -1) return socket.emit('error_msg', `Lobby ${lobbyId} is full.`);
 
     joinedLobbyId = lobbyId;
     mySlotIdx = openIdx;
 
-    if (!lobby.hostSocketId) {
-      lobby.hostSocketId = socket.id;
-    }
+    if (!lobby.hostSocketId) lobby.hostSocketId = socket.id;
 
     lobby.slots[openIdx] = {
       socketId: socket.id,
@@ -100,12 +98,8 @@ io.on('connection', (socket) => {
     lobby.slots[mySlotIdx].ready = !lobby.slots[mySlotIdx].ready;
     io.emit('lobby_list', getLobbiesSummary());
 
-    // Launch automatically when all slots for that lobby are filled and everyone is ready
     const filledSlots = lobby.slots.filter(Boolean);
-    const allFilled = filledSlots.length === lobby.maxPlayers;
-    const allReady = allFilled && filledSlots.every(p => p.ready);
-
-    if (allReady) {
+    if (filledSlots.length === lobby.maxPlayers && filledSlots.every(p => p.ready)) {
       launchGame(joinedLobbyId);
     }
   });
@@ -115,7 +109,6 @@ io.on('connection', (socket) => {
     if (!lobby) return;
     lobby.started = true;
     const activePlayers = lobby.slots.filter(Boolean);
-    
     lobby.hostSocketId = activePlayers[0].socketId;
 
     io.to(`lobby_${lobbyId}`).emit('game_start', {
@@ -132,6 +125,14 @@ io.on('connection', (socket) => {
       id: socket.id,
       ...data
     });
+  });
+
+  // Sync Robot / Goody state to all players in lobby
+  socket.on('robot_sync', (robotData) => {
+    if (!joinedLobbyId) return;
+    const lobby = LOBBIES[joinedLobbyId];
+    if (lobby) lobby.robotState = robotData;
+    socket.to(`lobby_${joinedLobbyId}`).emit('client_robot_sync', robotData);
   });
 
   socket.on('host_zombie_sync', (data) => {
@@ -157,6 +158,11 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('player_bitten', (targetSocketId) => {
+    if (!joinedLobbyId) return;
+    io.to(targetSocketId).emit('force_damage_player');
+  });
+
   socket.on('unlock_door', (doorIndex) => {
     if (!joinedLobbyId) return;
     io.to(`lobby_${joinedLobbyId}`).emit('door_unlocked', { doorIndex });
@@ -167,9 +173,7 @@ io.on('connection', (socket) => {
       const lobby = LOBBIES[joinedLobbyId];
       if (lobby) {
         lobby.slots[mySlotIdx] = null;
-        if (lobby.slots.every(s => s === null)) {
-          lobby.started = false;
-        }
+        if (lobby.slots.every(s => s === null)) lobby.started = false;
         socket.leave(`lobby_${joinedLobbyId}`);
         io.to(`lobby_${joinedLobbyId}`).emit('player_left', socket.id);
       }

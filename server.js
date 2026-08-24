@@ -119,7 +119,6 @@ io.on('connection', socket => {
     });
   });
 
-  // Handle Zombie Hits & Securely Grant Points back to the specific shooter
   socket.on('zombie_hit', data => {
     io.emit('host_apply_zombie_hit', {
       zombieIndex: data.zombieIndex,
@@ -129,8 +128,8 @@ io.on('connection', socket => {
     });
   });
 
-  socket.on('award_points', amount => {
-    socket.emit('grant_points', amount);
+  socket.on('award_points', data => {
+    io.to(data.socketId).emit('grant_points', data.amount);
   });
 
   socket.on('host_zombie_sync', zombies => {
@@ -168,7 +167,6 @@ io.on('connection', socket => {
     socket.to(loc.lobbyId).emit('sync_hole_fill', data);
   });
 
-  // Global Machine, Robot Mercenary, & Event Sync Relays
   socket.on('host_mystery_box_sync', data => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;

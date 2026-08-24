@@ -90,7 +90,7 @@
       <div id="active-slots-container" style="margin-bottom: 16px;"></div>
       <button class="btn btn-ready" id="btn-toggle-ready">READY UP</button>
       <button class="btn btn-leave" id="btn-leave-lobby" style="margin-top: 8px;">LEAVE LOBBY</button>
-      <div style="font-size:12px;color:#888;margin-top:10px;">Match launches automatically when all 4 slots are filled & ready!</div>
+      <div style="font-size:12px;color:#888;margin-top:10px;">Match launches automatically when all slots are filled & ready!</div>
     </div>
   </div>
 
@@ -169,7 +169,7 @@
           const card = document.createElement('div');
           card.className = 'lobby-box';
           let slotsHtml = '';
-          for (let i = 0; i < 4; i++) {
+          for (let i = 0; i < lobby.maxPlayers; i++) {
             const slot = lobby.slots[i];
             if (slot) {
               slotsHtml += `<div class="slot-row" style="color:#${slot.color.toString(16).padStart(6,'0')};">
@@ -180,15 +180,15 @@
               slotsHtml += `<div class="slot-row slot-open"><span>SLOT ${i+1}: [OPEN]</span><span>--</span></div>`;
             }
           }
-          const isFull = lobby.playerCount >= 4;
+          const isFull = lobby.playerCount >= lobby.maxPlayers;
           const isPlaying = lobby.started;
           const btnText = isPlaying ? 'IN PROGRESS' : (isFull ? 'FULL' : `JOIN LOBBY ${lobby.id}`);
           const btnDisabled = isFull || isPlaying;
 
           card.innerHTML = `
             <div class="lobby-box-title">
-              <span>LOBBY ${lobby.id}</span>
-              <span style="color:#fff;">${lobby.playerCount}/4</span>
+              <span>LOBBY ${lobby.id} (${lobby.maxPlayers}P)</span>
+              <span style="color:#fff;">${lobby.playerCount}/${lobby.maxPlayers}</span>
             </div>
             ${slotsHtml}
             <button class="btn" ${btnDisabled ? 'disabled style="opacity:0.5;cursor:not-allowed;"':''} onclick="joinLobbySlot(${lobby.id})">${btnText}</button>
@@ -217,7 +217,7 @@
     function renderRoomSlots(lobby) {
       const cont = $('active-slots-container');
       cont.innerHTML = '';
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < lobby.maxPlayers; i++) {
         const slot = lobby.slots[i];
         const isMe = (i + 1 === mySlotNumber);
         if (slot) {
@@ -250,7 +250,7 @@
     let ammoReserves={1:200,2:0,3:0,4:0,5:0},weaponUpgradeLevels={1:0,2:0,3:0,4:0,5:0},hasAutomaticPistol=false,hasRifle=false,hasAutoRifle=false,hasRayPistol=false,isLmbHeldDown=false,lastShotTime=0,autoFireRateMs=120,grenadeCount=2,grenadeUpgradeLevel=0,claymoreCount=2,claymoreUpgradeLevel=0;
     const activeGrenades=[],activeClaymores=[];
     let robotMercState={active:false,health:100,maxHealth:100,durationTimer:0,level:1,isBeingOverrun:false,overrunProgress:0,lastProximitySpeechTime:0};
-    const unhiredLines=["Penumbra industries veteran at your service, marine! Five hundred credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits and watch these phantoms scatter!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
+    const unhiredLines=["Penumbra industries veteran at your service, marine! 500 credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits and watch these phantoms scatter!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
     const hiredLines=["Heavy metal activated! Locking and loading for Vanguard Company!","Get to the extraction point! I've got your flank covered, marine!","Come on! Let's party! No ghoul gets past these dual barrels!","Vanguard ship is waiting in the clouds! Stay frosty and keep pumping lead!"];
     let lastUnhiredLineIdx=-1,lastHiredLineIdx=-1;
 
@@ -297,6 +297,10 @@
       playerBites++;updateTacticalHUD();$('damage-overlay').style.backgroundColor="rgba(255,0,0,0.4)";setTimeout(()=>{$('damage-overlay').style.backgroundColor="rgba(255,0,0,0)"},150);
       if(playerBites>=maxBites)triggerGameOver();else txtDiv.innerHTML="YOU WERE BITTEN! FALL BACK!";
     }
+
+    socket.on('force_damage_player', () => {
+      damagePlayer();
+    });
 
     function triggerGameOver(){isGameOver=true;document.exitPointerLock();txtDiv.innerHTML=`YOU FELL IN ROUND ${currentRound}. SPECTATING SQUAD...`}
 
@@ -530,6 +534,7 @@
       rebuildZombieHitboxes();
     }
 
+    // Client Zombie Sync
     socket.on('client_zombie_sync', networkZombies => {
       if (isHost) return;
       while(activeZombies.length < networkZombies.length) {
@@ -595,12 +600,14 @@
       p.x=x;p.z=z;return p;
     }
 
+    // Multiplayer Closest Target Aggro Loop + Multi-Player Bite Checks
     function updateZombies(now){
       if(isGameOver||!isHost)return;
       let chg=false;
-      let allPlayers = [{ pos: playerRig.position }];
-      Object.values(remotePlayers).forEach(rp => {
-        if(rp.mesh) allPlayers.push({ pos: rp.mesh.position });
+
+      let allPlayers = [{ id: myId, pos: playerRig.position }];
+      Object.entries(remotePlayers).forEach(([socketId, rp]) => {
+        if(rp.mesh) allPlayers.push({ id: socketId, pos: rp.mesh.position });
       });
 
       for(let i=activeZombies.length-1;i>=0;i--){
@@ -612,31 +619,34 @@
           else if(zb.emergenceStage===1){parts.body.visible=true;parts.body.position.y=zb.stageProgress*1.1;if(zb.stageProgress>=1){zb.emergenceStage=2;zb.stageProgress=0;chg=true}}
           else if(zb.emergenceStage===2){parts.arms.visible=true;parts.arms.position.y=zb.stageProgress*1.1;if(zb.stageProgress>=1){zb.emergenceStage=3;chg=true}}
         }else{
-          let nearestPlayerPos = playerRig.position.clone();
-          let minDist = parts.group.position.distanceTo(playerRig.position);
+          let nearestPlayer = allPlayers[0];
+          let minDist = parts.group.position.distanceTo(nearestPlayer.pos);
           allPlayers.forEach(pl => {
             let d = parts.group.position.distanceTo(pl.pos);
-            if(d < minDist){ minDist = d; nearestPlayerPos = pl.pos.clone(); }
+            if(d < minDist){ minDist = d; nearestPlayer = pl; }
           });
 
+          let tgt = nearestPlayer.pos.clone();
           let zp=parts.group.position;
-          if(zp.z>-25&&nearestPlayerPos.z<-25)nearestPlayerPos.set(0,zp.y,-25);
-          else if(zp.z<-25&&zp.z>-65&&nearestPlayerPos.z<-65)nearestPlayerPos.set(0,zp.y,-65);
-          else if(zp.z<-65&&zp.z>-215&&nearestPlayerPos.z<-215)nearestPlayerPos.set(0,zp.y,-215);
-          else if(zp.z<-215&&zp.z>-255&&nearestPlayerPos.z<-255)nearestPlayerPos.set(0,zp.y,-255);
+          if(zp.z>-25&&tgt.z<-25)tgt.set(0,zp.y,-25);
+          else if(zp.z<-25&&zp.z>-65&&tgt.z<-65)tgt.set(0,zp.y,-65);
+          else if(zp.z<-65&&zp.z>-215&&tgt.z<-215)tgt.set(0,zp.y,-215);
+          else if(zp.z<-215&&zp.z>-255&&tgt.z<-255)tgt.set(0,zp.y,-255);
 
-          let d=new V3().subVectors(nearestPlayerPos,zp);d.y=0;d.normalize();
-          let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));parts.group.lookAt(nearestPlayerPos.x,parts.group.position.y,nearestPlayerPos.z);
-        }
-        
-        let flatZombiePos = new V3(parts.group.position.x, playerRig.position.y, parts.group.position.z);
-        let distPlanar = flatZombiePos.distanceTo(playerRig.position);
-        let sameFloor = Math.abs(parts.group.position.y - playerRig.position.y) < 5.0;
+          let d=new V3().subVectors(tgt,zp);d.y=0;d.normalize();
+          let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
 
-        if(distPlanar < 2.5 && sameFloor && zb.emergenceStage === 3 && now - zb.lastAttackTime > 1500){
-          playZombieBiteSound();
-          damagePlayer();
-          zb.lastAttackTime = now;
+          // Check bite against whichever player the zombie reached
+          let flatZombiePos = new V3(parts.group.position.x, nearestPlayer.pos.y, parts.group.position.z);
+          if(flatZombiePos.distanceTo(nearestPlayer.pos) < 2.5 && Math.abs(parts.group.position.y - nearestPlayer.pos.y) < 5.0 && zb.emergenceStage === 3 && now - zb.lastAttackTime > 1500){
+            playZombieBiteSound();
+            if (nearestPlayer.id === myId) {
+              damagePlayer();
+            } else {
+              socket.emit('player_bitten', nearestPlayer.id);
+            }
+            zb.lastAttackTime = now;
+          }
         }
 
         if(robotMercState.active&&zb.emergenceStage===3&&!zb.deadAndShrinking){
@@ -754,7 +764,7 @@
     // Teammate 3D Model Construction with Corrected Face Orientation
     function createTeammateMesh(colorHex, name) {
       const g = GRP();
-      const visualWrapper = GRP(); // Container to correct facing orientation
+      const visualWrapper = GRP();
       g.add(visualWrapper);
 
       const suitMat = SM({ color: 0x2b332b, roughness: 0.7 });
@@ -764,7 +774,6 @@
       visualWrapper.add(MESH(BG(0.9, 1.1, 0.5), suitMat, 0, 1.75, 0));
       visualWrapper.add(MESH(BG(0.94, 0.6, 0.54), accentMat, 0, 1.9, 0));
 
-      // Head and Visor (Facing forward down local -Z)
       visualWrapper.add(MESH(BG(0.55, 0.55, 0.55), suitMat, 0, 2.55, 0));
       visualWrapper.add(MESH(BG(0.42, 0.18, 0.08), BM({ color: colorHex }), 0, 2.55, -0.28));
 
@@ -813,12 +822,11 @@
       if (isHost) startRound(1);
     });
 
-    // Remote Player Update: Aligns model heading without backward inversion
     socket.on('remote_player_update', data => {
       if (remotePlayers[data.id]) {
         const rp = remotePlayers[data.id];
         rp.mesh.position.set(data.x, data.y - 3.0, data.z);
-        rp.mesh.rotation.y = data.yaw;
+        rp.mesh.rotation.y = data.yaw + Math.PI;
       }
     });
 

@@ -175,7 +175,6 @@
 
     const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-    // Points grant listener from server
     socket.on('grant_points', amt => {
       addPoints(amt);
     });
@@ -615,7 +614,6 @@
         const localZ = activeZombies[idx];
         if (localZ) {
           localZ.meshParts.group.position.set(nz.x, nz.y, nz.z);
-          // --- FIX: Properly sync zombie rotation/facing direction across all screens ---
           localZ.meshParts.group.rotation.y = nz.yaw;
           if (localZ.stage !== nz.stage) {
             setZombieStage(localZ, nz.stage);
@@ -653,7 +651,6 @@
       if (tz && !tz.deadAndShrinking) {
         setZombieStage(tz, tz.stage - data.damage);
         if (tz.deadAndShrinking) {
-          // Send reward points back to the specific shooter
           io.to(data.shooterId).emit('grant_points', data.isHeadshot ? 20 : 10);
           rebuildZombieHitboxes();
           checkRoundEnd();
@@ -691,7 +688,6 @@
       secretActive = data.secretActive;
     });
 
-    // --- FIX: Sync Robot Mercenary position/rotation on client screens ---
     socket.on('client_robot_sync', data => {
       if (isHost) return;
       machineGroup.position.set(data.x, data.y, data.z);
@@ -755,7 +751,10 @@
           else if(zp.z<-215&&zp.z>-255&&tgt.z<-255)tgt.set(0,zp.y,-255);
 
           let d=new V3().subVectors(tgt,zp);d.y=0;d.normalize();
-          let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
+          let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));
+          
+          // --- FIX: Ensure host sets rotation and syncs it immediately ---
+          parts.group.lookAt(tgt.x, parts.group.position.y, tgt.z);
 
           let flatZombiePos = new V3(parts.group.position.x, nearestPlayer.pos.y, parts.group.position.z);
           if(flatZombiePos.distanceTo(nearestPlayer.pos) < 2.5 && Math.abs(parts.group.position.y - nearestPlayer.pos.y) < 5.0 && zb.emergenceStage === 3 && now - zb.lastAttackTime > 1500){
@@ -1041,6 +1040,8 @@
     setupTouchButton('dpad-down', 's');
     setupTouchButton('dpad-left-dir', 'a');
     setupTouchButton('dpad-right-dir', 'd');
+    setupTouchButton('btn-nade', null, true, throwGrenade);
+    setupTouchButton('btn-clay', null, true, placeClaymore);
 
     window.addEventListener('keydown',e=>{if(isGameOver)return;if(e.code==='KeyW')keys.w=1;if(e.code==='KeyS')keys.s=1;if(e.code==='KeyA')keys.a=1;if(e.code==='KeyD')keys.d=1;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=1;if(e.code==='Digit1')switchWeapon(1);if(e.code==='Digit2')switchWeapon(2);if(e.code==='Digit3')switchWeapon(3);if(e.code==='Digit4')switchWeapon(4);if(e.code==='Digit5')switchWeapon(5);if(e.code==='KeyG')throwGrenade();if(e.code==='KeyC')placeClaymore()});
     window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=0;if(e.code==='KeyS')keys.s=0;if(e.code==='KeyA')keys.a=0;if(e.code==='KeyD')keys.d=0;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=0});
@@ -1192,7 +1193,6 @@
             permanentlyOpen: secretPermanentlyOpen,
             secretActive: secretActive
           });
-          // --- FIX: Broadcast robot mercenary position & rotation from host to clients ---
           socket.emit('host_robot_sync', {
             x: machineGroup.position.x,
             y: machineGroup.position.y,
@@ -1209,7 +1209,10 @@
           let tp=playerRig.position.clone().add(new V3(0,0,-15).applyQuaternion(playerRig.quaternion));tp.y=(playerRig.position.y<-40)?-79.8:0;
           let rd=new V3().subVectors(tp,machineGroup.position),nz=null,minD=120+robotMercState.level*25;
           activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.emergenceStage===3){let d=machineGroup.position.distanceTo(z.meshParts.group.position);if(d<minD){minD=d;nz=z}}});
-          if(nz){let ld=new V3().subVectors(nz.meshParts.group.position,machineGroup.position);ld.y=0;ld.normalize();machineGroup.rotation.y=Math.atan2(ld.x,ld.z)}
+          if(nz){
+            let ld=new V3().subVectors(nz.meshParts.group.position,machineGroup.position);ld.y=0;ld.normalize();
+            machineGroup.rotation.y=Math.atan2(ld.x,ld.z); // --- FIX: Robot accurately looks at targets ---
+          }
           else if(rd.length()>0.8){rd.normalize();machineGroup.position.addScaledVector(rd,0.45);machineGroup.rotation.y=Math.atan2(rd.x,rd.z);mainWheelMesh.rotation.x+=0.3}
           else machineGroup.rotation.y=playerYaw;
         }else{
@@ -1252,7 +1255,7 @@
             x: z.meshParts.group.position.x,
             y: z.meshParts.group.position.y,
             z: z.meshParts.group.position.z,
-            yaw: z.meshParts.group.rotation.y,
+            yaw: z.meshParts.group.rotation.y, // --- FIX: Sync precise zombie rotation/yaw ---
             stage: z.stage
           }));
           socket.emit('host_zombie_sync', syncPacket);

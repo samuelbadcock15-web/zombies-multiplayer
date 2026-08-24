@@ -8,7 +8,6 @@ const io = new Server(server);
 
 app.use(expressApp.static(__dirname));
 
-// 6 Lobbies: 2 lobbies of 2-player, 2 lobbies of 3-player, 2 lobbies of 4-player
 const lobbies = [
   { id: 1, maxPlayers: 2, slots: [null, null], playerCount: 0, started: false },
   { id: 2, maxPlayers: 2, slots: [null, null], playerCount: 0, started: false },
@@ -57,7 +56,6 @@ io.on('connection', socket => {
     lobby.playerCount++;
     socketToPlayerMap[socket.id] = { lobbyId: lobby.id, slotIndex: slotIdx };
 
-    // Join the specific Socket.IO room for this lobby
     socket.join(lobby.id);
 
     socket.emit('slot_joined', {
@@ -152,7 +150,6 @@ io.on('connection', socket => {
     io.to(targetSocketId).emit('force_damage_player');
   });
 
-  // Burrow hole synchronization handlers for dirt
   socket.on('sync_hole_dig', data => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;
@@ -165,17 +162,23 @@ io.on('connection', socket => {
     socket.to(loc.lobbyId).emit('sync_hole_fill', data);
   });
 
-  // Machine & Relic State Synchronization Handlers
-  socket.on('sync_mystery_box_state', data => {
+  // Global Machine & Event Sync Relays
+  socket.on('host_mystery_box_sync', data => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;
-    socket.to(loc.lobbyId).emit('update_mystery_box_state', data);
+    socket.to(loc.lobbyId).emit('client_mystery_box_sync', data);
   });
 
-  socket.on('sync_upgrade_machine_state', data => {
+  socket.on('host_upgrade_machine_sync', data => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;
-    socket.to(loc.lobbyId).emit('update_upgrade_machine_state', data);
+    socket.to(loc.lobbyId).emit('client_upgrade_machine_sync', data);
+  });
+
+  socket.on('host_elevator_sync', data => {
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    socket.to(loc.lobbyId).emit('client_elevator_sync', data);
   });
 
   socket.on('disconnect', () => {

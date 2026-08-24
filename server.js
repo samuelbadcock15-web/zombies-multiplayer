@@ -14,13 +14,16 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Configure Lobbies: 3 x 3-player lobbies (1-3) and 3 x 4-player lobbies (4-6)
 const LOBBIES = {};
 for (let i = 1; i <= 6; i++) {
+  const maxCapacity = i <= 3 ? 3 : 4;
   LOBBIES[i] = {
     id: i,
+    maxPlayers: maxCapacity,
     started: false,
     hostSocketId: null,
-    slots: [null, null, null, null],
+    slots: new Array(maxCapacity).fill(null),
     doorState: [false, false, false, false]
   };
 }
@@ -30,6 +33,7 @@ const PLAYER_COLORS = [0x00ffcc, 0xff4444, 0xffbb00, 0x9944ff];
 function getLobbiesSummary() {
   return Object.values(LOBBIES).map(l => ({
     id: l.id,
+    maxPlayers: l.maxPlayers,
     started: l.started,
     playerCount: l.slots.filter(Boolean).length,
     slots: l.slots.map((s, idx) => s ? {
@@ -54,7 +58,7 @@ io.on('connection', (socket) => {
     if (lobby.started) return socket.emit('error_msg', 'Mission already in progress.');
 
     const openIdx = lobby.slots.findIndex(s => s === null);
-    if (openIdx === -1) return socket.emit('error_msg', `Lobby ${lobbyId} is full (4/4).`);
+    if (openIdx === -1) return socket.emit('error_msg', `Lobby ${lobbyId} is full (${lobby.maxPlayers}/${lobby.maxPlayers}).`);
 
     joinedLobbyId = lobbyId;
     mySlotIdx = openIdx;
@@ -96,11 +100,12 @@ io.on('connection', (socket) => {
     lobby.slots[mySlotIdx].ready = !lobby.slots[mySlotIdx].ready;
     io.emit('lobby_list', getLobbiesSummary());
 
+    // Launch automatically when all slots for that lobby are filled and everyone is ready
     const filledSlots = lobby.slots.filter(Boolean);
-    const allFourFilled = filledSlots.length === 4;
-    const allFourReady = allFourFilled && filledSlots.every(p => p.ready);
+    const allFilled = filledSlots.length === lobby.maxPlayers;
+    const allReady = allFilled && filledSlots.every(p => p.ready);
 
-    if (allFourReady) {
+    if (allReady) {
       launchGame(joinedLobbyId);
     }
   });
@@ -123,16 +128,6 @@ io.on('connection', (socket) => {
 
   socket.on('player_update', (data) => {
     if (!joinedLobbyId) return;
-    const lobby = LOBBIES[joinedLobbyId];
-    if (lobby) {
-      const p = lobby.slots.find(s => s && s.socketId === socket.id);
-      if (p) {
-        p.x = data.x;
-        p.y = data.y;
-        p.z = data.z;
-        p.yaw = data.yaw;
-      }
-    }
     socket.to(`lobby_${joinedLobbyId}`).emit('remote_player_update', {
       id: socket.id,
       ...data

@@ -529,7 +529,7 @@
       rebuildZombieHitboxes();
     }
 
-    // Client Zombie Sync with + Math.PI correction so zombies face forward correctly on all screens!
+    // Client Zombie Sync with correct forward-facing orientation (No extra Math.PI offset needed since host yaw matches lookAt vector)
     socket.on('client_zombie_sync', networkZombies => {
       if (isHost) return;
       while(activeZombies.length < networkZombies.length) {
@@ -549,7 +549,7 @@
         const localZ = activeZombies[idx];
         if (localZ) {
           localZ.meshParts.group.position.set(nz.x, nz.y, nz.z);
-          localZ.meshParts.group.rotation.y = nz.yaw + Math.PI;
+          localZ.meshParts.group.rotation.y = nz.yaw;
           if (localZ.stage !== nz.stage) {
             setZombieStage(localZ, nz.stage);
           }

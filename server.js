@@ -185,7 +185,6 @@ io.on('connection', socket => {
     socket.to(loc.lobbyId).emit('client_elevator_sync', data);
   });
 
-  // Relay robot rotation/aim direction to all players in the room
   socket.on('host_robot_sync', data => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;

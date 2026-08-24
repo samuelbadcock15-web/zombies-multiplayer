@@ -119,7 +119,6 @@ io.on('connection', socket => {
     });
   });
 
-  // Authoritative server-side hit handler that grants points to the correct shooter
   socket.on('zombie_hit', data => {
     io.emit('host_apply_zombie_hit', {
       zombieIndex: data.zombieIndex,

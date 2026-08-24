@@ -15,7 +15,6 @@
     #score-board { position: absolute; top: 6px; right: 8px; font-size: 13px; font-weight: 700; background: #140d0a; color: #fa0; padding: 4px 10px; border: 2px solid #8b5a2b; pointer-events: auto; }
     #team-hud { position: absolute; top: 44px; right: 8px; background: rgba(20,13,10,0.85); border: 1px solid #8b5a2b; padding: 4px 6px; font-size: 10px; line-height: 1.3; }
     
-    /* Round display safely tucked away at bottom-left, clear of movement pad */
     #round-display { position: absolute; bottom: 8px; left: 135px; font-size: 26px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; pointer-events: none; }
     #msg-box { position: absolute; top: 85px; width: 100%; text-align: center; left: 0; pointer-events: none; }
     #text { display: inline-block; background: rgba(35,24,18,.95); color: #f0e0d0; border: 2px solid #8b5a2b; padding: 4px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,.5); max-width: 90vw; }
@@ -34,7 +33,6 @@
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
     
-    /* Compact D-Pad positioned safely above bottom edge */
     #dpad { position: absolute; bottom: 42px; left: 10px; width: 115px; height: 115px; }
     .dpad-btn { position: absolute; width: 36px; height: 36px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 6px; color: #d4af37; font-size: 15px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(0,0,0,0.5); }
     #dpad-up { top: 0; left: 39.5px; }
@@ -46,7 +44,6 @@
     #btn-nade { left: 39.5px; border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
     #btn-clay { left: 58.5px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
 
-    /* Wide and short Look-Pad */
     #look-pad { position: absolute; bottom: 12px; right: 10px; left: 130px; height: 22vh; background: rgba(212,175,55,0.06); border: 2px dashed rgba(212,175,55,0.3); border-radius: 10px; touch-action: none; }
 
     #weapon-bar { position: absolute; top: 40px; left: 8px; display: flex; gap: 3px; pointer-events: auto; }
@@ -617,8 +614,8 @@
         const localZ = activeZombies[idx];
         if (localZ) {
           localZ.meshParts.group.position.set(nz.x, nz.y, nz.z);
-          // --- FIX: Force identical forward-facing orientation on non-host screens ---
-          localZ.meshParts.group.rotation.y = nz.yaw + Math.PI;
+          // --- FIX: Corrected forward rotation math so zombies never walk backwards on non-host screens ---
+          localZ.meshParts.group.rotation.y = nz.yaw;
           setZombieStage(localZ, nz.stage);
         }
       });
@@ -644,6 +641,21 @@
           l.visible = idx < h.dirtCount;
         });
         playProceduralDigSound();
+      }
+    });
+
+    socket.on('host_apply_zombie_hit', data => {
+      if (!isHost) return;
+      const tz = activeZombies[data.zombieIndex];
+      if (tz && !tz.deadAndShrinking) {
+        setZombieStage(tz, tz.stage - data.damage);
+        if (tz.deadAndShrinking) {
+          socket.emit('award_points', { socketId: data.shooterId, amount: data.isHeadshot ? 20 : 10 });
+          rebuildZombieHitboxes();
+          checkRoundEnd();
+        } else {
+          socket.emit('award_points', { socketId: data.shooterId, amount: 10 });
+        }
       }
     });
 
@@ -883,7 +895,6 @@
         let isH=(zh[0].object.userData.hitBoxPart==="head");
         let zDmg = isH?getWeaponStat(currentWeapon,'headDamage'):getWeaponStat(currentWeapon,'damage');
         
-        // --- FIX: Instantly process local points if host, otherwise emit hit to server ---
         if (isHost) {
           const tz = activeZombies[zh[0].object.userData.parentZombieIndex];
           if(tz&&!tz.deadAndShrinking){

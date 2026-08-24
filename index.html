@@ -232,7 +232,7 @@
     let ammoReserves={1:200,2:0,3:0,4:0,5:0},weaponUpgradeLevels={1:0,2:0,3:0,4:0,5:0},hasAutomaticPistol=false,hasRifle=false,hasAutoRifle=false,hasRayPistol=false,isLmbHeldDown=false,lastShotTime=0,autoFireRateMs=120,grenadeCount=2,grenadeUpgradeLevel=0,claymoreCount=2,claymoreUpgradeLevel=0;
     const activeGrenades=[],activeClaymores=[];
     let robotMercState={active:false,health:100,maxHealth:100,durationTimer:0,level:1,isBeingOverrun:false,overrunProgress:0,lastProximitySpeechTime:0};
-    const unhiredLines=["Penumbra industries veteran at your service, marine! 500 credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits and watch these phantoms scatter!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
+    const unhiredLines=["Penumbra industries veteran at your service, marine! Five hundred credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits and watch these phantoms scatter!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
     const hiredLines=["Heavy metal activated! Locking and loading for Vanguard Company!","Get to the extraction point! I've got your flank covered, marine!","Come on! Let's party! No ghoul gets past these dual barrels!","Vanguard ship is waiting in the clouds! Stay frosty and keep pumping lead!"];
     let lastUnhiredLineIdx=-1,lastHiredLineIdx=-1;
 
@@ -512,7 +512,7 @@
       rebuildZombieHitboxes();
     }
 
-    // Client Zombie Synchronization - Fully Restored Head, Body, and Limbs
+    // Client Zombie Sync
     socket.on('client_zombie_sync', networkZombies => {
       if (isHost) return;
       while(activeZombies.length < networkZombies.length) {
@@ -764,10 +764,10 @@
       if (!isMobile) document.body.requestPointerLock();
       initAudio();
 
-      isHost = (data.hostId === myId || data.hostId === socket.id);
+      isHost = (data.hostSocketId === myId || data.hostSocketId === socket.id);
 
       data.players.forEach(p => {
-        if (p.socketId !== myId && p.socketId !== socket.id) {
+        if (p.socketId !== myId) {
           remotePlayers[p.socketId] = {
             data: p,
             mesh: createTeammateMesh(p.color, p.name)

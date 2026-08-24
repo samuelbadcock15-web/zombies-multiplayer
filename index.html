@@ -95,7 +95,7 @@
   </div>
 
   <div id="gui">
-    <div id="stats">WASD / D-PAD | SWIPE LOOK PAD | TAP TO SHOOT</div>
+    <div id="stats">WASD / D-PAD | SWIPE LOOK PAD | TAP ZOMBIE TO SHOOT</div>
     <div id="score-board">CREDITS:<span id="score-val">500</span></div>
     <div id="team-hud"><b style="color:#d4af37;">SQUAD STATUS</b><div id="team-list-hud"></div></div>
     <div id="round-display">ROUND<span id="round-val">I</span></div>
@@ -353,15 +353,9 @@
     });
 
     let audioCtx=null,audioListener=null;const scene=new T.Scene(),defaultBG=new T.Color(0x120d0a),underwaterBG=new T.Color(0x0a1624),caveBG=new T.Color(0x080605);scene.background=defaultBG;
-    
-    // Fixed Camera FOV so mobile and PC match perfectly
-    const camera=new T.PerspectiveCamera(65,window.innerWidth/window.innerHeight,0.1,1000);
-    camera.rotation.order='YXZ';
-    
+    const camera=new T.PerspectiveCamera(65,window.innerWidth/window.innerHeight,0.1,1000);camera.rotation.order='YXZ';
     const playerRig=GRP();playerRig.position.set(0,3,15);scene.add(playerRig);
     const cameraPitchObject=GRP();playerRig.add(cameraPitchObject);cameraPitchObject.add(camera);
-    
-    // Standardized pistolGroup offset for both mobile & PC
     const pistolGroup=GRP();pistolGroup.position.set(0.28,-0.28,-0.55);cameraPitchObject.add(pistolGroup);
     const gunMeshGroup=GRP();pistolGroup.add(gunMeshGroup);
     const muzzleFlash=new T.PointLight(0xffaa00,0,10);pistolGroup.add(muzzleFlash);
@@ -666,9 +660,19 @@
     function fillHoloGroupWithRewardModel(g,rt){while(g.children.length>0)g.remove(g.children[0]);g.add(buildWeaponGeometry((rt>=1&&rt<=5)?rt:1,false))}
     function fillHoloGroupWithWeaponModel(g,wid,upg){while(g.children.length>0)g.remove(g.children[0]);g.add(buildWeaponGeometry(wid,upg))}
 
-    function executeWeaponFireRaycast(){
+    // --- Tap-to-Shoot Raycasting (Shoots exactly where you tap on mobile or click on PC) ---
+    function executeWeaponFireRaycast(clientX, clientY){
       if(isGameOver||!gunMeshGroup.visible)return;
-      raycaster.setFromCamera(new T.Vector2(0,0),camera);
+      
+      const mouse = new T.Vector2();
+      if (isMobile && clientX !== undefined && clientY !== undefined) {
+        mouse.x = (clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+      } else {
+        mouse.set(0, 0); // Center crosshair for desktop pointer lock
+      }
+
+      raycaster.setFromCamera(mouse, camera);
       let oh=raycaster.intersectObjects([redOrbMesh]);
       if(oh.length>0&&playerRig.position.y<-40&&oh[0].distance<30){
         playerRig.position.set(0,3,15);playerYaw=playerPitch=0;playerRig.rotation.set(0,0,0);cameraPitchObject.rotation.set(0,0,0);scene.background=defaultBG;isLmbHeldDown=false;elevatorActive=false;elevatorProgress=0;elevatorDirection=1;secretGalleryGroup.position.y=0.2;
@@ -881,9 +885,11 @@
     });
     lookPad.addEventListener('touchend', e => { e.preventDefault(); lastTouchX = lastTouchY = null; });
 
+    // Tap anywhere on screen to shoot at what you touch on mobile
     window.addEventListener('touchstart', e => {
       if (!gameActive || isGameOver || !isMobile || e.target.tagName.includes('BUTTON') || e.target.closest('#mobile-controls')) return;
-      executeWeaponFireRaycast();
+      const touch = e.touches[0];
+      executeWeaponFireRaycast(touch.clientX, touch.clientY);
     });
 
     function drawAnimatedHostScreen(t){

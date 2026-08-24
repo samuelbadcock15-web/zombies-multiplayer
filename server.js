@@ -14,6 +14,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Fixed lobbies 1 to 6
 const LOBBIES = {};
 for (let i = 1; i <= 6; i++) {
   LOBBIES[i] = {
@@ -35,7 +36,8 @@ function getLobbiesSummary() {
       name: s.name,
       slotIndex: idx + 1,
       ready: s.ready,
-      color: PLAYER_COLORS[idx]
+      color: PLAYER_COLORS[idx],
+      socketId: s.socketId
     } : null)
   }));
 }
@@ -76,7 +78,8 @@ io.on('connection', (socket) => {
     socket.emit('slot_joined', {
       lobbyId,
       slotNumber: openIdx + 1,
-      myColor: PLAYER_COLORS[openIdx]
+      myColor: PLAYER_COLORS[openIdx],
+      myId: socket.id
     });
 
     io.emit('lobby_list', getLobbiesSummary());
@@ -119,18 +122,17 @@ io.on('connection', (socket) => {
   socket.on('player_update', (data) => {
     if (!joinedLobbyId) return;
     socket.to(`lobby_${joinedLobbyId}`).emit('remote_player_update', {
+      id: socket.id,
       slotNumber: mySlotIdx + 1,
       ...data
     });
   });
 
-  // Relay Host zombie coordinates to Players 2, 3, 4
   socket.on('host_zombie_sync', (data) => {
     if (!joinedLobbyId) return;
     socket.to(`lobby_${joinedLobbyId}`).emit('client_zombie_sync', data);
   });
 
-  // Relay round notifications
   socket.on('host_round_sync', (roundNum) => {
     if (!joinedLobbyId) return;
     socket.to(`lobby_${joinedLobbyId}`).emit('client_round_sync', roundNum);
@@ -139,10 +141,12 @@ io.on('connection', (socket) => {
   socket.on('zombie_hit', (data) => {
     if (!joinedLobbyId) return;
     const lobby = LOBBIES[joinedLobbyId];
+    if (!lobby) return;
     const host = lobby.slots.find(Boolean);
     if (host) {
       io.to(host.socketId).emit('host_apply_zombie_hit', {
         ...data,
+        shooterId: socket.id,
         shooterSlot: mySlotIdx + 1
       });
     }
@@ -162,7 +166,7 @@ io.on('connection', (socket) => {
           lobby.started = false;
         }
         socket.leave(`lobby_${joinedLobbyId}`);
-        io.to(`lobby_${joinedLobbyId}`).emit('player_left', mySlotIdx + 1);
+        io.to(`lobby_${joinedLobbyId}`).emit('player_left', socket.id);
       }
       joinedLobbyId = null;
       mySlotIdx = -1;
@@ -175,5 +179,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Zombies 4-Slot Server running on port ${PORT}`);
+  console.log(`Zombies 4-Player server running on port ${PORT}`);
 });

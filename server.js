@@ -5,10 +5,7 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: "*" }
-});
-
+const io = new Server(server, { cors: { origin: "*" } });
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(__dirname));
@@ -17,164 +14,155 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Rooms dictionary
-const rooms = {};
-
-function generateRoomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
+// Fixed lobbies 1 to 6
+const LOBBIES = {};
+for (let i = 1; i <= 6; i++) {
+  LOBBIES[i] = {
+    id: i,
+    started: false,
+    slots: [null, null, null, null], // 4 slots
+    doorState: [false, false, false, false]
+  };
 }
 
 const PLAYER_COLORS = [0x00ffcc, 0xff4444, 0xffbb00, 0x9944ff];
 
+function getLobbiesSummary() {
+  return Object.values(LOBBIES).map(l => ({
+    id: l.id,
+    started: l.started,
+    playerCount: l.slots.filter(Boolean).length,
+    slots: l.slots.map((s, idx) => s ? {
+      name: s.name,
+      slotIndex: idx + 1,
+      ready: s.ready,
+      color: PLAYER_COLORS[idx]
+    } : null)
+  }));
+}
+
 io.on('connection', (socket) => {
-  let currentRoom = null;
+  let joinedLobbyId = null;
+  let mySlotIdx = -1;
 
-  socket.on('create_room', (playerName) => {
-    const code = generateRoomCode();
-    rooms[code] = {
-      code,
-      hostId: socket.id,
-      started: false,
-      players: {},
-      doorState: [false, false, false, false]
-    };
-    joinRoom(socket, code, playerName);
-  });
+  // Send lobby list immediately on connect
+  socket.emit('lobby_list', getLobbiesSummary());
 
-  socket.on('join_room', ({ code, playerName }) => {
-    const rCode = (code || '').toUpperCase().trim();
-    if (!rooms[rCode]) {
-      socket.emit('error_msg', 'Room not found.');
-      return;
-    }
-    if (rooms[rCode].started) {
-      socket.emit('error_msg', 'Game already in progress.');
-      return;
-    }
-    if (Object.keys(rooms[rCode].players).length >= 4) {
-      socket.emit('error_msg', 'Room is full (max 4 players).');
-      return;
-    }
-    joinRoom(socket, rCode, playerName);
-  });
+  socket.on('join_slot', ({ lobbyId, name }) => {
+    const lobby = LOBBIES[lobbyId];
+    if (!lobby) return socket.emit('error_msg', 'Invalid Lobby Number.');
+    if (lobby.started) return socket.emit('error_msg', 'Mission already in progress.');
 
-  function joinRoom(sock, code, name) {
-    currentRoom = code;
-    sock.join(code);
+    // Find first open slot
+    const openIdx = lobby.slots.findIndex(s => s === null);
+    if (openIdx === -1) return socket.emit('error_msg', `Lobby ${lobbyId} is completely full (4/4).`);
 
-    const room = rooms[code];
-    const playerIdx = Object.keys(room.players).length;
-    room.players[sock.id] = {
-      id: sock.id,
-      name: name || `Marine ${playerIdx + 1}`,
-      colorIndex: playerIdx,
-      color: PLAYER_COLORS[playerIdx],
-      x: (playerIdx - 1.5) * 3,
+    joinedLobbyId = lobbyId;
+    mySlotIdx = openIdx;
+
+    lobby.slots[openIdx] = {
+      socketId: socket.id,
+      name: (name || `Marine ${openIdx + 1}`).toUpperCase().trim(),
+      ready: false,
+      slotNumber: openIdx + 1,
+      color: PLAYER_COLORS[openIdx],
+      x: (openIdx - 1.5) * 3,
       y: 3,
       z: 15,
       yaw: 0,
       pitch: 0,
-      weapon: 1,
-      isFiring: false,
-      isDowned: false
+      weapon: 1
     };
 
-    sock.emit('room_joined', {
-      code,
-      myId: sock.id,
-      isHost: room.hostId === sock.id,
-      players: room.players
+    socket.join(`lobby_${lobbyId}`);
+
+    socket.emit('slot_joined', {
+      lobbyId,
+      slotNumber: openIdx + 1,
+      myColor: PLAYER_COLORS[openIdx]
     });
 
-    io.to(code).emit('lobby_update', {
-      players: Object.values(room.players),
-      hostId: room.hostId
+    io.emit('lobby_list', getLobbiesSummary());
+  });
+
+  socket.on('toggle_ready', () => {
+    if (!joinedLobbyId || mySlotIdx === -1) return;
+    const lobby = LOBBIES[joinedLobbyId];
+    if (!lobby || !lobby.slots[mySlotIdx]) return;
+
+    lobby.slots[mySlotIdx].ready = !lobby.slots[mySlotIdx].ready;
+    io.emit('lobby_list', getLobbiesSummary());
+
+    // Check if all seated players are ready (minimum 1 player)
+    const activePlayers = lobby.slots.filter(Boolean);
+    const allReady = activePlayers.length > 0 && activePlayers.every(p => p.ready);
+
+    if (allReady) {
+      lobby.started = true;
+      io.to(`lobby_${joinedLobbyId}`).emit('game_start', {
+        lobbyId: joinedLobbyId,
+        players: lobby.slots.filter(Boolean)
+      });
+      io.emit('lobby_list', getLobbiesSummary());
+    }
+  });
+
+  socket.on('leave_slot', () => {
+    handleLeave();
+  });
+
+  socket.on('player_update', (data) => {
+    if (!joinedLobbyId) return;
+    socket.to(`lobby_${joinedLobbyId}`).emit('remote_player_update', {
+      slotNumber: mySlotIdx + 1,
+      ...data
     });
+  });
+
+  socket.on('host_zombie_sync', (data) => {
+    if (!joinedLobbyId) return;
+    socket.to(`lobby_${joinedLobbyId}`).emit('client_zombie_sync', data);
+  });
+
+  socket.on('zombie_hit', (data) => {
+    if (!joinedLobbyId) return;
+    const lobby = LOBBIES[joinedLobbyId];
+    const host = lobby.slots.find(Boolean);
+    if (host) {
+      io.to(host.socketId).emit('host_apply_zombie_hit', {
+        ...data,
+        shooterSlot: mySlotIdx + 1
+      });
+    }
+  });
+
+  socket.on('unlock_door', (doorIndex) => {
+    if (!joinedLobbyId) return;
+    io.to(`lobby_${joinedLobbyId}`).emit('door_unlocked', { doorIndex });
+  });
+
+  function handleLeave() {
+    if (joinedLobbyId && mySlotIdx !== -1) {
+      const lobby = LOBBIES[joinedLobbyId];
+      if (lobby) {
+        lobby.slots[mySlotIdx] = null;
+        if (lobby.slots.every(s => s === null)) {
+          lobby.started = false;
+        }
+        socket.leave(`lobby_${joinedLobbyId}`);
+        io.to(`lobby_${joinedLobbyId}`).emit('player_left', mySlotIdx + 1);
+      }
+      joinedLobbyId = null;
+      mySlotIdx = -1;
+      io.emit('lobby_list', getLobbiesSummary());
+    }
   }
 
-  socket.on('start_game', () => {
-    if (!currentRoom || !rooms[currentRoom]) return;
-    if (rooms[currentRoom].hostId !== socket.id) return;
-
-    rooms[currentRoom].started = true;
-    io.to(currentRoom).emit('game_started', {
-      players: rooms[currentRoom].players
-    });
-  });
-
-  // Relay 3D position & state
-  socket.on('player_update', (data) => {
-    if (!currentRoom || !rooms[currentRoom]) return;
-    const p = rooms[currentRoom].players[socket.id];
-    if (p) {
-      Object.assign(p, data);
-      socket.to(currentRoom).emit('remote_player_update', {
-        id: socket.id,
-        ...data
-      });
-    }
-  });
-
-  // Host broadcasts authoritative zombie positions/stages
-  socket.on('host_zombie_sync', (zombieData) => {
-    if (!currentRoom || !rooms[currentRoom]) return;
-    if (rooms[currentRoom].hostId !== socket.id) return;
-    socket.to(currentRoom).emit('client_zombie_sync', zombieData);
-  });
-
-  // Damage / Kill events
-  socket.on('zombie_hit', (data) => {
-    if (!currentRoom || !rooms[currentRoom]) return;
-    io.to(rooms[currentRoom].hostId).emit('host_apply_zombie_hit', {
-      ...data,
-      shooterId: socket.id
-    });
-  });
-
-  // Shared door unlocks
-  socket.on('unlock_door', (doorIndex) => {
-    if (!currentRoom || !rooms[currentRoom]) return;
-    rooms[currentRoom].doorState[doorIndex] = true;
-    io.to(currentRoom).emit('door_unlocked', { doorIndex, unlockedBy: socket.id });
-  });
-
-  // Weapon fire effects relay
-  socket.on('fire_shot', (data) => {
-    if (!currentRoom) return;
-    socket.to(currentRoom).emit('remote_fire_shot', { id: socket.id, ...data });
-  });
-
-  // Grenade / Explosions
-  socket.on('spawn_grenade', (gData) => {
-    if (!currentRoom) return;
-    socket.to(currentRoom).emit('remote_grenade', gData);
-  });
-
-  // Disconnect handler
   socket.on('disconnect', () => {
-    if (!currentRoom || !rooms[currentRoom]) return;
-    const room = rooms[currentRoom];
-    delete room.players[socket.id];
-
-    if (Object.keys(room.players).length === 0) {
-      delete rooms[currentRoom];
-    } else {
-      if (room.hostId === socket.id) {
-        room.hostId = Object.keys(room.players)[0];
-        io.to(room.hostId).emit('host_promoted');
-      }
-      io.to(currentRoom).emit('player_left', socket.id);
-      io.to(currentRoom).emit('lobby_update', {
-        players: Object.values(room.players),
-        hostId: room.hostId
-      });
-    }
+    handleLeave();
   });
 });
 
 server.listen(PORT, () => {
-  console.log(`Zombies 4-Player server running on port ${PORT}`);
+  console.log(`Zombies 4-Slot Server running on port ${PORT}`);
 });

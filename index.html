@@ -12,7 +12,7 @@
     #stats { position: absolute; top: 12px; left: 12px; font-size: 13px; font-weight: 700; background: rgba(30,20,15,.9); color: #d4af37; padding: 6px 10px; border: 1px solid #6b4c35; line-height: 1.3; }
     #score-board { position: absolute; top: 12px; right: 12px; font-size: 18px; font-weight: 700; background: #140d0a; color: #fa0; padding: 8px 16px; border: 2px solid #8b5a2b; pointer-events: auto; }
     #team-hud { position: absolute; top: 60px; right: 12px; background: rgba(20,13,10,0.85); border: 1px solid #8b5a2b; padding: 6px 10px; font-size: 12px; line-height: 1.5; }
-    #round-display { position: absolute; bottom: 180px; left: 24px; font-size: 36px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; }
+    #round-display { position: absolute; bottom: 25px; left: 16px; font-size: 38px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; }
     #msg-box { position: absolute; top: 60px; width: 100%; text-align: center; left: 0; }
     #text { display: inline-block; background: rgba(35,24,18,.95); color: #f0e0d0; border: 2px solid #8b5a2b; padding: 8px 16px; font-size: 13px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,.5); }
     #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; transform: translate(-50%,-50%); pointer-events: none; }
@@ -25,22 +25,20 @@
       #crosshair { display: none !important; }
     }
 
-    /* Mobile Controls Dashboard */
+    /* Mobile Controls */
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
     
     /* Left Analog Virtual Joystick Base */
-    #joystick-base { position: absolute; bottom: 25px; left: 24px; width: 130px; height: 130px; background: rgba(43,24,16,0.4); border: 2px solid rgba(212,175,55,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; touch-action: none; }
-    #joystick-knob { width: 55px; height: 55px; background: radial-gradient(circle, #d4af37 0%, #8b5a2b 80%); border: 2px solid #fff; border-radius: 50%; position: absolute; box-shadow: 0 4px 10px rgba(0,0,0,0.6); }
+    #joystick-base { position: absolute; bottom: 125px; left: 24px; width: 130px; height: 130px; background: rgba(43,24,16,0.4); border: 2px solid rgba(212,175,55,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; touch-action: none; }
+    #joystick-knob { width: 55px; height: 55px; background: radial-gradient(circle, #d4af37 0%, #8b5a2b 80%); border: 2px solid #fff; border-radius: 50%; position: absolute; box-shadow: 0 4px 10px rgba(0,0,0,0.6); pointer-events: none; }
 
-    /* Right Bottom-Right Dashboard Container */
-    #right-dashboard { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 12px; align-items: flex-end; }
+    /* Compact, Low-Profile Look Pad */
+    #look-pad { position: absolute; bottom: 20px; right: 20px; width: 44vw; height: 18vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 12px; touch-action: none; }
     
-    /* Action Buttons (Nade & Mine) */
-    .dash-btn { width: 50px; height: 50px; border-radius: 10px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 10px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-
-    /* Compact Touch Look Pad */
-    #look-pad { width: 42vw; height: 28vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 12px; touch-action: none; }
+    /* Action Buttons (Nade & Mine) moved into the cleared space above look-pad */
+    #btn-nade { position: absolute; bottom: 125px; right: 20px; width: 48px; height: 48px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 10px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #btn-clay { position: absolute; bottom: 125px; right: 78px; width: 48px; height: 48px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 10px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
     #weapon-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
     .w-btn { width: 36px; height: 36px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
@@ -110,17 +108,14 @@
   </div>
 
   <div id="mobile-controls">
-    <!-- Virtual Analog Joystick (Bottom Left) -->
     <div id="joystick-base" class="touch-interactive">
       <div id="joystick-knob"></div>
     </div>
 
-    <!-- Right Dashboard (Action buttons + Touch Look Pad) -->
-    <div id="right-dashboard" class="touch-interactive">
-      <button id="btn-nade" class="dash-btn">NADE</button>
-      <button id="btn-clay" class="dash-btn">MINE</button>
-      <div id="look-pad"></div>
-    </div>
+    <div id="look-pad" class="touch-interactive"></div>
+
+    <button id="btn-nade" class="touch-interactive dash-btn">NADE</button>
+    <button id="btn-clay" class="touch-interactive dash-btn">MINE</button>
 
     <div id="weapon-bar" class="touch-interactive">
       <div class="w-btn" onclick="switchWeapon(1)">1</div>
@@ -851,7 +846,7 @@
     
     const keys={w:0,a:0,s:0,d:0,shift:0};
 
-    // --- Virtual Analog Joystick Movement Logic ---
+    // --- Functional Virtual Analog Joystick Touch Logic ---
     let joystickTouchId = null;
     let joystickCenter = { x: 0, y: 0 };
     const joystickBase = $('joystick-base');
@@ -875,7 +870,7 @@
           const dx = t.clientX - joystickCenter.x;
           const dy = t.clientY - joystickCenter.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = 45;
+          const maxDist = 40;
           const angle = Math.atan2(dy, dx);
           
           const clampedDist = Math.min(dist, maxDist);
@@ -883,11 +878,10 @@
           const knobY = Math.sin(angle) * clampedDist;
           joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
 
-          // Map analog stick to movement keys
-          keys.w = (dy < -15) ? 1 : 0;
-          keys.s = (dy > 15) ? 1 : 0;
-          keys.a = (dx < -15) ? 1 : 0;
-          keys.d = (dx > 15) ? 1 : 0;
+          keys.w = (dy < -12) ? 1 : 0;
+          keys.s = (dy > 12) ? 1 : 0;
+          keys.a = (dx < -12) ? 1 : 0;
+          keys.d = (dx > 12) ? 1 : 0;
         }
       }
     });
@@ -914,14 +908,14 @@
     const lookPad = $('look-pad');
     lookPad.addEventListener('touchstart', e => {
       e.preventDefault();
-      const t = e.touches[0];
+      const t = e.changedTouches[0];
       lastTouchX = t.clientX;
       lastTouchY = t.clientY;
     });
     lookPad.addEventListener('touchmove', e => {
       e.preventDefault();
       if (lastTouchX === null || isGameOver) return;
-      const t = e.touches[0];
+      const t = e.changedTouches[0];
       const dx = t.clientX - lastTouchX;
       const dy = t.clientY - lastTouchY;
       lastTouchX = t.clientX;

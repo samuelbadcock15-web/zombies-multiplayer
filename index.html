@@ -38,8 +38,8 @@
 
     #look-pad { position: absolute; bottom: 15px; right: 15px; width: 44vw; height: 20vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 12px; touch-action: none; }
     
-    #btn-nade { position: absolute; bottom: 135px; right: 15px; width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-    #btn-clay { position: absolute; bottom: 135px; right: 62px; width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #btn-nade { position: absolute; bottom: 25px; right: calc(44vw + 25px); width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #btn-clay { position: absolute; bottom: 72px; right: calc(44vw + 25px); width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
     #weapon-bar { position: absolute; top: 40px; left: 8px; display: flex; gap: 3px; pointer-events: auto; }
     .w-btn { width: 28px; height: 28px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; }
@@ -107,7 +107,7 @@
   </div>
 
   <div id="gui">
-    <div id="stats">JOYSTICK | SWIPE LOOK | TAP TO SHOOT</div>
+    <div id="stats">JOYSTICK | SWIPE LOOK | TAP TO SHOOT/FILL HOLES</div>
     <div id="score-board">CREDITS:<span id="score-val">500</span></div>
     <div id="team-hud"><b style="color:#d4af37;">SQUAD</b><div id="team-list-hud"></div></div>
     <div id="round-display">ROUND<span id="round-val">I</span></div>
@@ -158,12 +158,10 @@
 
     const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-    // Single Player Arcade Button -> Redirects to standalone single-player render URL
     $('btn-single-player').onclick = () => {
       window.location.href = "https://zombies-3az2.onrender.com";
     };
 
-    // Multiplayer Co-op Arcade Button -> Unlocks audio and opens lobby list browser
     $('btn-multiplayer').onclick = () => {
       initAudio();
       if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
@@ -496,8 +494,24 @@
     function createBurrowHole(sz,x,y,z){const hg=GRP();hg.position.set(x,y+0.02,z);const pb=MESH(CG(sz,sz,0.05,24),pitVoidMaterial);pb.userData={materialType:"pit_void"};hg.add(pb);const dl=[];for(let i=0;i<4;i++){let lm=MESH(CG(sz-i*0.2,sz-(i-1)*0.1,0.15,16),dirtMaterial,0,i*0.12,0);lm.userData={materialType:"dirt"};hg.add(lm);dl.push(lm)}scene.add(hg);pb.userData.holeIndex=allBurrowHoles.length;holeInteractiveMeshes.push(pb);allBurrowHoles.push({group:hg,hitMesh:pb,layers:dl,dirtCount:4,maxDirt:4,globalX:x,globalY:y,globalZ:z})}
     createBurrowHole(3,-12,0,10);createBurrowHole(3,12,0,-10);createBurrowHole(3.5,-30,0,-110);createBurrowHole(3.5,30,0,-170);createBurrowHole(3.5,-45,0,-300);createBurrowHole(3.5,45,0,-360);createBurrowHole(4,-45,-79.8,-345);createBurrowHole(4,45,-79.8,-315);
 
-    function clearHoleDirtLayer(i){const h=allBurrowHoles[i];if(h.dirtCount>0){h.dirtCount--;h.layers[h.dirtCount].visible=false;playProceduralDigSound()}}
-    function fillHoleWithDirt(i){const h=allBurrowHoles[i];if(h.dirtCount<h.maxDirt){h.layers[h.dirtCount].visible=true;h.dirtCount++;addPoints(5);txtDiv.innerHTML="SEALED THE VAULT! +5 CREDITS."}}
+    function clearHoleDirtLayer(i){
+      const h=allBurrowHoles[i];
+      if(h.dirtCount>0){
+        h.dirtCount--;
+        h.layers[h.dirtCount].visible=false;
+        playProceduralDigSound();
+      }
+    }
+
+    function fillHoleWithDirt(i){
+      const h=allBurrowHoles[i];
+      if(h.dirtCount<h.maxDirt){
+        h.layers[h.dirtCount].visible=true;
+        h.dirtCount++;
+        addPoints(5);
+        txtDiv.innerHTML="SEALED THE VAULT! +5 CREDITS.";
+      }
+    }
 
     const activeZombies=[],zombieInteractiveMeshes=[];
     function createZombieMesh(){
@@ -537,7 +551,12 @@
       });
       if(!av.length)return;
       const th=av[Math.floor(Math.random()*av.length)];
-      if(th.dirtCount>0){clearHoleDirtLayer(allBurrowHoles.indexOf(th));return}
+      if(th.dirtCount>0){
+        let hIdx = allBurrowHoles.indexOf(th);
+        clearHoleDirtLayer(hIdx);
+        if(isHost) socket.emit('sync_hole_dig', { holeIndex: hIdx, dirtCount: th.dirtCount });
+        return;
+      }
       const zd=createZombieMesh();
       zd.group.position.set(th.globalX,th.globalY,th.globalZ);
       scene.add(zd.group);
@@ -572,6 +591,28 @@
         }
       });
       rebuildZombieHitboxes();
+    });
+
+    socket.on('sync_hole_dig', data => {
+      const h = allBurrowHoles[data.holeIndex];
+      if (h) {
+        h.dirtCount = data.dirtCount;
+        h.layers.forEach((l, idx) => {
+          l.visible = idx < h.dirtCount;
+        });
+        playProceduralDigSound();
+      }
+    });
+
+    socket.on('sync_hole_fill', data => {
+      const h = allBurrowHoles[data.holeIndex];
+      if (h) {
+        h.dirtCount = data.dirtCount;
+        h.layers.forEach((l, idx) => {
+          l.visible = idx < h.dirtCount;
+        });
+        playProceduralDigSound();
+      }
     });
 
     socket.on('host_apply_zombie_hit', data => {
@@ -689,6 +730,19 @@
       }
 
       raycaster.setFromCamera(mouse, camera);
+
+      // Check if tapping a burrow hole to fill it with dirt on mobile/PC
+      let hi=raycaster.intersectObjects(holeInteractiveMeshes);
+      if(hi.length>0 && hi[0].distance<25){
+        let hIdx = hi[0].object.userData.holeIndex;
+        let h = allBurrowHoles[hIdx];
+        if (h && h.dirtCount < h.maxDirt) {
+          fillHoleWithDirt(hIdx);
+          socket.emit('fill_hole', { holeIndex: hIdx, dirtCount: h.dirtCount });
+          return;
+        }
+      }
+
       let oh=raycaster.intersectObjects([redOrbMesh]);
       if(oh.length>0&&playerRig.position.y<-40&&oh[0].distance<30){
         playerRig.position.set(0,3,15);playerYaw=playerPitch=0;playerRig.rotation.set(0,0,0);cameraPitchObject.rotation.set(0,0,0);scene.background=defaultBG;isLmbHeldDown=false;elevatorActive=false;elevatorProgress=0;elevatorDirection=1;secretGalleryGroup.position.y=0.2;
@@ -779,6 +833,29 @@
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
     }
 
+    // Server hole synchronization listeners
+    socket.on('sync_hole_dig', data => {
+      const h = allBurrowHoles[data.holeIndex];
+      if (h) {
+        h.dirtCount = data.dirtCount;
+        h.layers.forEach((l, idx) => {
+          l.visible = idx < h.dirtCount;
+        });
+        playProceduralDigSound();
+      }
+    });
+
+    socket.on('sync_hole_fill', data => {
+      const h = allBurrowHoles[data.holeIndex];
+      if (h) {
+        h.dirtCount = data.dirtCount;
+        h.layers.forEach((l, idx) => {
+          l.visible = idx < h.dirtCount;
+        });
+        playProceduralDigSound();
+      }
+    });
+
     // Teammate 3D Model Construction with Corrected Face Orientation
     function createTeammateMesh(colorHex, name) {
       const g = GRP();
@@ -857,7 +934,19 @@
     });
 
     window.addEventListener('mousemove',e=>{if(document.pointerLockElement!==document.body||isGameOver)return;playerYaw-=e.movementX*0.0025;playerRig.rotation.y=playerYaw;playerPitch=Math.max(-1.4,Math.min(1.4,playerPitch-e.movementY*0.0025));cameraPitchObject.rotation.x=playerPitch});
-    window.addEventListener('mousedown',e=>{if(isMobile||document.pointerLockElement!==document.body||isGameOver)return;if(e.button===0){isLmbHeldDown=true;executeWeaponFireRaycast();lastShotTime=performance.now()}if(e.button===2){raycaster.setFromCamera(new T.Vector2(0,0),camera);let hi=raycaster.intersectObjects(holeInteractiveMeshes);if(hi.length>0&&hi[0].distance<25)fillHoleWithDirt(hi[0].object.userData.holeIndex)}});
+    window.addEventListener('mousedown',e=>{
+      if(isMobile||document.pointerLockElement!==document.body||isGameOver)return;
+      if(e.button===0){isLmbHeldDown=true;executeWeaponFireRaycast();lastShotTime=performance.now()}
+      if(e.button===2){
+        raycaster.setFromCamera(new T.Vector2(0,0),camera);
+        let hi=raycaster.intersectObjects(holeInteractiveMeshes);
+        if(hi.length>0&&hi[0].distance<25){
+          let hIdx = hi[0].object.userData.holeIndex;
+          fillHoleWithDirt(hIdx);
+          socket.emit('fill_hole', { holeIndex: hIdx, dirtCount: allBurrowHoles[hIdx].dirtCount });
+        }
+      }
+    });
     window.addEventListener('mouseup',e=>{if(e.button===0)isLmbHeldDown=false});
     
     const keys={w:0,a:0,s:0,d:0,shift:0};

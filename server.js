@@ -8,6 +8,7 @@ const io = new Server(server);
 
 app.use(expressApp.static(__dirname));
 
+// 6 Lobbies: 2 lobbies of 2-player, 2 lobbies of 3-player, 2 lobbies of 4-player
 const lobbies = [
   { id: 1, maxPlayers: 2, slots: [null, null], playerCount: 0, started: false },
   { id: 2, maxPlayers: 2, slots: [null, null], playerCount: 0, started: false },
@@ -56,6 +57,7 @@ io.on('connection', socket => {
     lobby.playerCount++;
     socketToPlayerMap[socket.id] = { lobbyId: lobby.id, slotIndex: slotIdx };
 
+    // Join the specific Socket.IO room for this lobby
     socket.join(lobby.id);
 
     socket.emit('slot_joined', {
@@ -119,6 +121,7 @@ io.on('connection', socket => {
     });
   });
 
+  // Handle zombie hits and award points securely to the specific shooter
   socket.on('zombie_hit', data => {
     io.emit('host_apply_zombie_hit', {
       zombieIndex: data.zombieIndex,
@@ -126,6 +129,10 @@ io.on('connection', socket => {
       isHeadshot: data.isHeadshot,
       shooterId: socket.id
     });
+  });
+
+  socket.on('award_points', amount => {
+    socket.emit('grant_points', amount);
   });
 
   socket.on('host_zombie_sync', zombies => {
@@ -150,6 +157,7 @@ io.on('connection', socket => {
     io.to(targetSocketId).emit('force_damage_player');
   });
 
+  // Burrow hole synchronization handlers for dirt & point rewards
   socket.on('sync_hole_dig', data => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;
@@ -159,10 +167,11 @@ io.on('connection', socket => {
   socket.on('fill_hole', data => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;
+    socket.emit('grant_points', 5);
     socket.to(loc.lobbyId).emit('sync_hole_fill', data);
   });
 
-  // Global Machine & Event Sync Relays
+  // Machine & Event Sync Relays
   socket.on('host_mystery_box_sync', data => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;

@@ -33,12 +33,12 @@
     #dpad-left { top: 58px; left: 0; }
     #dpad-right { top: 58px; right: 0; }
 
-    /* Right-Side Look Pad (Covers entire right half for seamless camera movement) */
-    #look-pad { position: absolute; top: 0; right: 0; width: 50vw; height: 100vh; background: transparent; }
-
-    /* Square Grenade & Mine Buttons (Top Right Corner) */
-    #btn-nade { position: absolute; top: 75px; right: 15px; width: 52px; height: 52px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 11px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; }
-    #btn-clay { position: absolute; top: 135px; right: 15px; width: 52px; height: 52px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 11px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; }
+    /* Visible Right-Side Look Pad (Clearly outlined so you can see where to swipe) */
+    #look-pad { position: absolute; top: 80px; right: 20px; width: 45vw; height: 55vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 14px; }
+    
+    /* Square Grenade & Mine Buttons (Placed neatly on bottom right below the look pad) */
+    #btn-nade { position: absolute; bottom: 35px; right: 140px; width: 60px; height: 60px; border-radius: 10px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 11px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #btn-clay { position: absolute; bottom: 35px; right: 210px; width: 60px; height: 60px; border-radius: 10px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 11px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
     #weapon-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
     .w-btn { width: 36px; height: 36px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
@@ -99,7 +99,7 @@
   </div>
 
   <div id="gui">
-    <div id="stats">WASD / D-PAD | TAP TO SHOOT | 1-5 SWITCH | G NADE | C CLAYMORE</div>
+    <div id="stats">WASD / D-PAD | SWIPE LOOK PAD | TAP TO SHOOT</div>
     <div id="score-board">CREDITS:<span id="score-val">500</span></div>
     <div id="team-hud"><b style="color:#d4af37;">SQUAD STATUS</b><div id="team-list-hud"></div></div>
     <div id="round-display">ROUND<span id="round-val">I</span></div>
@@ -251,7 +251,7 @@
     let ammoReserves={1:200,2:0,3:0,4:0,5:0},weaponUpgradeLevels={1:0,2:0,3:0,4:0,5:0},hasAutomaticPistol=false,hasRifle=false,hasAutoRifle=false,hasRayPistol=false,isLmbHeldDown=false,lastShotTime=0,autoFireRateMs=120,grenadeCount=2,grenadeUpgradeLevel=0,claymoreCount=2,claymoreUpgradeLevel=0;
     const activeGrenades=[],activeClaymores=[];
     let robotMercState={active:false,health:100,maxHealth:100,durationTimer:0,level:1,isBeingOverrun:false,overrunProgress:0,lastProximitySpeechTime:0};
-    const unhiredLines=["Penumbra industries veteran at your service, marine! Five hundred credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits and watch these phantoms scatter!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
+    const unhiredLines=["Penumbra industries veteran at your service, marine! 500 credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits and watch these phantoms scatter!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
     const hiredLines=["Heavy metal activated! Locking and loading for Vanguard Company!","Get to the extraction point! I've got your flank covered, marine!","Come on! Let's party! No ghoul gets past these dual barrels!","Vanguard ship is waiting in the clouds! Stay frosty and keep pumping lead!"];
     let lastUnhiredLineIdx=-1,lastHiredLineIdx=-1;
 
@@ -835,8 +835,6 @@
     });
 
     window.addEventListener('mousemove',e=>{if(document.pointerLockElement!==document.body||isGameOver)return;playerYaw-=e.movementX*0.0025;playerRig.rotation.y=playerYaw;playerPitch=Math.max(-1.4,Math.min(1.4,playerPitch-e.movementY*0.0025));cameraPitchObject.rotation.x=playerPitch});
-    
-    // Tap anywhere on canvas to shoot on mobile or desktop
     window.addEventListener('mousedown',e=>{if(isMobile||document.pointerLockElement!==document.body||isGameOver)return;if(e.button===0){isLmbHeldDown=true;executeWeaponFireRaycast();lastShotTime=performance.now()}if(e.button===2){raycaster.setFromCamera(new T.Vector2(0,0),camera);let hi=raycaster.intersectObjects(holeInteractiveMeshes);if(hi.length>0&&hi[0].distance<25)fillHoleWithDirt(hi[0].object.userData.holeIndex)}});
     window.addEventListener('mouseup',e=>{if(e.button===0)isLmbHeldDown=false});
     
@@ -881,7 +879,7 @@
     });
     lookPad.addEventListener('touchend', e => { e.preventDefault(); lastTouchX = lastTouchY = null; });
 
-    // Tap to shoot on mobile
+    // Tap to shoot anywhere on mobile canvas
     window.addEventListener('touchstart', e => {
       if (!gameActive || isGameOver || !isMobile || e.target.tagName.includes('BUTTON') || e.target.closest('#mobile-controls')) return;
       executeWeaponFireRaycast();

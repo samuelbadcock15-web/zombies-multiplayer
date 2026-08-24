@@ -752,9 +752,7 @@
 
           let d=new V3().subVectors(tgt,zp);d.y=0;d.normalize();
           let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));
-          
-          // --- FIX: Ensure host sets rotation and syncs it immediately ---
-          parts.group.lookAt(tgt.x, parts.group.position.y, tgt.z);
+          parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
 
           let flatZombiePos = new V3(parts.group.position.x, nearestPlayer.pos.y, parts.group.position.z);
           if(flatZombiePos.distanceTo(nearestPlayer.pos) < 2.5 && Math.abs(parts.group.position.y - nearestPlayer.pos.y) < 5.0 && zb.emergenceStage === 3 && now - zb.lastAttackTime > 1500){
@@ -902,11 +900,11 @@
           if(tz&&!tz.deadAndShrinking){
             setZombieStage(tz,tz.stage-zDmg);
             if(tz.deadAndShrinking){
-              io.to(socket.id).emit('grant_points', isH?20:10);
+              addPoints(isH?20:10); // --- FIX: Host immediately adds local points ---
               txtDiv.innerHTML=isH?"CRITICAL HEADSHOT KILL! +20 CREDITS":"TARGET BANISHED! +10 CREDITS";
               rebuildZombieHitboxes();checkRoundEnd();
             } else {
-              io.to(socket.id).emit('grant_points', 10);
+              addPoints(10); // --- FIX: Host immediately adds local points for hits ---
               txtDiv.innerHTML=isH?"HEADSHOT HIT! -3 STAGES! +20 CREDITS":"HIT REGISTERED! STAGE REDUCED. +10 CREDITS";
             }
           }
@@ -1211,7 +1209,7 @@
           activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.emergenceStage===3){let d=machineGroup.position.distanceTo(z.meshParts.group.position);if(d<minD){minD=d;nz=z}}});
           if(nz){
             let ld=new V3().subVectors(nz.meshParts.group.position,machineGroup.position);ld.y=0;ld.normalize();
-            machineGroup.rotation.y=Math.atan2(ld.x,ld.z); // --- FIX: Robot accurately looks at targets ---
+            machineGroup.rotation.y=Math.atan2(ld.x,ld.z);
           }
           else if(rd.length()>0.8){rd.normalize();machineGroup.position.addScaledVector(rd,0.45);machineGroup.rotation.y=Math.atan2(rd.x,rd.z);mainWheelMesh.rotation.x+=0.3}
           else machineGroup.rotation.y=playerYaw;
@@ -1255,7 +1253,7 @@
             x: z.meshParts.group.position.x,
             y: z.meshParts.group.position.y,
             z: z.meshParts.group.position.z,
-            yaw: z.meshParts.group.rotation.y, // --- FIX: Sync precise zombie rotation/yaw ---
+            yaw: z.meshParts.group.rotation.y,
             stage: z.stage
           }));
           socket.emit('host_zombie_sync', syncPacket);

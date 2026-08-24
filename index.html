@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <title>Haunted Mansion Vault - 4-Player Outbreak Edition</title>
+  <title>Haunted Mansion Vault - Co-Op Outbreak Edition</title>
   <style>
     * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
     body { margin: 0; background: #0c0806; color: #fff; font-family: monospace; overflow: hidden; width: 100vw; height: 100vh; touch-action: none; }
@@ -11,7 +11,6 @@
     
     #gui { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: none; }
     
-    /* Streamlined Top HUD */
     #stats { position: absolute; top: 6px; left: 8px; font-size: 10px; font-weight: 700; background: rgba(30,20,15,.9); color: #d4af37; padding: 3px 6px; border: 1px solid #6b4c35; max-width: 50vw; line-height: 1.2; }
     #score-board { position: absolute; top: 6px; right: 8px; font-size: 13px; font-weight: 700; background: #140d0a; color: #fa0; padding: 4px 10px; border: 2px solid #8b5a2b; pointer-events: auto; }
     #team-hud { position: absolute; top: 44px; right: 8px; background: rgba(20,13,10,0.85); border: 1px solid #8b5a2b; padding: 4px 6px; font-size: 10px; line-height: 1.3; }
@@ -39,29 +38,30 @@
 
     #look-pad { position: absolute; bottom: 15px; right: 15px; width: 44vw; height: 20vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 12px; touch-action: none; }
     
-    /* NADE and MINE buttons tucked neatly into the very bottom-left corner of the touch look-pad area */
-    #btn-nade { position: absolute; bottom: 25px; right: calc(44vw + 25px); width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-    #btn-clay { position: absolute; bottom: 72px; right: calc(44vw + 25px); width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #btn-nade { position: absolute; bottom: 135px; right: 15px; width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #btn-clay { position: absolute; bottom: 135px; right: 62px; width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
-    /* Weapon Bar tucked neatly below top bar */
     #weapon-bar { position: absolute; top: 40px; left: 8px; display: flex; gap: 3px; pointer-events: auto; }
     .w-btn { width: 28px; height: 28px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; }
 
-    /* Audio Unlock Gate */
-    #audio-overlay { position: fixed; inset: 0; background: rgba(12,8,6,0.96); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
-    .audio-btn { background: #d4af37; color: #140d0a; border: none; padding: 18px 36px; font-size: 20px; font-weight: 900; font-family: monospace; cursor: pointer; border-radius: 6px; box-shadow: 0 0 20px rgba(212,175,55,0.5); text-transform: uppercase; pointer-events: auto; }
-    .audio-btn:hover { background: #ffd700; }
+    /* Arcade Start Gate Screen */
+    #audio-overlay { position: fixed; inset: 0; background: radial-gradient(circle, #24140d 0%, #0c0806 90%); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; font-family: monospace; }
+    .arcade-btn-group { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 320px; }
+    .audio-btn { background: #d4af37; color: #140d0a; border: 2px solid #ffd700; padding: 16px 24px; font-size: 18px; font-weight: 900; font-family: monospace; cursor: pointer; border-radius: 8px; box-shadow: 0 0 20px rgba(212,175,55,0.3); text-transform: uppercase; pointer-events: auto; width: 100%; transition: all 0.2s ease; }
+    .audio-btn:hover { background: #ffd700; transform: scale(1.03); }
+    .audio-btn-sec { background: #1a0f0a; color: #fa0; border: 2px solid #8b5a2b; }
+    .audio-btn-sec:hover { background: #2b1810; color: #ffd700; }
 
     /* Lobby UI */
     #lobby-screen { position: absolute; inset: 0; background: radial-gradient(circle, #24140d 0%, #0c0806 90%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; font-family: monospace; display: none; }
     .lobby-header { font-size: 24px; color: #d4af37; font-weight: 900; margin-bottom: 12px; letter-spacing: 2px; text-shadow: 0 0 10px rgba(212,175,55,0.4); text-align: center; }
     .input-box { background: #140c08; border: 1px solid #6b4c35; color: #fff; padding: 10px; font-size: 16px; font-family: monospace; text-transform: uppercase; text-align: center; margin-bottom: 16px; width: 240px; }
     
-    #lobbies-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; max-width: 900px; width: 92%; max-height: 65vh; overflow-y: auto; }
-    .lobby-box { background: rgba(20,13,10,0.95); border: 2px solid #8b5a2b; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
-    .lobby-box-title { font-size: 16px; color: #fa0; font-weight: bold; border-bottom: 1px solid #4a3324; padding-bottom: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+    #lobbies-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; max-width: 900px; width: 94%; max-height: 62vh; overflow-y: auto; padding: 4px; }
+    .lobby-box { background: rgba(20,13,10,0.95); border: 2px solid #8b5a2b; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+    .lobby-box-title { font-size: 15px; color: #fa0; font-weight: bold; border-bottom: 1px solid #4a3324; padding-bottom: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; }
     
-    .slot-row { background: #120a07; border: 1px solid #3a2418; padding: 6px 8px; margin-bottom: 6px; font-size: 12px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; }
+    .slot-row { background: #120a07; border: 1px solid #3a2418; padding: 5px 8px; margin-bottom: 5px; font-size: 11px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; }
     .slot-open { color: #665544; border-style: dashed; }
     .status-ready { color: #00ff66; font-weight: 900; }
     .status-waiting { color: #ffaa00; }
@@ -80,21 +80,25 @@
 <body>
   <div id="damage-overlay"></div>
 
+  <!-- Arcade Start Gate -->
   <div id="audio-overlay">
-    <div style="font-size:28px;color:#d4af37;font-weight:900;margin-bottom:15px;letter-spacing:2px;">HAUNTED MANSION VAULT</div>
-    <div style="color:#b8860b;margin-bottom:25px;font-size:14px;">4-PLAYER CO-OP OUTBREAK EDITION</div>
-    <button class="audio-btn" id="btn-enter-game">ENTER OUTBREAK</button>
+    <div style="font-size:28px;color:#d4af37;font-weight:900;margin-bottom:10px;letter-spacing:2px;">HAUNTED MANSION VAULT</div>
+    <div style="color:#b8860b;margin-bottom:30px;font-size:13px;">CHOOSE GAME MODE</div>
+    <div class="arcade-btn-group">
+      <button class="audio-btn audio-btn-sec" id="btn-single-player">SINGLE PLAYER</button>
+      <button class="audio-btn" id="btn-multiplayer">MULTIPLIER CO-OP</button>
+    </div>
   </div>
 
   <div id="lobby-screen">
     <div id="browser-view" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-      <div class="lobby-header">HAUNTED OUTBREAK<br><span style="font-size:14px;color:#fa0;">SELECT SQUAD LOBBY (1-6)</span></div>
+      <div class="lobby-header">MULTIPLAYER OUTBREAK<br><span style="font-size:13px;color:#fa0;">SELECT SQUAD LOBBY (2P / 3P / 4P)</span></div>
       <input id="player-name-input" class="input-box" maxlength="12" placeholder="CALLSIGN" value="MARINE">
       <div id="lobbies-container"></div>
     </div>
 
     <div id="room-view">
-      <div class="lobby-header" id="current-lobby-title">LOBBY 1</div>
+      <div class="lobby-header" id="current-lobby-title">LOBBY</div>
       <div id="active-slots-container" style="margin-bottom: 16px;"></div>
       <button class="btn btn-ready" id="btn-toggle-ready">READY UP</button>
       <button class="btn btn-leave" id="btn-leave-lobby" style="margin-top: 8px;">LEAVE LOBBY</button>
@@ -154,7 +158,13 @@
 
     const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-    $('btn-enter-game').onclick = () => {
+    // Single Player Arcade Button -> Redirects to standalone single-player render URL
+    $('btn-single-player').onclick = () => {
+      window.location.href = "https://zombies-3az2.onrender.com";
+    };
+
+    // Multiplayer Co-op Arcade Button -> Unlocks audio and opens lobby list browser
+    $('btn-multiplayer').onclick = () => {
       initAudio();
       if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
       $('audio-overlay').style.display = 'none';
@@ -185,12 +195,12 @@
           }
           const isFull = lobby.playerCount >= lobby.maxPlayers;
           const isPlaying = lobby.started;
-          const btnText = isPlaying ? 'IN PROGRESS' : (isFull ? 'FULL' : `JOIN LOBBY ${lobby.id}`);
+          const btnText = isPlaying ? 'IN PROGRESS' : (isFull ? 'FULL' : `JOIN LOBBY ${lobby.id} (${lobby.maxPlayers}P)`);
           const btnDisabled = isFull || isPlaying;
 
           card.innerHTML = `
             <div class="lobby-box-title">
-              <span>LOBBY ${lobby.id} (${lobby.maxPlayers}P)</span>
+              <span>LOBBY ${lobby.id} — ${lobby.maxPlayers} PLAYER SQUAD</span>
               <span style="color:#fff;">${lobby.playerCount}/${lobby.maxPlayers}</span>
             </div>
             ${slotsHtml}

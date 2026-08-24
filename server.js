@@ -78,7 +78,6 @@ io.on('connection', socket => {
       slot.ready = !slot.ready;
       broadcastLobbyList();
 
-      // Check if lobby is completely filled and every player is ready
       const allFilled = lobby.playerCount === lobby.maxPlayers && lobby.slots.every(s => s !== null);
       const allReady = lobby.slots.every(s => s !== null && s.ready);
 
@@ -86,7 +85,6 @@ io.on('connection', socket => {
         lobby.started = true;
         const hostSocketId = lobby.slots[0].socketId;
         
-        // Use io.in(lobby.id) or direct socket emission to all occupants
         lobby.slots.forEach(s => {
           io.to(s.socketId).emit('game_start', {
             hostSocketId: hostSocketId,
@@ -143,6 +141,15 @@ io.on('connection', socket => {
 
   socket.on('player_bitten', targetSocketId => {
     io.to(targetSocketId).emit('force_damage_player');
+  });
+
+  // Burrow hole synchronization handlers for dirt
+  socket.on('sync_hole_dig', data => {
+    socket.broadcast.emit('sync_hole_dig', data);
+  });
+
+  socket.on('fill_hole', data => {
+    socket.broadcast.emit('sync_hole_fill', data);
   });
 
   socket.on('disconnect', () => {

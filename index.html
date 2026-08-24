@@ -33,8 +33,13 @@
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
     
-    #joystick-base { position: absolute; bottom: 65px; left: 20px; width: 110px; height: 110px; background: rgba(43,24,16,0.4); border: 2px solid rgba(212,175,55,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; touch-action: none; }
-    #joystick-knob { width: 45px; height: 45px; background: radial-gradient(circle, #d4af37 0%, #8b5a2b 80%); border: 2px solid #fff; border-radius: 50%; position: absolute; box-shadow: 0 4px 10px rgba(0,0,0,0.6); pointer-events: none; }
+    /* Classic D-Pad Restored (Bottom Left, perfectly above Round display) */
+    #dpad { position: absolute; bottom: 65px; left: 20px; width: 120px; height: 120px; }
+    .dpad-btn { position: absolute; width: 40px; height: 40px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 8px; color: #d4af37; font-size: 18px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #dpad-up { top: 0; left: 40px; }
+    #dpad-down { bottom: 0; left: 40px; }
+    #dpad-left { top: 40px; left: 0; }
+    #dpad-right { top: 40px; right: 0; }
 
     #look-pad { position: absolute; bottom: 15px; right: 15px; width: 44vw; height: 20vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 12px; touch-action: none; }
     
@@ -107,7 +112,7 @@
   </div>
 
   <div id="gui">
-    <div id="stats">JOYSTICK | SWIPE LOOK | TAP TO SHOOT/FILL HOLES</div>
+    <div id="stats">D-PAD | SWIPE LOOK | TAP TO SHOOT/FILL HOLES</div>
     <div id="score-board">CREDITS:<span id="score-val">500</span></div>
     <div id="team-hud"><b style="color:#d4af37;">SQUAD</b><div id="team-list-hud"></div></div>
     <div id="round-display">ROUND<span id="round-val">I</span></div>
@@ -116,8 +121,12 @@
   </div>
 
   <div id="mobile-controls">
-    <div id="joystick-base" class="touch-interactive">
-      <div id="joystick-knob"></div>
+    <!-- Classic D-Pad Restored -->
+    <div id="dpad" class="touch-interactive">
+      <div class="dpad-btn" id="dpad-up">▲</div>
+      <div class="dpad-btn" id="dpad-down">▼</div>
+      <div class="dpad-btn" id="dpad-left">◀</div>
+      <div class="dpad-btn" id="dpad-right">▶</div>
     </div>
 
     <div id="look-pad" class="touch-interactive"></div>
@@ -731,7 +740,6 @@
 
       raycaster.setFromCamera(mouse, camera);
 
-      // Check if tapping a burrow hole to fill it with dirt on mobile/PC
       let hi=raycaster.intersectObjects(holeInteractiveMeshes);
       if(hi.length>0 && hi[0].distance<25){
         let hIdx = hi[0].object.userData.holeIndex;
@@ -833,29 +841,6 @@
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
     }
 
-    // Server hole synchronization listeners
-    socket.on('sync_hole_dig', data => {
-      const h = allBurrowHoles[data.holeIndex];
-      if (h) {
-        h.dirtCount = data.dirtCount;
-        h.layers.forEach((l, idx) => {
-          l.visible = idx < h.dirtCount;
-        });
-        playProceduralDigSound();
-      }
-    });
-
-    socket.on('sync_hole_fill', data => {
-      const h = allBurrowHoles[data.holeIndex];
-      if (h) {
-        h.dirtCount = data.dirtCount;
-        h.layers.forEach((l, idx) => {
-          l.visible = idx < h.dirtCount;
-        });
-        playProceduralDigSound();
-      }
-    });
-
     // Teammate 3D Model Construction with Corrected Face Orientation
     function createTeammateMesh(colorHex, name) {
       const g = GRP();
@@ -951,56 +936,15 @@
     
     const keys={w:0,a:0,s:0,d:0,shift:0};
 
-    let joystickTouchId = null;
-    let joystickCenter = { x: 0, y: 0 };
-    const joystickBase = $('joystick-base');
-    const joystickKnob = $('joystick-knob');
-
-    joystickBase.addEventListener('touchstart', e => {
-      e.preventDefault();
-      if (joystickTouchId !== null) return;
-      const t = e.changedTouches[0];
-      joystickTouchId = t.identifier;
-      const rect = joystickBase.getBoundingClientRect();
-      joystickCenter.x = rect.left + rect.width / 2;
-      joystickCenter.y = rect.top + rect.height / 2;
-    });
-
-    joystickBase.addEventListener('touchmove', e => {
-      e.preventDefault();
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        const t = e.changedTouches[i];
-        if (t.identifier === joystickTouchId) {
-          const dx = t.clientX - joystickCenter.x;
-          const dy = t.clientY - joystickCenter.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = 35;
-          const angle = Math.atan2(dy, dx);
-          
-          const clampedDist = Math.min(dist, maxDist);
-          const knobX = Math.cos(angle) * clampedDist;
-          const knobY = Math.sin(angle) * clampedDist;
-          joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
-
-          keys.w = (dy < -8) ? 1 : 0;
-          keys.s = (dy > 8) ? 1 : 0;
-          keys.a = (dx < -8) ? 1 : 0;
-          keys.d = (dx > 8) ? 1 : 0;
-        }
-      }
-    });
-
-    function resetJoystick(e) {
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === joystickTouchId) {
-          joystickTouchId = null;
-          joystickKnob.style.transform = `translate(0px, 0px)`;
-          keys.w = keys.s = keys.a = keys.d = 0;
-        }
-      }
+    function setupTouchButton(id, keyName) {
+      const el = $(id);
+      el.addEventListener('touchstart', e => { e.preventDefault(); keys[keyName] = 1; });
+      el.addEventListener('touchend', e => { e.preventDefault(); keys[keyName] = 0; });
     }
-    joystickBase.addEventListener('touchend', resetJoystick);
-    joystickBase.addEventListener('touchcancel', resetJoystick);
+    setupTouchButton('dpad-up', 'w');
+    setupTouchButton('dpad-down', 's');
+    setupTouchButton('dpad-left', 'a');
+    setupTouchButton('dpad-right', 'd');
 
     window.addEventListener('keydown',e=>{if(isGameOver)return;if(e.code==='KeyW')keys.w=1;if(e.code==='KeyS')keys.s=1;if(e.code==='KeyA')keys.a=1;if(e.code==='KeyD')keys.d=1;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=1;if(e.code==='Digit1')switchWeapon(1);if(e.code==='Digit2')switchWeapon(2);if(e.code==='Digit3')switchWeapon(3);if(e.code==='Digit4')switchWeapon(4);if(e.code==='Digit5')switchWeapon(5);if(e.code==='KeyG')throwGrenade();if(e.code==='KeyC')placeClaymore()});
     window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=0;if(e.code==='KeyS')keys.s=0;if(e.code==='KeyA')keys.a=0;if(e.code==='KeyD')keys.d=0;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=0});

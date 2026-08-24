@@ -139,7 +139,6 @@
     const socket = io();
     let myLobbyId = null, mySlotNumber = null, myColor = null, isHost = false, gameActive = false, myId = null;
     const remotePlayers = {}; // socketId -> { mesh, data }
-    const activeRemotePlayerData = {}; // socketId -> { x, y, z, yaw }
 
     const $ = i => document.getElementById(i), T = THREE, V3 = T.Vector3, BG = (w,h,d)=>new T.BoxGeometry(w,h,d), CG = (rt,rb,h,s=16)=>new T.CylinderGeometry(rt,rb,h,s), PG = (w,h)=>new T.PlaneGeometry(w,h), SG = (r,s=16,p=16)=>new T.SphereGeometry(r,s,p), SM = m=>new T.MeshStandardMaterial(m), BM = m=>new T.MeshBasicMaterial(m), GRP = ()=>new T.Group();
     const MESH = (g,m,x=0,y=0,z=0,rx=0,ry=0)=>{ let o=new T.Mesh(g,m); o.position.set(x,y,z); if(rx)o.rotation.x=rx; if(ry)o.rotation.y=ry; return o; };
@@ -158,6 +157,7 @@
       $('lobby-screen').style.display = 'flex';
     };
 
+    // --- LOBBY SYSTEM ---
     socket.on('lobby_list', lobbies => {
       if (myLobbyId) {
         const currentLobby = lobbies.find(l => l.id === myLobbyId);
@@ -530,7 +530,6 @@
       rebuildZombieHitboxes();
     }
 
-    // Client Zombie Sync
     socket.on('client_zombie_sync', networkZombies => {
       if (isHost) return;
       while(activeZombies.length < networkZombies.length) {
@@ -596,12 +595,9 @@
       p.x=x;p.z=z;return p;
     }
 
-    // Multiplayer Zombie Aggro: Targets whichever player is closest in 3D distance
     function updateZombies(now){
       if(isGameOver||!isHost)return;
       let chg=false;
-
-      // Compile active player positions (Host + Remote players)
       let allPlayers = [{ pos: playerRig.position }];
       Object.values(remotePlayers).forEach(rp => {
         if(rp.mesh) allPlayers.push({ pos: rp.mesh.position });
@@ -616,7 +612,6 @@
           else if(zb.emergenceStage===1){parts.body.visible=true;parts.body.position.y=zb.stageProgress*1.1;if(zb.stageProgress>=1){zb.emergenceStage=2;zb.stageProgress=0;chg=true}}
           else if(zb.emergenceStage===2){parts.arms.visible=true;parts.arms.position.y=zb.stageProgress*1.1;if(zb.stageProgress>=1){zb.emergenceStage=3;chg=true}}
         }else{
-          // Find closest player for aggro
           let nearestPlayerPos = playerRig.position.clone();
           let minDist = parts.group.position.distanceTo(playerRig.position);
           allPlayers.forEach(pl => {
@@ -756,29 +751,33 @@
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
     }
 
-    // Teammate 3D Model Construction
+    // Teammate 3D Model Construction with Corrected Face Orientation
     function createTeammateMesh(colorHex, name) {
       const g = GRP();
+      const visualWrapper = GRP(); // Container to correct facing orientation
+      g.add(visualWrapper);
+
       const suitMat = SM({ color: 0x2b332b, roughness: 0.7 });
       const accentMat = SM({ color: colorHex, metalness: 0.8, roughness: 0.2 });
       const bootMat = SM({ color: 0x141414, roughness: 0.9 });
 
-      g.add(MESH(BG(0.9, 1.1, 0.5), suitMat, 0, 1.75, 0));
-      g.add(MESH(BG(0.94, 0.6, 0.54), accentMat, 0, 1.9, 0));
+      visualWrapper.add(MESH(BG(0.9, 1.1, 0.5), suitMat, 0, 1.75, 0));
+      visualWrapper.add(MESH(BG(0.94, 0.6, 0.54), accentMat, 0, 1.9, 0));
 
-      g.add(MESH(BG(0.55, 0.55, 0.55), suitMat, 0, 2.55, 0));
-      g.add(MESH(BG(0.42, 0.18, 0.08), BM({ color: colorHex }), 0, 2.55, -0.28));
+      // Head and Visor (Facing forward down local -Z)
+      visualWrapper.add(MESH(BG(0.55, 0.55, 0.55), suitMat, 0, 2.55, 0));
+      visualWrapper.add(MESH(BG(0.42, 0.18, 0.08), BM({ color: colorHex }), 0, 2.55, -0.28));
 
-      g.add(MESH(BG(0.32, 0.9, 0.38), suitMat, -0.24, 0.75, 0));
-      g.add(MESH(BG(0.32, 0.9, 0.38), suitMat, 0.24, 0.75, 0));
-      g.add(MESH(BG(0.35, 0.25, 0.48), bootMat, -0.24, 0.18, -0.05));
-      g.add(MESH(BG(0.35, 0.25, 0.48), bootMat, 0.24, 0.18, -0.05));
+      visualWrapper.add(MESH(BG(0.32, 0.9, 0.38), suitMat, -0.24, 0.75, 0));
+      visualWrapper.add(MESH(BG(0.32, 0.9, 0.38), suitMat, 0.24, 0.75, 0));
+      visualWrapper.add(MESH(BG(0.35, 0.25, 0.48), bootMat, -0.24, 0.18, -0.05));
+      visualWrapper.add(MESH(BG(0.35, 0.25, 0.48), bootMat, 0.24, 0.18, -0.05));
 
       const gunMesh = buildWeaponGeometry(1, false);
       gunMesh.position.set(0.35, 1.5, -0.35);
       gunMesh.rotation.y = Math.PI;
       gunMesh.scale.setScalar(1.2);
-      g.add(gunMesh);
+      visualWrapper.add(gunMesh);
 
       scene.add(g);
       return g;
@@ -814,12 +813,12 @@
       if (isHost) startRound(1);
     });
 
-    // Remote Player Update with + Math.PI correction to fix backward-facing bug
+    // Remote Player Update: Aligns model heading without backward inversion
     socket.on('remote_player_update', data => {
       if (remotePlayers[data.id]) {
         const rp = remotePlayers[data.id];
         rp.mesh.position.set(data.x, data.y - 3.0, data.z);
-        rp.mesh.rotation.y = data.yaw + Math.PI;
+        rp.mesh.rotation.y = data.yaw;
       }
     });
 

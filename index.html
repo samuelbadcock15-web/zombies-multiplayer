@@ -5,16 +5,21 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <title>Haunted Mansion Vault - 4-Player Outbreak Edition</title>
   <style>
-    * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+    * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
     body { margin: 0; background: #0c0806; color: #fff; font-family: monospace; overflow: hidden; width: 100vw; height: 100vh; touch-action: none; }
     canvas { display: block; width: 100%; height: 100%; }
+    
     #gui { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: none; }
-    #stats { position: absolute; top: 12px; left: 12px; font-size: 13px; font-weight: 700; background: rgba(30,20,15,.9); color: #d4af37; padding: 6px 10px; border: 1px solid #6b4c35; line-height: 1.3; }
-    #score-board { position: absolute; top: 12px; right: 12px; font-size: 18px; font-weight: 700; background: #140d0a; color: #fa0; padding: 8px 16px; border: 2px solid #8b5a2b; pointer-events: auto; }
-    #team-hud { position: absolute; top: 60px; right: 12px; background: rgba(20,13,10,0.85); border: 1px solid #8b5a2b; padding: 6px 10px; font-size: 12px; line-height: 1.5; }
-    #round-display { position: absolute; bottom: 25px; left: 16px; font-size: 38px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; }
-    #msg-box { position: absolute; top: 60px; width: 100%; text-align: center; left: 0; }
-    #text { display: inline-block; background: rgba(35,24,18,.95); color: #f0e0d0; border: 2px solid #8b5a2b; padding: 8px 16px; font-size: 13px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,.5); }
+    
+    /* Streamlined Top HUD */
+    #stats { position: absolute; top: 6px; left: 8px; font-size: 10px; font-weight: 700; background: rgba(30,20,15,.9); color: #d4af37; padding: 3px 6px; border: 1px solid #6b4c35; max-width: 50vw; line-height: 1.2; }
+    #score-board { position: absolute; top: 6px; right: 8px; font-size: 13px; font-weight: 700; background: #140d0a; color: #fa0; padding: 4px 10px; border: 2px solid #8b5a2b; pointer-events: auto; }
+    #team-hud { position: absolute; top: 44px; right: 8px; background: rgba(20,13,10,0.85); border: 1px solid #8b5a2b; padding: 4px 6px; font-size: 10px; line-height: 1.3; }
+    
+    #round-display { position: absolute; bottom: 15px; left: 16px; font-size: 32px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; }
+    #msg-box { position: absolute; top: 85px; width: 100%; text-align: center; left: 0; pointer-events: none; }
+    #text { display: inline-block; background: rgba(35,24,18,.95); color: #f0e0d0; border: 2px solid #8b5a2b; padding: 4px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,.5); max-width: 90vw; }
+    
     #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; transform: translate(-50%,-50%); pointer-events: none; }
     #crosshair::after,#crosshair::before { content:''; position: absolute; background: #fa0; }
     #crosshair::before { top: 4px; left: -10px; width: 30px; height: 2px; }
@@ -25,23 +30,21 @@
       #crosshair { display: none !important; }
     }
 
-    /* Mobile Controls */
+    /* Mobile Controls Dashboard */
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
     
-    /* Lowered Joystick (Sits perfectly above Round Display) */
-    #joystick-base { position: absolute; bottom: 75px; left: 24px; width: 120px; height: 120px; background: rgba(43,24,16,0.4); border: 2px solid rgba(212,175,55,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; touch-action: none; }
-    #joystick-knob { width: 50px; height: 50px; background: radial-gradient(circle, #d4af37 0%, #8b5a2b 80%); border: 2px solid #fff; border-radius: 50%; position: absolute; box-shadow: 0 4px 10px rgba(0,0,0,0.6); pointer-events: none; }
+    #joystick-base { position: absolute; bottom: 65px; left: 20px; width: 110px; height: 110px; background: rgba(43,24,16,0.4); border: 2px solid rgba(212,175,55,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; touch-action: none; }
+    #joystick-knob { width: 45px; height: 45px; background: radial-gradient(circle, #d4af37 0%, #8b5a2b 80%); border: 2px solid #fff; border-radius: 50%; position: absolute; box-shadow: 0 4px 10px rgba(0,0,0,0.6); pointer-events: none; }
 
-    /* Compact, Low-Profile Look Pad */
-    #look-pad { position: absolute; bottom: 20px; right: 20px; width: 44vw; height: 22vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 12px; touch-action: none; }
+    #look-pad { position: absolute; bottom: 15px; right: 15px; width: 44vw; height: 20vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 12px; touch-action: none; }
     
-    /* Smaller Action Buttons Tucked Nicely Inside Top-Left of Look Pad Space */
-    #btn-nade { position: absolute; bottom: 155px; right: 24px; width: 42px; height: 42px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 9px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-    #btn-clay { position: absolute; bottom: 155px; right: 72px; width: 42px; height: 42px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 9px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #btn-nade { position: absolute; bottom: 135px; right: 15px; width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #btn-clay { position: absolute; bottom: 135px; right: 62px; width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
-    #weapon-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
-    .w-btn { width: 36px; height: 36px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    /* Weapon Bar tucked neatly below top bar */
+    #weapon-bar { position: absolute; top: 40px; left: 8px; display: flex; gap: 3px; pointer-events: auto; }
+    .w-btn { width: 28px; height: 28px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; }
 
     /* Audio Unlock Gate */
     #audio-overlay { position: fixed; inset: 0; background: rgba(12,8,6,0.96); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
@@ -99,9 +102,9 @@
   </div>
 
   <div id="gui">
-    <div id="stats">ANALOG JOYSTICK | SWIPE LOOK PAD | TAP ZOMBIE TO SHOOT</div>
+    <div id="stats">JOYSTICK | SWIPE LOOK | TAP TO SHOOT</div>
     <div id="score-board">CREDITS:<span id="score-val">500</span></div>
-    <div id="team-hud"><b style="color:#d4af37;">SQUAD STATUS</b><div id="team-list-hud"></div></div>
+    <div id="team-hud"><b style="color:#d4af37;">SQUAD</b><div id="team-list-hud"></div></div>
     <div id="round-display">ROUND<span id="round-val">I</span></div>
     <div id="crosshair"></div>
     <div id="msg-box"><div id="text">HAUNTED PROTOCOL ENGAGED. 500 CREDITS LOADED.</div></div>
@@ -354,10 +357,19 @@
     });
 
     let audioCtx=null,audioListener=null;const scene=new T.Scene(),defaultBG=new T.Color(0x120d0a),underwaterBG=new T.Color(0x0a1624),caveBG=new T.Color(0x080605);scene.background=defaultBG;
-    const camera=new T.PerspectiveCamera(65,window.innerWidth/window.innerHeight,0.1,1000);camera.rotation.order='YXZ';
+    
+    // Camera Aspect Correction for Mobile vs PC to ensure weapons render identically
+    const camera=new T.PerspectiveCamera(isMobile ? 75 : 65, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.rotation.order='YXZ';
+    
     const playerRig=GRP();playerRig.position.set(0,3,15);scene.add(playerRig);
     const cameraPitchObject=GRP();playerRig.add(cameraPitchObject);cameraPitchObject.add(camera);
-    const pistolGroup=GRP();pistolGroup.position.set(0.28,-0.28,-0.55);cameraPitchObject.add(pistolGroup);
+    const pistolGroup=GRP();
+    
+    // Standardized gun positioning across screen formats
+    pistolGroup.position.set(isMobile ? 0.22 : 0.28, isMobile ? -0.32 : -0.28, isMobile ? -0.48 : -0.55);
+    cameraPitchObject.add(pistolGroup);
+    
     const gunMeshGroup=GRP();pistolGroup.add(gunMeshGroup);
     const muzzleFlash=new T.PointLight(0xffaa00,0,10);pistolGroup.add(muzzleFlash);
     let playerYaw=0,playerPitch=0;const raycaster=new T.Raycaster();
@@ -846,7 +858,7 @@
     
     const keys={w:0,a:0,s:0,d:0,shift:0};
 
-    // --- Functional Virtual Analog Joystick Touch Logic ---
+    // --- Isolated Dual-Thumb Virtual Analog Joystick Touch Logic ---
     let joystickTouchId = null;
     let joystickCenter = { x: 0, y: 0 };
     const joystickBase = $('joystick-base');
@@ -870,7 +882,7 @@
           const dx = t.clientX - joystickCenter.x;
           const dy = t.clientY - joystickCenter.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = 38;
+          const maxDist = 35;
           const angle = Math.atan2(dy, dx);
           
           const clampedDist = Math.min(dist, maxDist);
@@ -878,10 +890,10 @@
           const knobY = Math.sin(angle) * clampedDist;
           joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
 
-          keys.w = (dy < -10) ? 1 : 0;
-          keys.s = (dy > 10) ? 1 : 0;
-          keys.a = (dx < -10) ? 1 : 0;
-          keys.d = (dx > 10) ? 1 : 0;
+          keys.w = (dy < -8) ? 1 : 0;
+          keys.s = (dy > 8) ? 1 : 0;
+          keys.a = (dx < -8) ? 1 : 0;
+          keys.d = (dx > 8) ? 1 : 0;
         }
       }
     });
@@ -904,29 +916,48 @@
     $('btn-nade').addEventListener('touchstart', e => { e.preventDefault(); throwGrenade(); });
     $('btn-clay').addEventListener('touchstart', e => { e.preventDefault(); placeClaymore(); });
 
+    let lookTouchId = null;
     let lastTouchX = null, lastTouchY = null;
     const lookPad = $('look-pad');
+
     lookPad.addEventListener('touchstart', e => {
       e.preventDefault();
+      if (lookTouchId !== null) return;
       const t = e.changedTouches[0];
+      lookTouchId = t.identifier;
       lastTouchX = t.clientX;
       lastTouchY = t.clientY;
     });
+
     lookPad.addEventListener('touchmove', e => {
       e.preventDefault();
       if (lastTouchX === null || isGameOver) return;
-      const t = e.changedTouches[0];
-      const dx = t.clientX - lastTouchX;
-      const dy = t.clientY - lastTouchY;
-      lastTouchX = t.clientX;
-      lastTouchY = t.clientY;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (t.identifier === lookTouchId) {
+          const dx = t.clientX - lastTouchX;
+          const dy = t.clientY - lastTouchY;
+          lastTouchX = t.clientX;
+          lastTouchY = t.clientY;
 
-      playerYaw -= dx * 0.006;
-      playerRig.rotation.y = playerYaw;
-      playerPitch = Math.max(-1.4, Math.min(1.4, playerPitch - dy * 0.006));
-      cameraPitchObject.rotation.x = playerPitch;
+          playerYaw -= dx * 0.006;
+          playerRig.rotation.y = playerYaw;
+          playerPitch = Math.max(-1.4, Math.min(1.4, playerPitch - dy * 0.006));
+          cameraPitchObject.rotation.x = playerPitch;
+        }
+      }
     });
-    lookPad.addEventListener('touchend', e => { e.preventDefault(); lastTouchX = lastTouchY = null; });
+
+    function resetLookPad(e) {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === lookTouchId) {
+          lookTouchId = null;
+          lastTouchX = lastTouchY = null;
+        }
+      }
+    }
+    lookPad.addEventListener('touchend', resetLookPad);
+    lookPad.addEventListener('touchcancel', resetLookPad);
 
     window.addEventListener('touchstart', e => {
       if (!gameActive || isGameOver || !isMobile || e.target.tagName.includes('BUTTON') || e.target.closest('#mobile-controls')) return;

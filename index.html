@@ -2,48 +2,72 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <title>Haunted Mansion Vault - 4-Player Outbreak Edition</title>
   <style>
-    body { margin: 0; background: #0c0806; color: #fff; font-family: monospace; overflow: hidden; width: 100vw; height: 100vh; }
+    * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+    body { margin: 0; background: #0c0806; color: #fff; font-family: monospace; overflow: hidden; width: 100vw; height: 100vh; touch-action: none; }
     canvas { display: block; width: 100%; height: 100%; }
     #gui { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: none; }
-    #stats { position: absolute; top: 20px; left: 20px; font-size: 14px; font-weight: 700; background: rgba(30,20,15,.9); color: #d4af37; padding: 8px 12px; border: 1px solid #6b4c35; line-height: 1.4; }
-    #score-board { position: absolute; top: 20px; right: 20px; font-size: 20px; font-weight: 700; background: #140d0a; color: #fa0; padding: 10px 20px; border: 2px solid #8b5a2b; pointer-events: auto; }
-    #team-hud { position: absolute; top: 80px; right: 20px; background: rgba(20,13,10,0.85); border: 1px solid #8b5a2b; padding: 8px 14px; font-size: 13px; line-height: 1.6; }
-    #round-display { position: absolute; bottom: 40px; left: 20px; font-size: 48px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; }
-    #msg-box { position: absolute; bottom: 40px; width: 100%; text-align: center; left: 0; }
-    #text { display: inline-block; background: rgba(35,24,18,.95); color: #f0e0d0; border: 2px solid #8b5a2b; padding: 15px; min-width: 350px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,.5); }
+    #stats { position: absolute; top: 12px; left: 12px; font-size: 13px; font-weight: 700; background: rgba(30,20,15,.9); color: #d4af37; padding: 6px 10px; border: 1px solid #6b4c35; line-height: 1.3; }
+    #score-board { position: absolute; top: 12px; right: 12px; font-size: 18px; font-weight: 700; background: #140d0a; color: #fa0; padding: 8px 16px; border: 2px solid #8b5a2b; pointer-events: auto; }
+    #team-hud { position: absolute; top: 60px; right: 12px; background: rgba(20,13,10,0.85); border: 1px solid #8b5a2b; padding: 6px 10px; font-size: 12px; line-height: 1.5; }
+    #round-display { position: absolute; bottom: 85px; left: 16px; font-size: 40px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; }
+    #msg-box { position: absolute; top: 60px; width: 100%; text-align: center; left: 0; }
+    #text { display: inline-block; background: rgba(35,24,18,.95); color: #f0e0d0; border: 2px solid #8b5a2b; padding: 8px 16px; font-size: 13px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,.5); }
     #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; transform: translate(-50%,-50%); pointer-events: none; }
     #crosshair::after,#crosshair::before { content:''; position: absolute; background: #fa0; }
     #crosshair::before { top: 4px; left: -10px; width: 30px; height: 2px; }
     #crosshair::after { top: -10px; left: 4px; width: 2px; height: 30px; }
     #damage-overlay { position: absolute; inset: 0; background: rgba(255,0,0,0); pointer-events: none; transition: background .1s ease; z-index: 5; }
 
-    /* Lobby Interface */
+    /* Mobile Virtual Controls */
+    #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
+    .touch-interactive { pointer-events: auto; }
+    
+    /* D-PAD Movement (+) */
+    #dpad { position: absolute; bottom: 25px; left: 25px; width: 130px; height: 130px; }
+    .dpad-btn { position: absolute; width: 42px; height: 42px; background: rgba(43,24,16,0.8); border: 2px solid #d4af37; border-radius: 6px; color: #d4af37; font-size: 20px; font-weight: 900; display: flex; align-items: center; justify-content: center; active: scale(0.95); }
+    #dpad-up { top: 0; left: 44px; }
+    #dpad-down { bottom: 0; left: 44px; }
+    #dpad-left { top: 44px; left: 0; }
+    #dpad-right { top: 44px; right: 0; }
+
+    /* Touch Look Area */
+    #look-pad { position: absolute; top: 120px; right: 0; width: 55vw; height: 50vh; background: rgba(0,0,0,0.01); border-left: 1px dashed rgba(212,175,55,0.15); }
+    
+    /* Action Buttons */
+    #btn-fire { position: absolute; bottom: 35px; right: 35px; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, #ff4400 0%, #8b0000 80%); border: 3px solid #ffaa00; color: #fff; font-size: 16px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(255,68,0,0.6); }
+    #btn-nade { position: absolute; bottom: 130px; right: 40px; width: 52px; height: 52px; border-radius: 50%; background: rgba(50,40,30,0.85); border: 2px solid #fa0; color: #fa0; font-size: 11px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; }
+    #btn-clay { position: absolute; bottom: 130px; right: 105px; width: 52px; height: 52px; border-radius: 50%; background: rgba(50,40,30,0.85); border: 2px solid #fa0; color: #fa0; font-size: 10px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; }
+
+    /* Weapon Switch Bar */
+    #weapon-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+    .w-btn { width: 36px; height: 36px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+
+    /* Lobby Screen UI */
     #lobby-screen { position: absolute; inset: 0; background: radial-gradient(circle, #24140d 0%, #0c0806 90%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; font-family: monospace; }
-    .lobby-header { font-size: 26px; color: #d4af37; font-weight: 900; margin-bottom: 15px; letter-spacing: 2px; text-shadow: 0 0 10px rgba(212,175,55,0.4); text-align: center; }
-    .input-box { background: #140c08; border: 1px solid #6b4c35; color: #fff; padding: 10px; font-size: 16px; font-family: monospace; text-transform: uppercase; text-align: center; margin-bottom: 20px; width: 260px; }
+    .lobby-header { font-size: 24px; color: #d4af37; font-weight: 900; margin-bottom: 12px; letter-spacing: 2px; text-shadow: 0 0 10px rgba(212,175,55,0.4); text-align: center; }
+    .input-box { background: #140c08; border: 1px solid #6b4c35; color: #fff; padding: 10px; font-size: 16px; font-family: monospace; text-transform: uppercase; text-align: center; margin-bottom: 16px; width: 240px; }
     
-    #lobbies-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 950px; width: 90%; }
-    .lobby-box { background: rgba(20,13,10,0.95); border: 2px solid #8b5a2b; border-radius: 6px; padding: 15px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
-    .lobby-box-title { font-size: 18px; color: #fa0; font-weight: bold; border-bottom: 1px solid #4a3324; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; }
+    #lobbies-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; max-width: 900px; width: 92%; max-height: 65vh; overflow-y: auto; }
+    .lobby-box { background: rgba(20,13,10,0.95); border: 2px solid #8b5a2b; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+    .lobby-box-title { font-size: 16px; color: #fa0; font-weight: bold; border-bottom: 1px solid #4a3324; padding-bottom: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; }
     
-    .slot-row { background: #120a07; border: 1px solid #3a2418; padding: 8px 10px; margin-bottom: 8px; font-size: 13px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; }
+    .slot-row { background: #120a07; border: 1px solid #3a2418; padding: 6px 8px; margin-bottom: 6px; font-size: 12px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; }
     .slot-open { color: #665544; border-style: dashed; }
     .status-ready { color: #00ff66; font-weight: 900; }
     .status-waiting { color: #ffaa00; }
 
-    .btn { background: #8b5a2b; color: #fff; border: none; padding: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: monospace; text-transform: uppercase; margin-top: 8px; border-radius: 4px; }
+    .btn { background: #8b5a2b; color: #fff; border: none; padding: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: monospace; text-transform: uppercase; margin-top: 6px; border-radius: 4px; }
     .btn:hover { background: #b8793b; }
     .btn-ready { background: #2e7d32; font-size: 16px; padding: 14px; }
     .btn-ready:hover { background: #388e3c; }
     .btn-force { background: #b8860b; color: #000; font-size: 14px; font-weight: 900; }
     .btn-force:hover { background: #ffd700; }
     .btn-leave { background: #8b2b2b; }
-    .btn-leave:hover { background: #b83b3b; }
 
-    #room-view { display: none; background: rgba(20,13,10,0.95); border: 2px solid #8b5a2b; border-radius: 6px; padding: 25px 40px; width: 440px; text-align: center; }
+    #room-view { display: none; background: rgba(20,13,10,0.95); border: 2px solid #8b5a2b; border-radius: 6px; padding: 20px 30px; width: 90%; max-width: 400px; text-align: center; }
   </style>
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -53,28 +77,52 @@
 
   <div id="lobby-screen">
     <div id="browser-view" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-      <div class="lobby-header">HAUNTED OUTBREAK<br><span style="font-size:15px;color:#fa0;">SELECT A SQUAD LOBBY (1-6)</span></div>
+      <div class="lobby-header">HAUNTED OUTBREAK<br><span style="font-size:14px;color:#fa0;">SELECT SQUAD LOBBY (1-6)</span></div>
       <input id="player-name-input" class="input-box" maxlength="12" placeholder="CALLSIGN" value="MARINE">
       <div id="lobbies-container"></div>
     </div>
 
     <div id="room-view">
       <div class="lobby-header" id="current-lobby-title">LOBBY 1</div>
-      <div id="active-slots-container" style="margin-bottom: 20px;"></div>
-      <button class="btn btn-ready" id="btn-toggle-ready">CLICK TO READY UP</button>
-      <button class="btn btn-force" id="btn-force-start" style="margin-top: 10px;">FORCE START / SOLO TEST</button>
-      <button class="btn btn-leave" id="btn-leave-lobby" style="margin-top: 10px;">LEAVE LOBBY</button>
-      <div style="font-size:12px;color:#888;margin-top:12px;">Match auto-launches when all 4 slots are filled & ready.</div>
+      <div id="active-slots-container" style="margin-bottom: 16px;"></div>
+      <button class="btn btn-ready" id="btn-toggle-ready">READY UP</button>
+      <button class="btn btn-force" id="btn-force-start" style="margin-top: 8px;">FORCE START / SOLO TEST</button>
+      <button class="btn btn-leave" id="btn-leave-lobby" style="margin-top: 8px;">LEAVE LOBBY</button>
+      <div style="font-size:12px;color:#888;margin-top:10px;">Match auto-launches when all 4 slots are ready.</div>
     </div>
   </div>
 
   <div id="gui">
-    <div id="stats">WASD + LOOK | KEYS 1-5 SWITCH | G THROW GRENADE | C PLACE CLAYMORE<br>SURVIVE THE HAUNTED OUTBREAK TOGETHER!</div>
+    <div id="stats">WASD / TOUCH D-PAD | 1-5 SWITCH | G NADE | C CLAYMORE</div>
     <div id="score-board">CREDITS:<span id="score-val">500</span></div>
     <div id="team-hud"><b style="color:#d4af37;">SQUAD STATUS</b><div id="team-list-hud"></div></div>
     <div id="round-display">ROUND<span id="round-val">I</span></div>
     <div id="crosshair"></div>
     <div id="msg-box"><div id="text">HAUNTED PROTOCOL ENGAGED. 500 CREDITS LOADED.</div></div>
+  </div>
+
+  <!-- Mobile On-Screen Controls Overlay -->
+  <div id="mobile-controls">
+    <div id="dpad" class="touch-interactive">
+      <div class="dpad-btn" id="dpad-up">▲</div>
+      <div class="dpad-btn" id="dpad-down">▼</div>
+      <div class="dpad-btn" id="dpad-left">◀</div>
+      <div class="dpad-btn" id="dpad-right">▶</div>
+    </div>
+
+    <div id="look-pad" class="touch-interactive"></div>
+
+    <button id="btn-fire" class="touch-interactive">FIRE</button>
+    <button id="btn-nade" class="touch-interactive">GRENADE</button>
+    <button id="btn-clay" class="touch-interactive">MINE</button>
+
+    <div id="weapon-bar" class="touch-interactive">
+      <div class="w-btn" onclick="switchWeapon(1)">1</div>
+      <div class="w-btn" onclick="switchWeapon(2)">2</div>
+      <div class="w-btn" onclick="switchWeapon(3)">3</div>
+      <div class="w-btn" onclick="switchWeapon(4)">4</div>
+      <div class="w-btn" onclick="switchWeapon(5)">5</div>
+    </div>
   </div>
 
   <canvas id="virtualArcadeCanvas" style="display:none" width="512" height="512"></canvas>
@@ -88,8 +136,8 @@
 
   <script>
     const socket = io();
-    let myLobbyId = null, mySlotNumber = null, myColor = null, isHost = false, gameActive = false;
-    const remotePlayers = {};
+    let myLobbyId = null, mySlotNumber = null, myColor = null, isHost = false, gameActive = false, myId = null;
+    const remotePlayers = {}; // socketId -> { mesh, data }
 
     const $ = i => document.getElementById(i), T = THREE, V3 = T.Vector3, BG = (w,h,d)=>new T.BoxGeometry(w,h,d), CG = (rt,rb,h,s=16)=>new T.CylinderGeometry(rt,rb,h,s), PG = (w,h)=>new T.PlaneGeometry(w,h), SG = (r,s=16,p=16)=>new T.SphereGeometry(r,s,p), SM = m=>new T.MeshStandardMaterial(m), BM = m=>new T.MeshBasicMaterial(m), GRP = ()=>new T.Group();
     const MESH = (g,m,x=0,y=0,z=0,rx=0,ry=0)=>{ let o=new T.Mesh(g,m); o.position.set(x,y,z); if(rx)o.rotation.x=rx; if(ry)o.rotation.y=ry; return o; };
@@ -98,6 +146,9 @@
     const boxScreenCanvas=$('mysteryBoxScreenCanvas'), boxScreenCtx=boxScreenCanvas.getContext('2d'), boxScreenTexture=new T.CanvasTexture(boxScreenCanvas);
     const upgScreenCanvas=$('upgradeMachineScreenCanvas'), upgScreenCtx=upgScreenCanvas.getContext('2d'), upgScreenTexture=new T.CanvasTexture(upgScreenCanvas);
     const jugCtx=$('jugCanvas').getContext('2d'), jugTex=new T.CanvasTexture($('jugCanvas')), qrCtx=$('quickReviveCanvas').getContext('2d'), qrTex=new T.CanvasTexture($('quickReviveCanvas')), dtCtx=$('doubleTapCanvas').getContext('2d'), dtTex=new T.CanvasTexture($('doubleTapCanvas')), suCtx=$('staminUpCanvas').getContext('2d'), suTex=new T.CanvasTexture($('staminUpCanvas'));
+
+    // Mobile Detection
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
     // --- LOBBY SYSTEM ---
     socket.on('lobby_list', lobbies => {
@@ -149,6 +200,7 @@
       myLobbyId = data.lobbyId;
       mySlotNumber = data.slotNumber;
       myColor = data.myColor;
+      myId = data.myId;
       isHost = (mySlotNumber === 1);
 
       $('browser-view').style.display = 'none';
@@ -163,16 +215,16 @@
         const slot = lobby.slots[i];
         const isMe = (i + 1 === mySlotNumber);
         if (slot) {
-          cont.innerHTML += `<div class="slot-row" style="color:#${slot.color.toString(16).padStart(6,'0')}; font-size:15px; padding:12px;">
+          cont.innerHTML += `<div class="slot-row" style="color:#${slot.color.toString(16).padStart(6,'0')}; font-size:14px; padding:10px;">
             <span>SLOT ${i+1}: ${slot.name} ${isMe ? '(YOU)':''}</span>
             <span class="${slot.ready ? 'status-ready':'status-waiting'}">${slot.ready ? 'READY ✓':'WAITING...'}</span>
           </div>`;
           if (isMe) {
-            $('btn-toggle-ready').innerText = slot.ready ? 'CANCEL READY' : 'CLICK TO READY UP';
+            $('btn-toggle-ready').innerText = slot.ready ? 'CANCEL READY' : 'READY UP';
             $('btn-toggle-ready').style.background = slot.ready ? '#8b5a2b' : '#2e7d32';
           }
         } else {
-          cont.innerHTML += `<div class="slot-row slot-open" style="font-size:15px; padding:12px;"><span>SLOT ${i+1}: WAITING FOR PLAYER...</span><span>--</span></div>`;
+          cont.innerHTML += `<div class="slot-row slot-open" style="font-size:14px; padding:10px;"><span>SLOT ${i+1}: WAITING FOR PLAYER...</span><span>--</span></div>`;
         }
       }
     }
@@ -193,7 +245,7 @@
     let ammoReserves={1:200,2:0,3:0,4:0,5:0},weaponUpgradeLevels={1:0,2:0,3:0,4:0,5:0},hasAutomaticPistol=false,hasRifle=false,hasAutoRifle=false,hasRayPistol=false,isLmbHeldDown=false,lastShotTime=0,autoFireRateMs=120,grenadeCount=2,grenadeUpgradeLevel=0,claymoreCount=2,claymoreUpgradeLevel=0;
     const activeGrenades=[],activeClaymores=[];
     let robotMercState={active:false,health:100,maxHealth:100,durationTimer:0,level:1,isBeingOverrun:false,overrunProgress:0,lastProximitySpeechTime:0};
-    const unhiredLines=["Penumbra industries veteran at your service, marine! Five hundred credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits and watch these phantoms scatter!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
+    const unhiredLines=["Penumbra industries veteran at your service, marine! 500 credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
     const hiredLines=["Heavy metal activated! Locking and loading for Vanguard Company!","Get to the extraction point! I've got your flank covered, marine!","Come on! Let's party! No ghoul gets past these dual barrels!","Vanguard ship is waiting in the clouds! Stay frosty and keep pumping lead!"];
     let lastUnhiredLineIdx=-1,lastHiredLineIdx=-1;
 
@@ -279,18 +331,18 @@
     }
 
     function switchWeapon(id){
-      if(id===2&&!hasAutomaticPistol){txtDiv.innerHTML="BUY THE AUTO PISTOL FROM THE MANSION WALL FIRST!";return}
-      if(id===3&&!hasRifle){txtDiv.innerHTML="BUY THE HEAVY SHOTGUN FROM THE MANSION WALL FIRST!";return}
-      if(id===4&&!hasAutoRifle){txtDiv.innerHTML="BUY THE RIFLE FROM THE MANSION WALL FIRST!";return}
-      if(id===5&&!hasRayPistol){txtDiv.innerHTML="RAY PISTOL MUST BE FOUND IN THE RELIC CHEST!";return}
-      if(upgradeMachineActive&&upgradeMachineWeaponSlot===id){txtDiv.innerHTML="THAT WEAPON IS CURRENTLY BEING BLESSED!";return}
+      if(id===2&&!hasAutomaticPistol){txtDiv.innerHTML="BUY AUTO PISTOL FROM MANSION WALL!";return}
+      if(id===3&&!hasRifle){txtDiv.innerHTML="BUY SHOTGUN FROM MANSION WALL!";return}
+      if(id===4&&!hasAutoRifle){txtDiv.innerHTML="BUY ASSAULT RIFLE FROM MANSION WALL!";return}
+      if(id===5&&!hasRayPistol){txtDiv.innerHTML="RAY PISTOL MUST BE FOUND IN RELIC CHEST!";return}
+      if(upgradeMachineActive&&upgradeMachineWeaponSlot===id){txtDiv.innerHTML="THAT WEAPON IS BEING BLESSED!";return}
       currentWeapon=id;let upg=weaponUpgradeLevels[currentWeapon]>0;while(gunMeshGroup.children.length>0)gunMeshGroup.remove(gunMeshGroup.children[0]);
       gunMeshGroup.add(buildWeaponGeometry(currentWeapon,upg));attachTacticalDisplay(gunMeshGroup,1.3);updateTacticalHUD();
-      txtDiv.innerHTML=`WEAPON SWITCHED TO: ${baseWeaponData[currentWeapon].name}${upg?` [LEVEL ${toRoman(weaponUpgradeLevels[currentWeapon])}]`:""}`;
+      txtDiv.innerHTML=`WEAPON: ${baseWeaponData[currentWeapon].name}${upg?` [LVL ${toRoman(weaponUpgradeLevels[currentWeapon])}]`:""}`;
     }
 
     document.body.addEventListener('click',()=>{
-      if(gameActive&&!isGameOver&&document.pointerLockElement!==document.body){
+      if(gameActive&&!isGameOver&&!isMobile&&document.pointerLockElement!==document.body){
         document.body.requestPointerLock();
         if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
       }
@@ -311,6 +363,7 @@
     function initAudio(){if(audioCtx)return;audioCtx=new(window.AudioContext||window.webkitAudioContext)();audioListener=new T.AudioListener();camera.add(audioListener);startMusicClock()}
     function speakRobotVoice(t){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.pitch=0.55;u.rate=0.92;u.volume=1;let v=window.speechSynthesis.getVoices().find(x=>x.lang.startsWith('en')&&(x.name.includes('Google')||x.name.includes('David')||x.name.includes('Male')));if(v)u.voice=v;window.speechSynthesis.speak(u)}
     function playPianoNote(f,d,type='sine',vol=0.08){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.setValueAtTime(f,audioCtx.currentTime);g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+d);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}
+    function startMusicClock(){if(pianoIntervalId)clearInterval(pianoIntervalId);pianoIntervalId=setInterval(()=>{if(isGameOver)return;pianoTickCounter++;if(roundActive){let pr=[[220,261.63,329.63],[174.61,261.63,349.23],[261.63,329.63,392],[196,246.94,293.66]],ci=Math.floor((pianoTickCounter%16)/4),ni=pianoTickCounter%4;if(ni===0)playPianoNote(pr[ci][0],1.5,'sine',0.06);else if(ni===2){playPianoNote(pr[ci][1],1,'sine',0.04);playPianoNote(pr[ci][2],1,'sine',0.04)}}else{let tn=[146.83,155.56,164.81,174.61,185,174.61,164.81,155.56],n=tn[pianoTickCounter%tn.length];playPianoNote(n,0.4,'triangle',0.05);if(pianoTickCounter%2===0)playPianoNote(n*2,0.2,'sine',0.02)}},450)}
     function playZombieBiteSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain(),m=audioCtx.createOscillator(),mg=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(90,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(40,audioCtx.currentTime+0.4);m.frequency.value=45;mg.gain.value=35;m.connect(mg);mg.connect(o.frequency);g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.001,audioCtx.currentTime+0.4);o.connect(g);g.connect(audioCtx.destination);m.start();o.start();m.stop(audioCtx.currentTime+0.4);o.stop(audioCtx.currentTime+0.4)}
     function playPistolShotSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();let pm=1+weaponUpgradeLevels[currentWeapon]*0.1;if(currentWeapon===5){o.type='sine';o.frequency.setValueAtTime(1200*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(200,audioCtx.currentTime+0.25);g.gain.setValueAtTime(0.35,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.25);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.25)}else if(currentWeapon===3||currentWeapon===4){o.type='sawtooth';o.frequency.setValueAtTime(180*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(10,audioCtx.currentTime+0.25);g.gain.setValueAtTime(0.4,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.25);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.25)}else{o.type=currentWeapon===2?'sawtooth':'triangle';o.frequency.setValueAtTime((currentWeapon===2?320:400)*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(10,audioCtx.currentTime+0.08);g.gain.setValueAtTime(0.25,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.08);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.08)}}
     function playExplosionSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(120,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(10,audioCtx.currentTime+0.5);g.gain.setValueAtTime(0.6,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.5);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.5)}
@@ -318,7 +371,7 @@
     function playMysteryBoxSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.setValueAtTime(587.33,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(880,audioCtx.currentTime+0.4);g.gain.setValueAtTime(0.15,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.4);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.4)}
 
     function createHauntedWoodFloorTexture(){const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#4a3324';ctx.fillRect(0,0,512,512);ctx.strokeStyle='#1f140e';ctx.lineWidth=6;for(let i=0;i<=512;i+=64){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,512);ctx.stroke()}for(let i=0;i<90;i++){ctx.fillStyle=Math.random()>0.5?'rgba(30,20,14,0.35)':'rgba(90,65,45,0.25)';ctx.fillRect(Math.random()*512,Math.random()*512,Math.random()*120+20,Math.random()*12+3)}const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(4,4);return tex}
-    function createHauntedWallTexture(){const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#5c4033';ctx.fillRect(0,0,512,512);ctx.strokeStyle='#2b1b12';ctx.lineWidth=10;ctx.strokeRect(20,20,472,472);ctx.strokeStyle='#7a523c';ctx.lineWidth=4;ctx.strokeRect(26,26,460,460);ctx.strokeStyle='#2b1b12';ctx.lineWidth=8;ctx.strokeRect(60,60,392,392);ctx.strokeStyle='#7a523c';ctx.lineWidth=3;ctx.strokeRect(65,65,382,382);for(let i=0;i<60;i++){ctx.fillStyle=Math.random()>0.5?'rgba(35,22,14,0.3)':'rgba(110,80,55,0.2)';ctx.fillRect(Math.random()*512,Math.random()*512,Math.random()*100+15,Math.random()*16+4)}const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(3,2);return tex}
+    function createHauntedWallTexture(){const c=document.createElement('canvas');c.width=512;c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#5c4033';ctx.fillRect(0,0,512,512);ctx.strokeStyle='#2b1b12';ctx.lineWidth=10;ctx.strokeRect(20,20,472,472);ctx.strokeStyle='#7a523c';ctx.lineWidth=4;ctx.strokeRect(26,26,460,460);ctx.strokeStyle='#2b1b12';ctx.lineWidth=8;ctx.strokeRect(60,60,392,392);ctx.strokeStyle='#7a523c';ctx.lineWidth=3;ctx.strokeRect(65,65,382,382);for(let i=0;i<60;i++){ctx.fillStyle=Math.random()>0.5?'rgba(35,22,14,0.3)':'rgba(110,80,55,0.2)';ctx.fillRect(Math.random()*512,Math.random()*512,Math.random()*100+15,Math.random()*16+4)}const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(3,2);return tex}
 
     const generalEnvironmentMeshes=[],wallObjects=[],perkMachineObjects=[],outlineMat=new T.LineBasicMaterial({color:0x140d0a,linewidth:2}),wallMat=SM({map:createHauntedWallTexture(),roughness:0.6,side:T.DoubleSide}),ceilingMat=SM({color:0x332218,roughness:0.8}),floorMat=SM({map:createHauntedWoodFloorTexture(),roughness:0.5,metalness:0.1});
     function addStructuralMesh(geo,mat,px,py,pz,rx=0,ry=0,mt="stone"){const m=MESH(geo,mat,px,py,pz,rx,ry);scene.add(m);const l=new T.LineSegments(new T.EdgesGeometry(geo),outlineMat);l.position.copy(m.position);l.rotation.copy(m.rotation);scene.add(l);m.userData={materialType:mt};generalEnvironmentMeshes.push(m);return m}
@@ -480,7 +533,7 @@
         const zd = createZombieMesh();
         zd.head.visible = zd.body.visible = zd.arms.visible = true;
         scene.add(zd.group);
-        activeZombies.push({ meshParts: zd, stage: 3, deadAndShrinking: false });
+        activeZombies.push({ meshParts: zd, stage: 3, deadAndShrinking: false, emergenceStage: 3 });
       }
       while(activeZombies.length > networkZombies.length) {
         const removed = activeZombies.pop();
@@ -505,7 +558,7 @@
       if (tz && !tz.deadAndShrinking) {
         setZombieStage(tz, tz.stage - data.damage);
         if (tz.deadAndShrinking) {
-          if (data.shooterSlot === mySlotNumber) addPoints(data.isHeadshot ? 20 : 10);
+          if (data.shooterId === myId) addPoints(data.isHeadshot ? 20 : 10);
           rebuildZombieHitboxes();
           checkRoundEnd();
         }
@@ -678,8 +731,8 @@
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
     }
 
-    // Teammates and Networking
-    function createTeammateMesh(colorHex, slotNum) {
+    // Teammates Rendering
+    function createTeammateMesh(colorHex, name) {
       const g = GRP();
       const suitMat = SM({ color: 0x2b332b, roughness: 0.7 });
       const accentMat = SM({ color: colorHex, metalness: 0.8, roughness: 0.2 });
@@ -706,15 +759,16 @@
     socket.on('game_start', data => {
       $('lobby-screen').style.display = 'none';
       $('gui').style.display = 'block';
+      if (isMobile) $('mobile-controls').style.display = 'block';
       gameActive = true;
-      document.body.requestPointerLock();
+      if (!isMobile) document.body.requestPointerLock();
       initAudio();
 
       data.players.forEach(p => {
-        if (p.slotNumber !== mySlotNumber) {
-          remotePlayers[p.slotNumber] = {
+        if (p.socketId !== myId) {
+          remotePlayers[p.socketId] = {
             data: p,
-            mesh: createTeammateMesh(p.color, p.slotNumber)
+            mesh: createTeammateMesh(p.color, p.name)
           };
         }
       });
@@ -723,27 +777,76 @@
     });
 
     socket.on('remote_player_update', data => {
-      if (remotePlayers[data.slotNumber]) {
-        const rp = remotePlayers[data.slotNumber];
+      if (remotePlayers[data.id]) {
+        const rp = remotePlayers[data.id];
         rp.mesh.position.set(data.x, data.y - 3.0, data.z);
         rp.mesh.rotation.y = data.yaw;
       }
     });
 
-    socket.on('player_left', slotNum => {
-      if (remotePlayers[slotNum]) {
-        scene.remove(remotePlayers[slotNum].mesh);
-        delete remotePlayers[slotNum];
+    socket.on('player_left', socketId => {
+      if (remotePlayers[socketId]) {
+        scene.remove(remotePlayers[socketId].mesh);
+        delete remotePlayers[socketId];
         updateTeamHUD();
       }
     });
 
+    // Keyboard and Desktop Mouse Controls
     window.addEventListener('mousemove',e=>{if(document.pointerLockElement!==document.body||isGameOver)return;playerYaw-=e.movementX*0.0025;playerRig.rotation.y=playerYaw;playerPitch=Math.max(-1.4,Math.min(1.4,playerPitch-e.movementY*0.0025));cameraPitchObject.rotation.x=playerPitch});
     window.addEventListener('mousedown',e=>{if(document.pointerLockElement!==document.body||isGameOver)return;if(e.button===0){isLmbHeldDown=true;executeWeaponFireRaycast();lastShotTime=performance.now()}if(e.button===2){raycaster.setFromCamera(new T.Vector2(0,0),camera);let hi=raycaster.intersectObjects(holeInteractiveMeshes);if(hi.length>0&&hi[0].distance<25)fillHoleWithDirt(hi[0].object.userData.holeIndex)}});
     window.addEventListener('mouseup',e=>{if(e.button===0)isLmbHeldDown=false});
+    
     const keys={w:0,a:0,s:0,d:0,shift:0};
     window.addEventListener('keydown',e=>{if(isGameOver)return;if(e.code==='KeyW')keys.w=1;if(e.code==='KeyS')keys.s=1;if(e.code==='KeyA')keys.a=1;if(e.code==='KeyD')keys.d=1;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=1;if(e.code==='Digit1')switchWeapon(1);if(e.code==='Digit2')switchWeapon(2);if(e.code==='Digit3')switchWeapon(3);if(e.code==='Digit4')switchWeapon(4);if(e.code==='Digit5')switchWeapon(5);if(e.code==='KeyG')throwGrenade();if(e.code==='KeyC')placeClaymore()});
     window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=0;if(e.code==='KeyS')keys.s=0;if(e.code==='KeyA')keys.a=0;if(e.code==='KeyD')keys.d=0;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=0});
+
+    // Mobile Virtual Touch Handlers
+    function setupTouchButton(id, keyName) {
+      const el = $(id);
+      el.addEventListener('touchstart', e => { e.preventDefault(); keys[keyName] = 1; });
+      el.addEventListener('touchend', e => { e.preventDefault(); keys[keyName] = 0; });
+    }
+    setupTouchButton('dpad-up', 'w');
+    setupTouchButton('dpad-down', 's');
+    setupTouchButton('dpad-left', 'a');
+    setupTouchButton('dpad-right', 'd');
+
+    $('btn-fire').addEventListener('touchstart', e => { e.preventDefault(); isLmbHeldDown = true; executeWeaponFireRaycast(); lastShotTime = performance.now(); });
+    $('btn-fire').addEventListener('touchend', e => { e.preventDefault(); isLmbHeldDown = false; });
+    $('btn-nade').addEventListener('touchstart', e => { e.preventDefault(); throwGrenade(); });
+    $('btn-clay').addEventListener('touchstart', e => { e.preventDefault(); placeClaymore(); });
+
+    // Touch Aiming & Look Pad
+    let lastTouchX = null, lastTouchY = null;
+    const lookPad = $('look-pad');
+    lookPad.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const t = e.touches[0];
+      lastTouchX = t.clientX;
+      lastTouchY = t.clientY;
+    });
+    lookPad.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (lastTouchX === null || isGameOver) return;
+      const t = e.touches[0];
+      const dx = t.clientX - lastTouchX;
+      const dy = t.clientY - lastTouchY;
+      lastTouchX = t.clientX;
+      lastTouchY = t.clientY;
+
+      playerYaw -= dx * 0.006;
+      playerRig.rotation.y = playerYaw;
+      playerPitch = Math.max(-1.4, Math.min(1.4, playerPitch - dy * 0.006));
+      cameraPitchObject.rotation.x = playerPitch;
+    });
+    lookPad.addEventListener('touchend', e => { e.preventDefault(); lastTouchX = lastTouchY = null; });
+
+    // Direct Tap-to-Interact
+    window.addEventListener('touchstart', e => {
+      if (!gameActive || isGameOver || !e.target.tagName.includes('CANVAS')) return;
+      executeWeaponFireRaycast();
+    });
 
     function drawAnimatedHostScreen(t){
       sCtx.fillStyle="#2b1810";sCtx.fillRect(0,0,512,512);sCtx.strokeStyle=robotMercState.active?"#ffd700":"#b8860b";sCtx.lineWidth=12;sCtx.strokeRect(0,0,512,512);sCtx.fillStyle=robotMercState.active?"#ffd700":"#b8860b";sCtx.fillRect(140,160,50,50);sCtx.fillRect(322,160,50,50);
@@ -835,7 +938,6 @@
           pitch: playerPitch
         });
 
-        // Host broadcasts live zombie states to Players 2, 3, 4
         if (isHost) {
           const syncPacket = activeZombies.map(z => ({
             x: z.meshParts.group.position.x,

@@ -21,27 +21,23 @@
     #crosshair::after { top: -10px; left: 4px; width: 2px; height: 30px; }
     #damage-overlay { position: absolute; inset: 0; background: rgba(255,0,0,0); pointer-events: none; transition: background .1s ease; z-index: 5; }
 
-    /* Mobile Virtual Controls */
+    /* Mobile Controls */
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
     
-    /* D-PAD Movement (+) */
     #dpad { position: absolute; bottom: 25px; left: 25px; width: 130px; height: 130px; }
-    .dpad-btn { position: absolute; width: 42px; height: 42px; background: rgba(43,24,16,0.8); border: 2px solid #d4af37; border-radius: 6px; color: #d4af37; font-size: 20px; font-weight: 900; display: flex; align-items: center; justify-content: center; active: scale(0.95); }
+    .dpad-btn { position: absolute; width: 42px; height: 42px; background: rgba(43,24,16,0.8); border: 2px solid #d4af37; border-radius: 6px; color: #d4af37; font-size: 20px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
     #dpad-up { top: 0; left: 44px; }
     #dpad-down { bottom: 0; left: 44px; }
     #dpad-left { top: 44px; left: 0; }
     #dpad-right { top: 44px; right: 0; }
 
-    /* Touch Look Area */
     #look-pad { position: absolute; top: 120px; right: 0; width: 55vw; height: 50vh; background: rgba(0,0,0,0.01); border-left: 1px dashed rgba(212,175,55,0.15); }
     
-    /* Action Buttons */
     #btn-fire { position: absolute; bottom: 35px; right: 35px; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, #ff4400 0%, #8b0000 80%); border: 3px solid #ffaa00; color: #fff; font-size: 16px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(255,68,0,0.6); }
     #btn-nade { position: absolute; bottom: 130px; right: 40px; width: 52px; height: 52px; border-radius: 50%; background: rgba(50,40,30,0.85); border: 2px solid #fa0; color: #fa0; font-size: 11px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; }
     #btn-clay { position: absolute; bottom: 130px; right: 105px; width: 52px; height: 52px; border-radius: 50%; background: rgba(50,40,30,0.85); border: 2px solid #fa0; color: #fa0; font-size: 10px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; }
 
-    /* Weapon Switch Bar */
     #weapon-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
     .w-btn { width: 36px; height: 36px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
 
@@ -101,7 +97,6 @@
     <div id="msg-box"><div id="text">HAUNTED PROTOCOL ENGAGED. 500 CREDITS LOADED.</div></div>
   </div>
 
-  <!-- Mobile On-Screen Controls Overlay -->
   <div id="mobile-controls">
     <div id="dpad" class="touch-interactive">
       <div class="dpad-btn" id="dpad-up">▲</div>
@@ -147,7 +142,6 @@
     const upgScreenCanvas=$('upgradeMachineScreenCanvas'), upgScreenCtx=upgScreenCanvas.getContext('2d'), upgScreenTexture=new T.CanvasTexture(upgScreenCanvas);
     const jugCtx=$('jugCanvas').getContext('2d'), jugTex=new T.CanvasTexture($('jugCanvas')), qrCtx=$('quickReviveCanvas').getContext('2d'), qrTex=new T.CanvasTexture($('quickReviveCanvas')), dtCtx=$('doubleTapCanvas').getContext('2d'), dtTex=new T.CanvasTexture($('doubleTapCanvas')), suCtx=$('staminUpCanvas').getContext('2d'), suTex=new T.CanvasTexture($('staminUpCanvas'));
 
-    // Mobile Detection
     const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
     // --- LOBBY SYSTEM ---
@@ -363,7 +357,6 @@
     function initAudio(){if(audioCtx)return;audioCtx=new(window.AudioContext||window.webkitAudioContext)();audioListener=new T.AudioListener();camera.add(audioListener);startMusicClock()}
     function speakRobotVoice(t){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.pitch=0.55;u.rate=0.92;u.volume=1;let v=window.speechSynthesis.getVoices().find(x=>x.lang.startsWith('en')&&(x.name.includes('Google')||x.name.includes('David')||x.name.includes('Male')));if(v)u.voice=v;window.speechSynthesis.speak(u)}
     function playPianoNote(f,d,type='sine',vol=0.08){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.setValueAtTime(f,audioCtx.currentTime);g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+d);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}
-    function startMusicClock(){if(pianoIntervalId)clearInterval(pianoIntervalId);pianoIntervalId=setInterval(()=>{if(isGameOver)return;pianoTickCounter++;if(roundActive){let pr=[[220,261.63,329.63],[174.61,261.63,349.23],[261.63,329.63,392],[196,246.94,293.66]],ci=Math.floor((pianoTickCounter%16)/4),ni=pianoTickCounter%4;if(ni===0)playPianoNote(pr[ci][0],1.5,'sine',0.06);else if(ni===2){playPianoNote(pr[ci][1],1,'sine',0.04);playPianoNote(pr[ci][2],1,'sine',0.04)}}else{let tn=[146.83,155.56,164.81,174.61,185,174.61,164.81,155.56],n=tn[pianoTickCounter%tn.length];playPianoNote(n,0.4,'triangle',0.05);if(pianoTickCounter%2===0)playPianoNote(n*2,0.2,'sine',0.02)}},450)}
     function playZombieBiteSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain(),m=audioCtx.createOscillator(),mg=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(90,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(40,audioCtx.currentTime+0.4);m.frequency.value=45;mg.gain.value=35;m.connect(mg);mg.connect(o.frequency);g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.001,audioCtx.currentTime+0.4);o.connect(g);g.connect(audioCtx.destination);m.start();o.start();m.stop(audioCtx.currentTime+0.4);o.stop(audioCtx.currentTime+0.4)}
     function playPistolShotSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();let pm=1+weaponUpgradeLevels[currentWeapon]*0.1;if(currentWeapon===5){o.type='sine';o.frequency.setValueAtTime(1200*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(200,audioCtx.currentTime+0.25);g.gain.setValueAtTime(0.35,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.25);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.25)}else if(currentWeapon===3||currentWeapon===4){o.type='sawtooth';o.frequency.setValueAtTime(180*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(10,audioCtx.currentTime+0.25);g.gain.setValueAtTime(0.4,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.25);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.25)}else{o.type=currentWeapon===2?'sawtooth':'triangle';o.frequency.setValueAtTime((currentWeapon===2?320:400)*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(10,audioCtx.currentTime+0.08);g.gain.setValueAtTime(0.25,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.08);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.08)}}
     function playExplosionSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(120,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(10,audioCtx.currentTime+0.5);g.gain.setValueAtTime(0.6,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.5);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.5)}
@@ -371,7 +364,7 @@
     function playMysteryBoxSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.setValueAtTime(587.33,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(880,audioCtx.currentTime+0.4);g.gain.setValueAtTime(0.15,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.4);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.4)}
 
     function createHauntedWoodFloorTexture(){const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#4a3324';ctx.fillRect(0,0,512,512);ctx.strokeStyle='#1f140e';ctx.lineWidth=6;for(let i=0;i<=512;i+=64){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,512);ctx.stroke()}for(let i=0;i<90;i++){ctx.fillStyle=Math.random()>0.5?'rgba(30,20,14,0.35)':'rgba(90,65,45,0.25)';ctx.fillRect(Math.random()*512,Math.random()*512,Math.random()*120+20,Math.random()*12+3)}const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(4,4);return tex}
-    function createHauntedWallTexture(){const c=document.createElement('canvas');c.width=512;c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#5c4033';ctx.fillRect(0,0,512,512);ctx.strokeStyle='#2b1b12';ctx.lineWidth=10;ctx.strokeRect(20,20,472,472);ctx.strokeStyle='#7a523c';ctx.lineWidth=4;ctx.strokeRect(26,26,460,460);ctx.strokeStyle='#2b1b12';ctx.lineWidth=8;ctx.strokeRect(60,60,392,392);ctx.strokeStyle='#7a523c';ctx.lineWidth=3;ctx.strokeRect(65,65,382,382);for(let i=0;i<60;i++){ctx.fillStyle=Math.random()>0.5?'rgba(35,22,14,0.3)':'rgba(110,80,55,0.2)';ctx.fillRect(Math.random()*512,Math.random()*512,Math.random()*100+15,Math.random()*16+4)}const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(3,2);return tex}
+    function createHauntedWallTexture(){const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#5c4033';ctx.fillRect(0,0,512,512);ctx.strokeStyle='#2b1b12';ctx.lineWidth=10;ctx.strokeRect(20,20,472,472);ctx.strokeStyle='#7a523c';ctx.lineWidth=4;ctx.strokeRect(26,26,460,460);ctx.strokeStyle='#2b1b12';ctx.lineWidth=8;ctx.strokeRect(60,60,392,392);ctx.strokeStyle='#7a523c';ctx.lineWidth=3;ctx.strokeRect(65,65,382,382);for(let i=0;i<60;i++){ctx.fillStyle=Math.random()>0.5?'rgba(35,22,14,0.3)':'rgba(110,80,55,0.2)';ctx.fillRect(Math.random()*512,Math.random()*512,Math.random()*100+15,Math.random()*16+4)}const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(3,2);return tex}
 
     const generalEnvironmentMeshes=[],wallObjects=[],perkMachineObjects=[],outlineMat=new T.LineBasicMaterial({color:0x140d0a,linewidth:2}),wallMat=SM({map:createHauntedWallTexture(),roughness:0.6,side:T.DoubleSide}),ceilingMat=SM({color:0x332218,roughness:0.8}),floorMat=SM({map:createHauntedWoodFloorTexture(),roughness:0.5,metalness:0.1});
     function addStructuralMesh(geo,mat,px,py,pz,rx=0,ry=0,mt="stone"){const m=MESH(geo,mat,px,py,pz,rx,ry);scene.add(m);const l=new T.LineSegments(new T.EdgesGeometry(geo),outlineMat);l.position.copy(m.position);l.rotation.copy(m.rotation);scene.add(l);m.userData={materialType:mt};generalEnvironmentMeshes.push(m);return m}
@@ -526,12 +519,15 @@
       rebuildZombieHitboxes();
     }
 
-    // Client Zombie Synchronization (For Players 2, 3, 4)
+    // Client Zombie Synchronization (For Players 2, 3, 4) - Restores full body & head
     socket.on('client_zombie_sync', networkZombies => {
       if (isHost) return;
       while(activeZombies.length < networkZombies.length) {
         const zd = createZombieMesh();
         zd.head.visible = zd.body.visible = zd.arms.visible = true;
+        zd.head.position.y = 2.4;
+        zd.body.position.y = 1.1;
+        zd.arms.position.y = 1.1;
         scene.add(zd.group);
         activeZombies.push({ meshParts: zd, stage: 3, deadAndShrinking: false, emergenceStage: 3 });
       }
@@ -731,19 +727,34 @@
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
     }
 
-    // Teammates Rendering
+    // Teammates Full 3D Body Mesh (With Legs, Boots, Helmet, Visor & Gun)
     function createTeammateMesh(colorHex, name) {
       const g = GRP();
       const suitMat = SM({ color: 0x2b332b, roughness: 0.7 });
       const accentMat = SM({ color: colorHex, metalness: 0.8, roughness: 0.2 });
-      g.add(MESH(BG(0.9, 1.3, 0.5), suitMat, 0, 1.8, 0));
-      g.add(MESH(BG(0.94, 0.6, 0.54), accentMat, 0, 2.0, 0));
-      g.add(MESH(BG(0.6, 0.6, 0.6), suitMat, 0, 2.8, 0));
-      g.add(MESH(BG(0.45, 0.2, 0.1), BM({ color: colorHex }), 0, 2.8, 0.31));
+      const bootMat = SM({ color: 0x141414, roughness: 0.9 });
+
+      // Torso & Armor Vest
+      g.add(MESH(BG(0.9, 1.1, 0.5), suitMat, 0, 1.75, 0));
+      g.add(MESH(BG(0.94, 0.6, 0.54), accentMat, 0, 1.9, 0));
+
+      // Head & Team Visor
+      g.add(MESH(BG(0.55, 0.55, 0.55), suitMat, 0, 2.55, 0));
+      g.add(MESH(BG(0.42, 0.18, 0.08), BM({ color: colorHex }), 0, 2.55, -0.28));
+
+      // Legs & Boots
+      g.add(MESH(BG(0.32, 0.9, 0.38), suitMat, -0.24, 0.75, 0));
+      g.add(MESH(BG(0.32, 0.9, 0.38), suitMat, 0.24, 0.75, 0));
+      g.add(MESH(BG(0.35, 0.25, 0.48), bootMat, -0.24, 0.18, -0.05));
+      g.add(MESH(BG(0.35, 0.25, 0.48), bootMat, 0.24, 0.18, -0.05));
+
+      // Weapon held pointing forward (-Z)
       const gunMesh = buildWeaponGeometry(1, false);
-      gunMesh.position.set(0.4, 1.7, 0.5);
-      gunMesh.scale.setScalar(1.4);
+      gunMesh.position.set(0.35, 1.5, -0.35);
+      gunMesh.rotation.y = Math.PI;
+      gunMesh.scale.setScalar(1.2);
       g.add(gunMesh);
+
       scene.add(g);
       return g;
     }
@@ -776,11 +787,12 @@
       if (mySlotNumber === 1) startRound(1);
     });
 
+    // Remote Player Movement: Adds Math.PI to fix 180-degree backward facing
     socket.on('remote_player_update', data => {
       if (remotePlayers[data.id]) {
         const rp = remotePlayers[data.id];
         rp.mesh.position.set(data.x, data.y - 3.0, data.z);
-        rp.mesh.rotation.y = data.yaw;
+        rp.mesh.rotation.y = data.yaw + Math.PI;
       }
     });
 
@@ -817,7 +829,6 @@
     $('btn-nade').addEventListener('touchstart', e => { e.preventDefault(); throwGrenade(); });
     $('btn-clay').addEventListener('touchstart', e => { e.preventDefault(); placeClaymore(); });
 
-    // Touch Aiming & Look Pad
     let lastTouchX = null, lastTouchY = null;
     const lookPad = $('look-pad');
     lookPad.addEventListener('touchstart', e => {
@@ -842,7 +853,6 @@
     });
     lookPad.addEventListener('touchend', e => { e.preventDefault(); lastTouchX = lastTouchY = null; });
 
-    // Direct Tap-to-Interact
     window.addEventListener('touchstart', e => {
       if (!gameActive || isGameOver || !e.target.tagName.includes('CANVAS')) return;
       executeWeaponFireRaycast();

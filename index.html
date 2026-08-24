@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <title>Haunted Mansion Vault - Outbreak Edition</title>
+  <title>Haunted Mansion Vault - 4-Player Outbreak Edition</title>
   <style>
     body { margin: 0; background: #0c0806; color: #fff; font-family: monospace; overflow: hidden; width: 100vw; height: 100vh; }
     canvas { display: block; width: 100%; height: 100%; }
@@ -51,7 +51,7 @@
 <body>
   <div id="damage-overlay"></div>
 
-  <!-- Lobby Interface -->
+  <!-- Lobby Screen -->
   <div id="lobby-screen">
     <!-- View 1: Lobby Browser -->
     <div id="browser-view" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
@@ -73,7 +73,7 @@
 
   <!-- In-Game HUD -->
   <div id="gui">
-    <div id="stats">WASD + LOOK | KEYS 1-5 SWITCH | G THROW GRENADE | C PLACE CLAYMORE<br>SURVIVE THE HAUNTED OUTBREAK FROM ROUND 1!</div>
+    <div id="stats">WASD + LOOK | KEYS 1-5 SWITCH | G THROW GRENADE | C PLACE CLAYMORE<br>SURVIVE THE HAUNTED OUTBREAK TOGETHER!</div>
     <div id="score-board">CREDITS:<span id="score-val">500</span></div>
     <div id="team-hud"><b style="color:#d4af37;">SQUAD STATUS</b><div id="team-list-hud"></div></div>
     <div id="round-display">ROUND<span id="round-val">I</span></div>
@@ -94,7 +94,7 @@
   <script>
     const socket = io();
     let myLobbyId = null, mySlotNumber = null, myColor = null, isHost = false, gameActive = false;
-    const remotePlayers = {}; // slotNumber -> { mesh, data }
+    const remotePlayers = {};
 
     const $ = i => document.getElementById(i), T = THREE, V3 = T.Vector3, BG = (w,h,d)=>new T.BoxGeometry(w,h,d), CG = (rt,rb,h,s=16)=>new T.CylinderGeometry(rt,rb,h,s), PG = (w,h)=>new T.PlaneGeometry(w,h), SG = (r,s=16,p=16)=>new T.SphereGeometry(r,s,p), SM = m=>new T.MeshStandardMaterial(m), BM = m=>new T.MeshBasicMaterial(m), GRP = ()=>new T.Group();
     const MESH = (g,m,x=0,y=0,z=0,rx=0,ry=0)=>{ let o=new T.Mesh(g,m); o.position.set(x,y,z); if(rx)o.rotation.x=rx; if(ry)o.rotation.y=ry; return o; };
@@ -429,11 +429,20 @@
       const ag=GRP(),ls=MESH(BG(0.25,0.25,0.8),ct,-0.65,0.7,0.4);ls.userData={hitBoxPart:"limbs"};let lf=MESH(BG(0.22,0.22,0.8),sm,-0.65,0.7,1.1);lf.userData={hitBoxPart:"limbs"};let rs=MESH(BG(0.25,0.25,0.8),ct,0.65,0.7,0.4);rs.userData={hitBoxPart:"limbs"};let rf=MESH(BG(0.22,0.22,0.8),sm,0.65,0.7,1.1);rf.userData={hitBoxPart:"limbs"};ag.add(ls,lf,rs,rf);ag.visible=false;zg.add(ag);
       return {group:zg,head:hg,body:bg,arms:ag};
     }
-
     function rebuildZombieHitboxes(){zombieInteractiveMeshes.length=0;activeZombies.forEach((zb,idx)=>{if(!zb.deadAndShrinking&&zb.stage>0){zb.meshParts.group.traverse(c=>{if(c.isMesh&&c.visible&&!c.userData.isCrater){c.userData.parentZombieIndex=idx;c.userData.materialType="flesh";zombieInteractiveMeshes.push(c)}})}})}
+    
     function spawnZombieAtBurrow(){
       if(zombiesToSpawnRemaining<=0||isGameOver)return;
-      let av=allBurrowHoles.filter(h=>{if(!unlockedDoors[0])return h.globalZ>-25;if(!unlockedDoors[1])return h.globalZ>-65;if(!unlockedDoors[2])return h.globalZ>-215;if(!unlockedDoors[3])return h.globalZ>-255;return true});
+      let playerInBasement = (playerRig.position.y < -40);
+      let av=allBurrowHoles.filter(h=>{
+        if(!playerInBasement && h.globalY < -40) return false;
+        if(playerInBasement && h.globalY > -40) return false;
+        if(!unlockedDoors[0])return h.globalZ>-25;
+        if(!unlockedDoors[1])return h.globalZ>-65;
+        if(!unlockedDoors[2])return h.globalZ>-215;
+        if(!unlockedDoors[3])return h.globalZ>-255;
+        return true;
+      });
       if(!av.length)return;const th=av[Math.floor(Math.random()*av.length)];if(th.dirtCount>0){clearHoleDirtLayer(allBurrowHoles.indexOf(th));return}
       const zd=createZombieMesh();zd.group.position.set(th.globalX,th.globalY,th.globalZ);scene.add(zd.group);
       activeZombies.push({meshParts:zd,speed:0.05+0.11*(currentRound/(currentRound+35))+Math.random()*0.02,stage:3,emergenceStage:0,stageProgress:0,baseY:th.globalY,deadAndShrinking:false,lastAttackTime:0});
@@ -453,7 +462,6 @@
       playExplosionSound();const l=new T.PointLight(0xff5500,8,r*2);l.position.copy(pos);scene.add(l);setTimeout(()=>scene.remove(l),150);const rg=MESH(new T.RingGeometry(0.1,r,16),BM({color:0xff3300,side:T.DoubleSide}),pos.x,pos.y+0.1,pos.z,Math.PI/2);scene.add(rg);setTimeout(()=>scene.remove(rg),250);let k=false;
       activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(pos)<=r){setZombieStage(z,z.stage-dmg);if(z.deadAndShrinking){addPoints(10);k=true}}});if(k){rebuildZombieHitboxes();checkRoundEnd()}
     }
-
     function getConstrainedPosition(p){
       let x=p.x,z=p.z;if(!unlockedDoors[0]&&z<-23)z=-23;if(!unlockedDoors[1]&&z<-63)z=-63;if(!unlockedDoors[2]&&z<-213)z=-213;if(!unlockedDoors[3]&&z<-254)z=-254;
       if(p.y<-40){p.x=Math.max(-115,Math.min(115,x));p.z=Math.max(-445,Math.min(-215,z));return p}
@@ -464,7 +472,6 @@
       else if(z<=-255&&z>=-405){x=Math.max(-73.5,Math.min(73.5,x));if(z>-256.5&&(x<-4.5||x>4.5))z=-256.5;if(z<-403.5)z=-403.5;z=Math.max(-405,Math.min(-255,z))}
       p.x=x;p.z=z;return p;
     }
-
     function updateZombies(now){
       if(isGameOver)return;let chg=false;
       for(let i=activeZombies.length-1;i>=0;i--){
@@ -483,8 +490,17 @@
           let d=new V3().subVectors(tgt,zp);d.y=0;d.normalize();
           let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
         }
-        let fz=new V3(parts.group.position.x,playerRig.position.y,parts.group.position.z);
-        if(fz.distanceTo(playerRig.position)<2.5&&zb.emergenceStage===3&&now-zb.lastAttackTime>1500){playZombieBiteSound();damagePlayer();zb.lastAttackTime=now}
+        
+        let flatZombiePos = new V3(parts.group.position.x, playerRig.position.y, parts.group.position.z);
+        let distPlanar = flatZombiePos.distanceTo(playerRig.position);
+        let sameFloor = Math.abs(parts.group.position.y - playerRig.position.y) < 5.0;
+
+        if(distPlanar < 2.5 && sameFloor && zb.emergenceStage === 3 && now - zb.lastAttackTime > 1500){
+          playZombieBiteSound();
+          damagePlayer();
+          zb.lastAttackTime = now;
+        }
+
         if(robotMercState.active&&zb.emergenceStage===3&&!zb.deadAndShrinking){
           let gr=120+robotMercState.level*25,dr=parts.group.position.distanceTo(machineGroup.position);
           if(dr<gr){
@@ -732,7 +748,7 @@
       else if(playerRig.position.y>-5){playerRig.position.y+=(3-playerRig.position.y)*0.1;scene.background=defaultBG}
       simulateStickmanMatch(t);
 
-      // Relay position to squad
+      // 30 Hz position broadcast
       if(now - lastNetSendTime > 33){
         lastNetSendTime = now;
         socket.emit('player_update', {

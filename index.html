@@ -15,8 +15,7 @@
     #score-board { position: absolute; top: 6px; right: 8px; font-size: 13px; font-weight: 700; background: #140d0a; color: #fa0; padding: 4px 10px; border: 2px solid #8b5a2b; pointer-events: auto; }
     #team-hud { position: absolute; top: 44px; right: 8px; background: rgba(20,13,10,0.85); border: 1px solid #8b5a2b; padding: 4px 6px; font-size: 10px; line-height: 1.3; }
     
-    /* Round display safely tucked away at bottom-left, clear of movement pad */
-    #round-display { position: absolute; bottom: 8px; left: 135px; font-size: 26px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; pointer-events: none; }
+    #round-display { position: absolute; bottom: 15px; left: 16px; font-size: 32px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; }
     #msg-box { position: absolute; top: 85px; width: 100%; text-align: center; left: 0; pointer-events: none; }
     #text { display: inline-block; background: rgba(35,24,18,.95); color: #f0e0d0; border: 2px solid #8b5a2b; padding: 4px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,.5); max-width: 90vw; }
     
@@ -34,20 +33,17 @@
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
     
-    /* Compact D-Pad positioned safely above bottom edge */
-    #dpad { position: absolute; bottom: 42px; left: 10px; width: 115px; height: 115px; }
-    .dpad-btn { position: absolute; width: 36px; height: 36px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 6px; color: #d4af37; font-size: 15px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(0,0,0,0.5); }
-    #dpad-up { top: 0; left: 39.5px; }
-    #dpad-down { bottom: 0; left: 39.5px; }
-    #dpad-left-dir { top: 39.5px; left: 0; }
-    #dpad-right-dir { top: 39.5px; right: 0; }
+    #dpad { position: absolute; bottom: 65px; left: 20px; width: 120px; height: 120px; }
+    .dpad-btn { position: absolute; width: 40px; height: 40px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 8px; color: #d4af37; font-size: 18px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #dpad-up { top: 0; left: 40px; }
+    #dpad-down { bottom: 0; left: 40px; }
+    #dpad-left { top: 40px; left: 0; }
+    #dpad-right { top: 40px; right: 0; }
 
-    .core-icon-btn { position: absolute; top: 39.5px; width: 19px; height: 36px; background: rgba(50,35,25,0.95); border: 1.5px solid #fa0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.6); z-index: 5; }
-    #btn-nade { left: 39.5px; border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
-    #btn-clay { left: 58.5px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
-
-    /* Wide and short Look-Pad */
-    #look-pad { position: absolute; bottom: 12px; right: 10px; left: 130px; height: 22vh; background: rgba(212,175,55,0.06); border: 2px dashed rgba(212,175,55,0.3); border-radius: 10px; touch-action: none; }
+    #look-pad { position: absolute; bottom: 15px; right: 15px; width: 44vw; height: 20vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 12px; touch-action: none; }
+    
+    #btn-nade { position: absolute; bottom: 25px; right: calc(44vw + 25px); width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #btn-clay { position: absolute; bottom: 72px; right: calc(44vw + 25px); width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
     #weapon-bar { position: absolute; top: 40px; left: 8px; display: flex; gap: 3px; pointer-events: auto; }
     .w-btn { width: 28px; height: 28px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; }
@@ -115,7 +111,7 @@
   </div>
 
   <div id="gui">
-    <div id="stats">D-PAD | LOOK PAD | TAP TO SHOOT</div>
+    <div id="stats">D-PAD | SWIPE LOOK | TAP TO SHOOT/FILL HOLES</div>
     <div id="score-board">CREDITS:<span id="score-val">500</span></div>
     <div id="team-hud"><b style="color:#d4af37;">SQUAD</b><div id="team-list-hud"></div></div>
     <div id="round-display">ROUND<span id="round-val">I</span></div>
@@ -127,23 +123,14 @@
     <div id="dpad" class="touch-interactive">
       <div class="dpad-btn" id="dpad-up">▲</div>
       <div class="dpad-btn" id="dpad-down">▼</div>
-      <div class="dpad-btn" id="dpad-left-dir">◀</div>
-      <div class="dpad-btn" id="dpad-right-dir">▶</div>
-
-      <div id="btn-nade" class="touch-interactive core-icon-btn" title="Frag Grenade">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="#fa0">
-          <path d="M12 2C10.34 2 9 3.34 9 5V6H7C5.9 6 5 6.9 5 8V10C5 11.1 5.9 12 7 12H8V18C8 19.66 9.34 21 11 21H13C14.66 21 16 19.66 16 18V12H17C18.1 12 19 11.1 19 10V8C19 6.9 18.1 6 17 6H15V5C15 3.34 13.66 2 12 2M11 4H13V6H11V4Z"/>
-        </svg>
-      </div>
-
-      <div id="btn-clay" class="touch-interactive core-icon-btn" title="Claymore Mine">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="#fa0">
-          <path d="M2 18H22V20H2V18M4 6H20L22 16H2L4 6M11 2H13V5H11V2Z"/>
-        </svg>
-      </div>
+      <div class="dpad-btn" id="dpad-left">◀</div>
+      <div class="dpad-btn" id="dpad-right">▶</div>
     </div>
 
     <div id="look-pad" class="touch-interactive"></div>
+
+    <button id="btn-nade" class="touch-interactive">NADE</button>
+    <button id="btn-clay" class="touch-interactive">MINE</button>
 
     <div id="weapon-bar" class="touch-interactive">
       <div class="w-btn" onclick="switchWeapon(1)">1</div>
@@ -177,10 +164,6 @@
     const jugCtx=$('jugCanvas').getContext('2d'), jugTex=new T.CanvasTexture($('jugCanvas')), qrCtx=$('quickReviveCanvas').getContext('2d'), qrTex=new T.CanvasTexture($('quickReviveCanvas')), dtCtx=$('doubleTapCanvas').getContext('2d'), dtTex=new T.CanvasTexture($('doubleTapCanvas')), suCtx=$('staminUpCanvas').getContext('2d'), suTex=new T.CanvasTexture($('staminUpCanvas'));
 
     const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-
-    socket.on('grant_points', amt => {
-      addPoints(amt);
-    });
 
     $('btn-single-player').onclick = () => {
       window.location.href = "https://zombies-3az2.onrender.com";
@@ -310,22 +293,17 @@
 
     function updateTacticalHUD(){
       let cur=ammoReserves[currentWeapon],max=getWeaponStat(currentWeapon,'maxAmmo'),pct=Math.max(0,Math.min(1,cur/max)),lvl=weaponUpgradeLevels[currentWeapon],c=tacticalCtx;
-      c.fillStyle='#21140e';c.fillRect(0,0,512,512);c.strokeStyle=currentWeapon===5?'#0ff':(lvl>0?'#fa0':'#b8860b');c.lineWidth=12;c.strokeRect(10,10,492,492);
-      
-      c.fillStyle='#ffd700';c.font='bold 28px monospace';c.textAlign='center';c.fillText("TACTICAL AMMO",256,52);
-      c.fillStyle='#fff';c.font='900 110px monospace';c.fillText(cur<10?`00${cur}`:(cur<100?`0${cur}`:`${cur}`),190,175);
-      c.font='bold 36px monospace';c.fillStyle='#b8860b';c.textAlign='left';c.fillText(`/${max}`,360,165);
-      
-      c.fillStyle=lvl>0?'#fa0':'#ffd700';c.font='bold 26px monospace';c.textAlign='center';c.fillText(lvl>0?`LVL ${toRoman(lvl)}`:'STANDARD ISSUE',256,220);
-      
-      c.fillStyle='#3a2418';c.fillRect(60,245,392,30);
-      c.fillStyle=pct<=0.15?'#f22':(pct<=0.35?'#f80':'#fa0');c.fillRect(64,249,Math.max(0,384*pct),22);
-
-      if(hasQuickRevive){c.fillStyle='#00a8ff';c.font='bold 18px monospace';c.textAlign='left';c.fillText("QUICK REVIVE SHIELD",60,305);c.fillStyle='#3a2418';c.fillRect(60,315,392,18);c.fillStyle='#00a8ff';c.fillRect(64,318,Math.max(0,384*(quickReviveShield/2)),12)}
-      
-      [{name:"JUG",active:hasJuggerNog,color:"#f22"},{name:"REV",active:hasQuickRevive,color:"#00a8ff"},{name:"DT2",active:hasDoubleTap,color:"#fa0"},{name:"STA",active:hasStaminUp,color:"#ff0"}].forEach((p,idx)=>{let bx=60+idx*98,by=355;c.fillStyle=p.active?p.color:'#3a2418';c.fillRect(bx,by,90,26);c.strokeStyle=p.active?'#fff':'#6b4c35';c.lineWidth=2;c.strokeRect(bx,by,90,26);c.fillStyle=p.active?'#000':'#b8860b';c.font='bold 14px monospace';c.textAlign='center';c.fillText(p.name,bx+45,by+18)});
-      
-      c.fillStyle=playerBites>=maxBites?'#f05':'#ffd700';c.font='bold 16px monospace';c.textAlign='center';c.fillText(`HEALTH: ${maxBites-playerBites}/${maxBites} BITES`,256,430);
+      c.fillStyle='#21140e';c.fillRect(0,0,512,512);c.strokeStyle=currentWeapon===5?'#0ff':(lvl>0?'#fa0':'#b8860b');c.lineWidth=12;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 22px monospace';c.textAlign='left';c.fillText("AMMO",30,42);c.fillStyle='#fff';c.font='900 76px monospace';c.fillText(cur<10?`00${cur}`:(cur<100?`0${cur}`:`${cur}`),30,110);c.font='bold 30px monospace';c.textAlign='right';c.fillStyle=lvl>0?'#fa0':'#ffd700';c.fillText(lvl>0?`LVL ${toRoman(lvl)}`:'STD',482,65);c.fillStyle='#b8860b';c.fillText(`/${max}`,482,105);c.fillStyle='#3a2418';c.fillRect(30,135,452,26);c.fillStyle=pct<=0.15?'#f22':(pct<=0.35?'#f80':'#fa0');c.fillRect(34,139,Math.max(0,444*pct),18);
+      if(hasQuickRevive){c.fillStyle='#00a8ff';c.font='bold 18px monospace';c.textAlign='left';c.fillText("QUICK REVIVE SHIELD",30,185);c.fillStyle='#3a2418';c.fillRect(30,195,452,18);c.fillStyle='#00a8ff';c.fillRect(34,198,Math.max(0,444*(quickReviveShield/2)),12)}
+      c.strokeStyle='#5a3d28';c.lineWidth=4;c.beginPath();c.moveTo(30,230);c.lineTo(482,230);c.stroke();c.fillStyle='#ffd700';c.font='bold 22px monospace';c.fillText(`GRENADES (LVL ${toRoman(grenadeUpgradeLevel+1)})`,30,265);
+      for(let i=0;i<2;i++){let gx=40+i*55,gy=285;c.fillStyle=i<grenadeCount?'#f50':'#443322';c.beginPath();c.arc(gx+15,gy+22,14,0,Math.PI*2);c.fill();c.fillRect(gx+10,gy+3,10,8)}
+      c.fillStyle='#ffd700';c.fillText(`CLAYMORES (LVL ${toRoman(claymoreUpgradeLevel+1)})`,260,265);
+      for(let i=0;i<2;i++){let cx=270+i*75,cy=290;c.fillStyle=i<claymoreCount?'#fa0':'#554422';c.beginPath();c.moveTo(cx,cy+18);c.lineTo(cx+45,cy+18);c.lineTo(cx+38,cy);c.lineTo(cx+7,cy);c.closePath();c.fill()}
+      c.strokeStyle='#5a3d28';c.beginPath();c.moveTo(30,340);c.lineTo(482,340);c.stroke();
+      [{name:"JUG",active:hasJuggerNog,color:"#f22"},{name:"REV",active:hasQuickRevive,color:"#00a8ff"},{name:"DT2",active:hasDoubleTap,color:"#fa0"},{name:"STA",active:hasStaminUp,color:"#ff0"}].forEach((p,idx)=>{let bx=30+idx*115,by=378;c.fillStyle=p.active?p.color:'#3a2418';c.fillRect(bx,by,100,28);c.strokeStyle=p.active?'#fff':'#6b4c35';c.lineWidth=2;c.strokeRect(bx,by,100,28);c.fillStyle=p.active?'#000':'#b8860b';c.font='bold 16px monospace';c.textAlign='center';c.fillText(p.name,bx+50,by+19)});
+      c.fillStyle=playerBites>=maxBites?'#f05':'#ffd700';c.font='bold 18px monospace';c.textAlign='left';c.fillText(`HEALTH (${maxBites-playerBites}/${maxBites} BITES)`,30,440);
+      let ah=Math.max(0,maxBites-playerBites);
+      for(let i=0;i<maxBites;i++){let hx=30+i*(420/maxBites),hy=450,x=hx+15,y=hy+12;c.fillStyle=i<ah?'#f05':'#44222a';c.beginPath();c.moveTo(x,y);c.bezierCurveTo(x,y-6,x-15,y-15,x-15,y-3);c.bezierCurveTo(x-15,y+9,x,y+18,x,y+24);c.bezierCurveTo(x,y+18,x+15,y+9,x+15,y-3);c.bezierCurveTo(x+15,y-15,x,y-6,x,y);c.fill()}
       gunTacticalTexture.needsUpdate=true;
     }
     function updateEquipmentUI(){updateTacticalHUD()}
@@ -520,7 +498,7 @@
     machineGroup.add(createAwesomeGuns());machineGroup.add(MESH(BG(2.3,0.35,1.9),BM({color:0x8b0000}),0,4.5,0));
     const arcadeScreenTexture=new T.CanvasTexture(sCanvas);chassis.add(MESH(PG(1.6,1.6),BM({map:arcadeScreenTexture}),0,0.1,0.91));
 
-    let robotAIState={status:'roam',target:new V3(0,0,0),speed:0.08};function getNewUpperLevelTarget(){return new V3((Math.random()-0.5)*30,0,-100+(Math.random()-0.5)*80)}
+    let robotAIState={status:'roam',target:new V3(0,0,0),speed:0.12};function getNewUpperLevelTarget(){return new V3((Math.random()-0.5)*30,0,-100+(Math.random()-0.5)*80)}
     robotAIState.target=getNewUpperLevelTarget();let elevatorActive=false,elevatorProgress=0,elevatorDirection=1;
 
     const allBurrowHoles=[],holeInteractiveMeshes=[],dirtMaterial=SM({color:0x3a2418,roughness:0.9}),pitVoidMaterial=BM({color:0x080402});
@@ -646,21 +624,6 @@
       }
     });
 
-    socket.on('host_apply_zombie_hit', data => {
-      if (!isHost) return;
-      const tz = activeZombies[data.zombieIndex];
-      if (tz && !tz.deadAndShrinking) {
-        setZombieStage(tz, tz.stage - data.damage);
-        if (tz.deadAndShrinking) {
-          socket.emit('award_points', { socketId: data.shooterId, amount: data.isHeadshot ? 20 : 10 });
-          rebuildZombieHitboxes();
-          checkRoundEnd();
-        } else {
-          socket.emit('award_points', { socketId: data.shooterId, amount: 10 });
-        }
-      }
-    });
-
     socket.on('client_mystery_box_sync', data => {
       mysteryBoxActive = data.active;
       mysteryBoxReadyToCollect = data.readyToCollect;
@@ -752,8 +715,7 @@
           else if(zp.z<-215&&zp.z>-255&&tgt.z<-255)tgt.set(0,zp.y,-255);
 
           let d=new V3().subVectors(tgt,zp);d.y=0;d.normalize();
-          let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));
-          parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
+          let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
 
           let flatZombiePos = new V3(parts.group.position.x, nearestPlayer.pos.y, parts.group.position.z);
           if(flatZombiePos.distanceTo(nearestPlayer.pos) < 2.5 && Math.abs(parts.group.position.y - nearestPlayer.pos.y) < 5.0 && zb.emergenceStage === 3 && now - zb.lastAttackTime > 1500){
@@ -836,20 +798,10 @@
         let td=dh[0].object,di=td.userData.doorIndex;
         if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
       }
-      
       let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
-      let upgHit = raycaster.intersectObjects(upgradeMachineGroup.children,true);
-      if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
-        if(!upgradeMachineActive&&!upgradeMachineReadyToCollect){
-          let cost=500+weaponUpgradeLevels[currentWeapon]*250;
-          if(playerPoints>=cost){
-            playerPoints-=cost;$('score-val').innerText=playerPoints;upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;
-            fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
-          }else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`;
-        }
-        return;
+      if(raycaster.intersectObjects(upgradeMachineGroup.children,true).length>0&&playerRig.position.distanceTo(mwPos)<15){
+        if(!upgradeMachineActive&&!upgradeMachineReadyToCollect){let cost=500+weaponUpgradeLevels[currentWeapon]*250;if(playerPoints>=cost){playerPoints-=cost;$('score-val').innerText=playerPoints;upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY."}else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`}return;
       }
-
       if(mysteryBoxReadyToCollect){
         let bwPos=new V3();mysteryBoxGroup.getWorldPosition(bwPos);
         if((raycaster.intersectObjects(boxWeaponHolo.children,true).length>0||raycaster.intersectObjects(mysteryBoxGroup.children).length>0)&&playerRig.position.distanceTo(bwPos)<15){
@@ -865,21 +817,15 @@
       if(raycaster.intersectObjects(mysteryBoxGroup.children).length>0&&playerRig.position.distanceTo(bwCheck)<15){
         if(!mysteryBoxActive&&!mysteryBoxReadyToCollect){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;mysteryBoxActive=true;mysteryBoxTimer=0;txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS..."}else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS."}return;
       }
-      
-      let hbHit = raycaster.intersectObjects([hiddenButtonMesh]);
-      if(hbHit.length>0 && playerRig.position.distanceTo(hiddenButtonMesh.position)<15){
-        if(!secretPermanentlyOpen){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;secretPermanentlyOpen=true;secretActive=true;txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN."}else txtDiv.innerHTML="CRYPT LOCK REQUIRES 350 CREDITS.";}
-        return;
+      if(raycaster.intersectObjects([hiddenButtonMesh]).length>0&&playerRig.position.distanceTo(hiddenButtonMesh.position)<15){
+        if(!secretPermanentlyOpen){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;secretPermanentlyOpen=true;secretActive=true;txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN."}else txtDiv.innerHTML="CRYPT LOCK REQUIRES 350 CREDITS."}return;
       }
       if(secretPermanentlyOpen){
         let bwP=new V3();pButton.getWorldPosition(bwP);
-        let pBtnHit = raycaster.intersectObjects([pButton]);
-        if(pBtnHit.length>0 && playerRig.position.distanceTo(bwP)<15){
-          if(elevatorActive)return;if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;elevatorActive=true;elevatorDirection=(elevatorProgress>=0.5)?1:-1;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);txtDiv.innerHTML="DESCENDING CRYPT LIFT! COST: 350 CREDITS."}else txtDiv.innerHTML="LIFT TOLL: 350 CREDITS.";
-          return;
+        if(raycaster.intersectObjects([pButton]).length>0&&playerRig.position.distanceTo(bwP)<15){
+          if(elevatorActive)return;if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;elevatorActive=true;elevatorDirection=(elevatorProgress>=0.5)?1:-1;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);txtDiv.innerHTML="DESCENDING CRYPT LIFT! COST: 350 CREDITS."}else txtDiv.innerHTML="LIFT TOLL: 350 CREDITS.";return;
         }
       }
-
       let wbh=raycaster.intersectObjects(wallBuyInteractiveObjects,true);
       if(wbh.length>0&&wbh[0].distance<8){
         let ct=wbh[0].object.userData.materialType;
@@ -900,14 +846,8 @@
         if (isHost) {
           if(tz&&!tz.deadAndShrinking){
             setZombieStage(tz,tz.stage-zDmg);
-            if(tz.deadAndShrinking){
-              addPoints(isH?20:10);
-              txtDiv.innerHTML=isH?"CRITICAL HEADSHOT KILL! +20 CREDITS":"TARGET BANISHED! +10 CREDITS";
-              rebuildZombieHitboxes();checkRoundEnd();
-            } else {
-              addPoints(10);
-              txtDiv.innerHTML=isH?"HEADSHOT HIT! -3 STAGES! +20 CREDITS":"HIT REGISTERED! STAGE REDUCED. +10 CREDITS";
-            }
+            if(tz.deadAndShrinking){addPoints(isH?20:10);txtDiv.innerHTML=isH?"CRITICAL HEADSHOT KILL! +20 CREDITS":"TARGET BANISHED! +10 CREDITS";rebuildZombieHitboxes();checkRoundEnd()}
+            else txtDiv.innerHTML=isH?"HEADSHOT HIT! -3 STAGES! +20 CREDITS":"HIT REGISTERED! STAGE REDUCED. +10 CREDITS";
           }
         } else {
           socket.emit('zombie_hit', {
@@ -1017,33 +957,21 @@
     
     const keys={w:0,a:0,s:0,d:0,shift:0};
 
-    function setupTouchButton(id, keyName, isAction = false, actionFunc = null) {
+    function setupTouchButton(id, keyName) {
       const el = $(id);
-      el.addEventListener('touchstart', e => {
-        e.preventDefault();
-        if (isAction && actionFunc) {
-          actionFunc();
-        } else {
-          keys[keyName] = 1;
-        }
-      });
-      el.addEventListener('touchend', e => {
-        e.preventDefault();
-        if (!isAction) {
-          keys[keyName] = 0;
-        }
-      });
+      el.addEventListener('touchstart', e => { e.preventDefault(); keys[keyName] = 1; });
+      el.addEventListener('touchend', e => { e.preventDefault(); keys[keyName] = 0; });
     }
-
     setupTouchButton('dpad-up', 'w');
     setupTouchButton('dpad-down', 's');
-    setupTouchButton('dpad-left-dir', 'a');
-    setupTouchButton('dpad-right-dir', 'd');
-    setupTouchButton('btn-nade', null, true, throwGrenade);
-    setupTouchButton('btn-clay', null, true, placeClaymore);
+    setupTouchButton('dpad-left', 'a');
+    setupTouchButton('dpad-right', 'd');
 
     window.addEventListener('keydown',e=>{if(isGameOver)return;if(e.code==='KeyW')keys.w=1;if(e.code==='KeyS')keys.s=1;if(e.code==='KeyA')keys.a=1;if(e.code==='KeyD')keys.d=1;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=1;if(e.code==='Digit1')switchWeapon(1);if(e.code==='Digit2')switchWeapon(2);if(e.code==='Digit3')switchWeapon(3);if(e.code==='Digit4')switchWeapon(4);if(e.code==='Digit5')switchWeapon(5);if(e.code==='KeyG')throwGrenade();if(e.code==='KeyC')placeClaymore()});
     window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=0;if(e.code==='KeyS')keys.s=0;if(e.code==='KeyA')keys.a=0;if(e.code==='KeyD')keys.d=0;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=0});
+
+    $('btn-nade').addEventListener('touchstart', e => { e.preventDefault(); throwGrenade(); });
+    $('btn-clay').addEventListener('touchstart', e => { e.preventDefault(); placeClaymore(); });
 
     let lookTouchId = null;
     let lastTouchX = null, lastTouchY = null;
@@ -1126,81 +1054,23 @@
       for(let i=activeGrenades.length-1;i>=0;i--){let n=activeGrenades[i];n.fuse-=0.016;n.velocity.y-=0.015;n.mesh.position.add(n.velocity);let fb=(playerRig.position.y<-45)?-79.8:0;if(n.mesh.position.y<=fb+0.2){n.mesh.position.y=fb+0.2;n.velocity.set(0,0,0)}if(n.fuse<=0){triggerExplosion(n.mesh.position,8.5+grenadeUpgradeLevel*2,3+grenadeUpgradeLevel);scene.remove(n.mesh);activeGrenades.splice(i,1)}}
       activeClaymores.forEach((c,idx)=>{activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(c.position)<4){triggerExplosion(c.position,7.5+claymoreUpgradeLevel*2,3+claymoreUpgradeLevel);scene.remove(c.group);activeClaymores.splice(idx,1)}})});
       upgReactorRing.rotation.x+=0.05;
-      
-      if(!isHost){
-        if(upgradeMachineActive){upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.12;upgHoloWeapon.position.y=4.2+(upgradeMachineTimer/3)*0.8;}
-        else if(upgradeMachineReadyToCollect){upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.02;upgHoloWeapon.position.y=4.8+Math.sin(upgradeMachineTimer*4)*0.15;}
-        if(mysteryBoxActive){mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.08;}
-        else if(mysteryBoxReadyToCollect){mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.03;boxWeaponHolo.position.y=3.5+Math.sin(mysteryBoxTimer*3)*0.15;}
+      if(upgradeMachineActive){upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.12;upgHoloWeapon.position.y=4.2+(upgradeMachineTimer/3)*0.8;if(upgradeMachineTimer>=3){upgradeMachineActive=false;upgradeMachineReadyToCollect=true;upgradeMachineTimer=0;upgHoloWeapon.position.set(0,4.8,0)}}
+      else if(upgradeMachineReadyToCollect){upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.02;upgHoloWeapon.position.y=4.8+Math.sin(upgradeMachineTimer*4)*0.15;if(playerRig.position.distanceTo(upgradeMachineGroup.position)<8||upgradeMachineTimer>1){upgradeMachineReadyToCollect=false;while(upgHoloWeapon.children.length>0)upgHoloWeapon.remove(upgHoloWeapon.children[0]);weaponUpgradeLevels[upgradeMachineWeaponSlot]++;ammoReserves[upgradeMachineWeaponSlot]=getWeaponStat(upgradeMachineWeaponSlot,'maxAmmo');switchWeapon(upgradeMachineWeaponSlot);playMysteryBoxSound();txtDiv.innerHTML=`${baseWeaponData[upgradeMachineWeaponSlot].name} AUTO-BLESSED TO LVL ${toRoman(weaponUpgradeLevels[upgradeMachineWeaponSlot])}!`}}
+      else if(!gunMeshGroup.visible&&!upgradeMachineActive&&!upgradeMachineReadyToCollect){let alt=1;if(hasRayPistol&&upgradeMachineWeaponSlot!==5)alt=5;else if(hasAutoRifle&&upgradeMachineWeaponSlot!==4)alt=4;else if(hasRifle&&upgradeMachineWeaponSlot!==3)alt=3;else if(hasAutomaticPistol&&upgradeMachineWeaponSlot!==2)alt=2;gunMeshGroup.visible=true;switchWeapon(alt)}
+      if(mysteryBoxActive){
+        mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.08;let rpn=["PISTOL","AUTO PISTOL","HEAVY SHOTGUN","AUTOMATIC RIFLE","RAY PISTOL","FRAG GRENADES","CLAYMORE MINE","ROBOT GOODY UPGRADE"],rpi=[1,2,3,4,5,6,7,8];
+        if(mysteryBoxTimer<2.5){if(Math.floor(mysteryBoxTimer*15)%2===0){let ri=Math.floor(Math.random()*rpn.length);mysteryBoxCyclingReward=rpn[ri];mysteryBoxRewardType=rpi[ri];fillHoloGroupWithRewardModel(boxWeaponHolo,mysteryBoxRewardType)}}
+        else{
+          mysteryBoxActive=false;mysteryBoxReadyToCollect=true;mysteryBoxTimer=0;mysteryBoxUsesCount++;let fr=Math.random(),fi=fr<0.1?4:(fr<0.35?Math.floor(Math.random()*4):(fr<0.7?5:(fr<0.9?6:7)));
+          mysteryBoxCyclingReward=rpn[fi];mysteryBoxRewardType=rpi[fi];fillHoloGroupWithWeaponModel(boxWeaponHolo,mysteryBoxRewardType);
+          let sbn=mysteryBoxCyclingReward;if(mysteryBoxRewardType>=1&&mysteryBoxRewardType<=5)sbn+=` [LVL ${toRoman(weaponUpgradeLevels[mysteryBoxRewardType]+1)}]`;
+          txtDiv.innerHTML=`CURSED CHEST UNLOCKED: ${sbn}! CLICK TO CLAIM.`;
+          if(mysteryBoxUsesCount>=4+Math.floor(Math.random()*3)){mysteryBoxUsesCount=0;mysteryBoxCurrentRoom=(mysteryBoxCurrentRoom+1)%boxRoomLocations.length;mysteryBoxGroup.position.copy(boxRoomLocations[mysteryBoxCurrentRoom].pos);updateMapHologramSign();txtDiv.innerHTML=`CHEST SHIFTED TO ${boxRoomLocations[mysteryBoxCurrentRoom].name}! CHECK MAP.`}
+        }
+      }else if(mysteryBoxReadyToCollect){
+        mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.03;boxWeaponHolo.position.y=3.5+Math.sin(mysteryBoxTimer*3)*0.15;
+        if(mysteryBoxTimer>=8){mysteryBoxFadeAlpha=Math.max(0,mysteryBoxFadeAlpha-0.016);if(mysteryBoxTimer>=10){mysteryBoxReadyToCollect=false;mysteryBoxTimer=0;mysteryBoxFadeAlpha=1;while(boxWeaponHolo.children.length>0)boxWeaponHolo.remove(boxWeaponHolo.children[0]);txtDiv.innerHTML="RELIC FADED BACK INTO THE SHADOWS..."}}
       }
-
-      if(isHost){
-        if(upgradeMachineActive){
-          upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.12;upgHoloWeapon.position.y=4.2+(upgradeMachineTimer/3)*0.8;
-          if(upgradeMachineTimer>=3){upgradeMachineActive=false;upgradeMachineReadyToCollect=true;upgradeMachineTimer=0;upgHoloWeapon.position.set(0,4.8,0)}
-        } else if(upgradeMachineReadyToCollect){
-          upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.02;upgHoloWeapon.position.y=4.8+Math.sin(upgradeMachineTimer*4)*0.15;
-          if(playerRig.position.distanceTo(upgradeMachineGroup.position)<8||upgradeMachineTimer>1){
-            upgradeMachineReadyToCollect=false;
-            while(upgHoloWeapon.children.length>0)upgHoloWeapon.remove(upgHoloWeapon.children[0]);
-            
-            weaponUpgradeLevels[upgradeMachineWeaponSlot]++;
-            ammoReserves[upgradeMachineWeaponSlot]=getWeaponStat(upgradeMachineWeaponSlot,'maxAmmo');
-            
-            gunMeshGroup.visible = true;
-            switchWeapon(upgradeMachineWeaponSlot);
-            
-            playMysteryBoxSound();
-            txtDiv.innerHTML=`${baseWeaponData[upgradeMachineWeaponSlot].name} AUTO-BLESSED TO LVL ${toRoman(weaponUpgradeLevels[upgradeMachineWeaponSlot])}!`;
-          }
-        }
-        if(mysteryBoxActive){
-          mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.08;let rpn=["PISTOL","AUTO PISTOL","HEAVY SHOTGUN","AUTOMATIC RIFLE","RAY PISTOL","FRAG GRENADES","CLAYMORE MINE","ROBOT GOODY UPGRADE"],rpi=[1,2,3,4,5,6,7,8];
-          if(mysteryBoxTimer<2.5){
-            if(Math.floor(mysteryBoxTimer*15)%2===0){let ri=Math.floor(Math.random()*rpn.length);mysteryBoxCyclingReward=rpn[ri];mysteryBoxRewardType=rpi[ri];fillHoloGroupWithRewardModel(boxWeaponHolo,mysteryBoxRewardType)}
-          } else {
-            mysteryBoxActive=false;mysteryBoxReadyToCollect=true;mysteryBoxTimer=0;mysteryBoxUsesCount++;let fr=Math.random(),fi=fr<0.1?4:(fr<0.35?Math.floor(Math.random()*4):(fr<0.7?5:(fr<0.9?6:7)));
-            mysteryBoxCyclingReward=rpn[fi];mysteryBoxRewardType=rpi[fi];fillHoloGroupWithWeaponModel(boxWeaponHolo,mysteryBoxRewardType);
-            let sbn=mysteryBoxCyclingReward;if(mysteryBoxRewardType>=1&&mysteryBoxRewardType<=5)sbn+=` [LVL ${toRoman(weaponUpgradeLevels[mysteryBoxRewardType]+1)}]`;
-            txtDiv.innerHTML=`CURSED CHEST UNLOCKED: ${sbn}! CLICK TO CLAIM.`;
-            if(mysteryBoxUsesCount>=4+Math.floor(Math.random()*3)){mysteryBoxUsesCount=0;mysteryBoxCurrentRoom=(mysteryBoxCurrentRoom+1)%boxRoomLocations.length;mysteryBoxGroup.position.copy(boxRoomLocations[mysteryBoxCurrentRoom].pos);updateMapHologramSign();txtDiv.innerHTML=`CHEST SHIFTED TO ${boxRoomLocations[mysteryBoxCurrentRoom].name}! CHECK MAP.`}
-          }
-        } else if(mysteryBoxReadyToCollect){
-          mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.03;boxWeaponHolo.position.y=3.5+Math.sin(mysteryBoxTimer*3)*0.15;
-          if(mysteryBoxTimer>=8){mysteryBoxFadeAlpha=Math.max(0,mysteryBoxFadeAlpha-0.016);if(mysteryBoxTimer>=10){mysteryBoxReadyToCollect=false;mysteryBoxTimer=0;mysteryBoxFadeAlpha=1;while(boxWeaponHolo.children.length>0)boxWeaponHolo.remove(boxWeaponHolo.children[0]);txtDiv.innerHTML="RELIC FADED BACK INTO THE SHADOWS..."}}
-        }
-        
-        if(now - lastNetSendTime > 33){
-          socket.emit('host_mystery_box_sync', {
-            active: mysteryBoxActive,
-            readyToCollect: mysteryBoxReadyToCollect,
-            timer: mysteryBoxTimer,
-            cyclingReward: mysteryBoxCyclingReward,
-            rewardType: mysteryBoxRewardType,
-            currentRoom: mysteryBoxCurrentRoom
-          });
-          socket.emit('host_upgrade_machine_sync', {
-            active: upgradeMachineActive,
-            readyToCollect: upgradeMachineReadyToCollect,
-            timer: upgradeMachineTimer,
-            weaponSlot: upgradeMachineWeaponSlot
-          });
-          socket.emit('host_elevator_sync', {
-            active: elevatorActive,
-            progress: elevatorProgress,
-            direction: elevatorDirection,
-            permanentlyOpen: secretPermanentlyOpen,
-            secretActive: secretActive
-          });
-          socket.emit('host_robot_sync', {
-            x: machineGroup.position.x,
-            y: machineGroup.position.y,
-            z: machineGroup.position.z,
-            yaw: machineGroup.rotation.y
-          });
-        }
-      }
-
       if(isHost&&roundActive&&zombiesToSpawnRemaining>0&&t-lastSpawnTime>spawnInterval){spawnZombieAtBurrow();lastSpawnTime=t}
       updateZombies(now);
       if(!robotMercState.isBeingOverrun){
@@ -1208,24 +1078,16 @@
           let tp=playerRig.position.clone().add(new V3(0,0,-15).applyQuaternion(playerRig.quaternion));tp.y=(playerRig.position.y<-40)?-79.8:0;
           let rd=new V3().subVectors(tp,machineGroup.position),nz=null,minD=120+robotMercState.level*25;
           activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.emergenceStage===3){let d=machineGroup.position.distanceTo(z.meshParts.group.position);if(d<minD){minD=d;nz=z}}});
-          if(nz){
-            let ld=new V3().subVectors(nz.meshParts.group.position,machineGroup.position);ld.y=0;ld.normalize();
-            machineGroup.rotation.y=Math.atan2(ld.x,ld.z);
-          }
+          if(nz){let ld=new V3().subVectors(nz.meshParts.group.position,machineGroup.position);ld.y=0;ld.normalize();machineGroup.rotation.y=Math.atan2(ld.x,ld.z)}
           else if(rd.length()>0.8){rd.normalize();machineGroup.position.addScaledVector(rd,0.45);machineGroup.rotation.y=Math.atan2(rd.x,rd.z);mainWheelMesh.rotation.x+=0.3}
           else machineGroup.rotation.y=playerYaw;
         }else{
           let diff=new V3().subVectors(robotAIState.target,machineGroup.position);
           if(diff.length()<1.5)robotAIState.target=getNewUpperLevelTarget();
-          else{diff.normalize();machineGroup.position.addScaledVector(diff,robotAIState.speed);machineGroup.rotation.y=Math.atan2(diff.x,diff.z);machineGroup.rotation.x=0;machineGroup.rotation.z=0;}
+          else{diff.normalize();machineGroup.position.addScaledVector(diff,robotAIState.speed);machineGroup.rotation.y=Math.atan2(diff.x,diff.z);mainWheelMesh.rotation.x+=0.1}
         }
       }
-      if(elevatorActive){
-        elevatorProgress=(elevatorDirection===-1)?Math.min(elevatorProgress+0.005,1):Math.max(elevatorProgress-0.005,0);
-        secretGalleryGroup.position.y=0.2-elevatorProgress*80;
-        if(playerRig.position.x>=-15&&playerRig.position.x<=15&&playerRig.position.z>=-345&&playerRig.position.z<=-315)playerRig.position.y=secretGalleryGroup.position.y+3;
-        if(elevatorProgress>=1||elevatorProgress<=0)elevatorActive=false;
-      }
+      if(elevatorActive){elevatorProgress=(elevatorDirection===-1)?Math.min(elevatorProgress+0.005,1):Math.max(elevatorProgress-0.005,0);secretGalleryGroup.position.y=0.2-elevatorProgress*80;if(playerRig.position.x>=-15&&playerRig.position.x<=15&&playerRig.position.z>=-345&&playerRig.position.z<=-315)playerRig.position.y=secretGalleryGroup.position.y+3;if(elevatorProgress>=1||elevatorProgress<=0)elevatorActive=false}
       chassis.position.y=3.6+Math.sin(t*0.01)*0.04;
       let mv=new V3(0,0,0);if(keys.w)mv.z-=1;if(keys.s)mv.z+=1;if(keys.a)mv.x-=1;if(keys.d)mv.x+=1;mv.normalize().applyQuaternion(playerRig.quaternion);mv.y=0;
       let ws=hasStaminUp?0.5:0.35;if(playerRig.position.z<-275&&playerRig.position.z>-385&&playerRig.position.x>-55&&playerRig.position.x<55&&!secretPermanentlyOpen&&playerRig.position.y<=3.5&&playerRig.position.y>-40)ws=0.12;

@@ -40,10 +40,13 @@
     #dpad-left { top: 40px; left: 0; }
     #dpad-right { top: 40px; right: 0; }
 
-    #look-pad { position: absolute; bottom: 15px; right: 15px; width: 44vw; height: 20vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 12px; touch-action: none; }
+    /* Expanded Wide Look Pad across the bottom-right and left-middle */
+    #look-pad { position: absolute; bottom: 15px; right: 15px; left: 155px; height: 34vh; background: rgba(212,175,55,0.06); border: 2px dashed rgba(212,175,55,0.3); border-radius: 12px; touch-action: none; }
     
-    #btn-nade { position: absolute; bottom: 25px; right: calc(44vw + 25px); width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-    #btn-clay { position: absolute; bottom: 72px; right: calc(44vw + 25px); width: 40px; height: 40px; border-radius: 8px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 8px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    /* Action Buttons (Nade & Mine) positioned strictly ABOVE the look pad */
+    .action-btn { position: absolute; bottom: calc(34vh + 25px); width: 42px; height: 42px; border-radius: 10px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #btn-nade { right: 75px; }
+    #btn-clay { right: 20px; }
 
     #weapon-bar { position: absolute; top: 40px; left: 8px; display: flex; gap: 3px; pointer-events: auto; }
     .w-btn { width: 28px; height: 28px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; }
@@ -302,7 +305,7 @@
       let c=boxScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=mysteryBoxReadyToCollect?'#fa0':'#b8860b';c.lineWidth=14;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("CURSED RELIC CHEST",256,48);c.fillStyle='#fff';c.font='900 48px monospace';c.fillText(mysteryBoxActive?"SUMMONING...":(mysteryBoxReadyToCollect?"CLAIM RELIC":"READY TO OPEN"),256,120);c.fillStyle='#140c08';c.fillRect(40,150,432,200);c.strokeStyle='#8b5a2b';c.lineWidth=4;c.strokeRect(40,150,432,200);c.fillStyle=mysteryBoxReadyToCollect?'#00ff66':'#ff0';c.font='bold 30px monospace';c.fillText(mysteryBoxCyclingReward,256,260);c.fillStyle='#ffd700';c.font='bold 22px monospace';c.fillText("COST: 350 CREDITS",256,395);c.fillStyle='#f36';c.fillText(`LOC: ${boxRoomLocations[mysteryBoxCurrentRoom].name}`,256,435);boxScreenTexture.needsUpdate=true;
     }
 
-    // --- REPOSITIONED AMMO DISPLAY (Shifted inward/centered for readability) ---
+    // --- REPOSITIONED AMMO DISPLAY (Shifted inward/centered for readability on both PC and mobile) ---
     function updateTacticalHUD(){
       let cur=ammoReserves[currentWeapon],max=getWeaponStat(currentWeapon,'maxAmmo'),pct=Math.max(0,Math.min(1,cur/max)),lvl=weaponUpgradeLevels[currentWeapon],c=tacticalCtx;
       c.fillStyle='#21140e';c.fillRect(0,0,512,512);c.strokeStyle=currentWeapon===5?'#0ff':(lvl>0?'#fa0':'#b8860b');c.lineWidth=12;c.strokeRect(10,10,492,492);
@@ -825,6 +828,7 @@
         if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
       }
       
+      // --- ONE-TAP UPGRADE ALTAR ACTIVATION ---
       let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
       let upgHit = raycaster.intersectObjects(upgradeMachineGroup.children,true);
       if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
@@ -854,6 +858,7 @@
         if(!mysteryBoxActive&&!mysteryBoxReadyToCollect){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;mysteryBoxActive=true;mysteryBoxTimer=0;txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS..."}else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS."}return;
       }
       
+      // --- ONE-TAP HIDDEN BUTTON & PLATFORM BUTTON ---
       let hbHit = raycaster.intersectObjects([hiddenButtonMesh]);
       if(hbHit.length>0 && playerRig.position.distanceTo(hiddenButtonMesh.position)<15){
         if(!secretPermanentlyOpen){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;secretPermanentlyOpen=true;secretActive=true;txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN."}else txtDiv.innerHTML="CRYPT LOCK REQUIRES 350 CREDITS.";}

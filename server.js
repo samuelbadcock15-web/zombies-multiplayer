@@ -14,7 +14,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Fixed lobbies 1 to 6
 const LOBBIES = {};
 for (let i = 1; i <= 6; i++) {
   LOBBIES[i] = {
@@ -91,17 +90,14 @@ io.on('connection', (socket) => {
     lobby.slots[mySlotIdx].ready = !lobby.slots[mySlotIdx].ready;
     io.emit('lobby_list', getLobbiesSummary());
 
-    // Auto-launch strictly when all 4 slots are filled and all 4 are ready
     const filledSlots = lobby.slots.filter(Boolean);
-    const allFourFilled = filledSlots.length === 4;
-    const allFourReady = allFourFilled && filledSlots.every(p => p.ready);
+    const allFourReady = filledSlots.length === 4 && filledSlots.every(p => p.ready);
 
     if (allFourReady) {
       launchGame(joinedLobbyId);
     }
   });
 
-  // Force start button for testing or starting with fewer players
   socket.on('force_start_game', () => {
     if (!joinedLobbyId) return;
     const lobby = LOBBIES[joinedLobbyId];
@@ -120,10 +116,6 @@ io.on('connection', (socket) => {
     io.emit('lobby_list', getLobbiesSummary());
   }
 
-  socket.on('leave_slot', () => {
-    handleLeave();
-  });
-
   socket.on('player_update', (data) => {
     if (!joinedLobbyId) return;
     socket.to(`lobby_${joinedLobbyId}`).emit('remote_player_update', {
@@ -132,9 +124,16 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Relay Host zombie coordinates to Players 2, 3, 4
   socket.on('host_zombie_sync', (data) => {
     if (!joinedLobbyId) return;
     socket.to(`lobby_${joinedLobbyId}`).emit('client_zombie_sync', data);
+  });
+
+  // Relay round notifications
+  socket.on('host_round_sync', (roundNum) => {
+    if (!joinedLobbyId) return;
+    socket.to(`lobby_${joinedLobbyId}`).emit('client_round_sync', roundNum);
   });
 
   socket.on('zombie_hit', (data) => {
@@ -171,9 +170,8 @@ io.on('connection', (socket) => {
     }
   }
 
-  socket.on('disconnect', () => {
-    handleLeave();
-  });
+  socket.on('leave_slot', () => { handleLeave(); });
+  socket.on('disconnect', () => { handleLeave(); });
 });
 
 server.listen(PORT, () => {

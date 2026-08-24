@@ -500,11 +500,19 @@
     const stickman1=createStickman(0xffd700),stickman2=createStickman(0x5a3d28),ballMesh=MESH(SG(0.6,32,32),SM({color:0xffd700,roughness:0.5}));scene.add(ballMesh);
     let gameState={ballPos:new V3(0,6,-140),p1Pos:new V3(-10,0,-125),p2Pos:new V3(10,0,-155),ballHolder:1,actionTimer:0,shotStart:new V3(),shotEnd:new V3()};
 
-    const machineGroup=GRP();machineGroup.position.set(0,0,5);scene.add(machineGroup);
-    let mainWheelMesh=MESH(CG(1,1,0.5,32),SM({color:0x111111}),0,1,0);mainWheelMesh.rotation.z=Math.PI/2;machineGroup.add(mainWheelMesh);
-    const chassis=MESH(BG(2.2,2.2,1.8),SM({color:0x4a3324}),0,3.6,0);machineGroup.add(chassis);chassis.userData={materialType:"robot_mercenary"};
+    const machineGroup=GRP();
+    machineGroup.position.set(0,0,5);
+    scene.add(machineGroup);
+
+    // --- FIX: Rotate robot interior wrapper 180 degrees so its front face is universally forward ---
+    const robotVisualWrapper = GRP();
+    machineGroup.add(robotVisualWrapper);
+    robotVisualWrapper.rotation.y = Math.PI;
+
+    let mainWheelMesh=MESH(CG(1,1,0.5,32),SM({color:0x111111}),0,1,0);mainWheelMesh.rotation.z=Math.PI/2;robotVisualWrapper.add(mainWheelMesh);
+    const chassis=MESH(BG(2.2,2.2,1.8),SM({color:0x4a3324}),0,3.6,0);robotVisualWrapper.add(chassis);chassis.userData={materialType:"robot_mercenary"};
     function createAwesomeGuns(){const g=GRP(),bg=CG(0.14,0.14,2.8,16);bg.rotateX(Math.PI/2);const l=MESH(bg,SM({color:0x3a2e25,metalness:0.6,roughness:0.4}),-0.8,3.6,1.1),r=l.clone();r.position.x=0.8;const bkg=CG(0.18,0.18,0.5,12);bkg.rotateX(Math.PI/2);const bL=MESH(bkg,SM({color:0xffd700,metalness:0.9,roughness:0.2}),-0.8,3.6,2.3),bR=bL.clone();bR.position.x=0.8;g.add(l,r,bL,bR);return g}
-    machineGroup.add(createAwesomeGuns());machineGroup.add(MESH(BG(2.3,0.35,1.9),BM({color:0x8b0000}),0,4.5,0));
+    robotVisualWrapper.add(createAwesomeGuns());robotVisualWrapper.add(MESH(BG(2.3,0.35,1.9),BM({color:0x8b0000}),0,4.5,0));
     const arcadeScreenTexture=new T.CanvasTexture(sCanvas);chassis.add(MESH(PG(1.6,1.6),BM({map:arcadeScreenTexture}),0,0.1,0.91));
 
     let robotAIState={status:'roam',target:new V3(0,0,0),speed:0.08};function getNewUpperLevelTarget(){return new V3((Math.random()-0.5)*30,0,-100+(Math.random()-0.5)*80)}
@@ -822,10 +830,20 @@
         let td=dh[0].object,di=td.userData.doorIndex;
         if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
       }
+      
       let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
-      if(raycaster.intersectObjects(upgradeMachineGroup.children,true).length>0&&playerRig.position.distanceTo(mwPos)<15){
-        if(!upgradeMachineActive&&!upgradeMachineReadyToCollect){let cost=500+weaponUpgradeLevels[currentWeapon]*250;if(playerPoints>=cost){playerPoints-=cost;$('score-val').innerText=playerPoints;upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY."}else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`}return;
+      let upgHit = raycaster.intersectObjects(upgradeMachineGroup.children,true);
+      if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
+        if(!upgradeMachineActive&&!upgradeMachineReadyToCollect){
+          let cost=500+weaponUpgradeLevels[currentWeapon]*250;
+          if(playerPoints>=cost){
+            playerPoints-=cost;$('score-val').innerText=playerPoints;upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;
+            fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
+          }else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`;
+        }
+        return;
       }
+
       if(mysteryBoxReadyToCollect){
         let bwPos=new V3();mysteryBoxGroup.getWorldPosition(bwPos);
         if((raycaster.intersectObjects(boxWeaponHolo.children,true).length>0||raycaster.intersectObjects(mysteryBoxGroup.children).length>0)&&playerRig.position.distanceTo(bwPos)<15){
@@ -841,15 +859,21 @@
       if(raycaster.intersectObjects(mysteryBoxGroup.children).length>0&&playerRig.position.distanceTo(bwCheck)<15){
         if(!mysteryBoxActive&&!mysteryBoxReadyToCollect){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;mysteryBoxActive=true;mysteryBoxTimer=0;txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS..."}else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS."}return;
       }
-      if(raycaster.intersectObjects([hiddenButtonMesh]).length>0&&playerRig.position.distanceTo(hiddenButtonMesh.position)<15){
-        if(!secretPermanentlyOpen){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;secretPermanentlyOpen=true;secretActive=true;txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN."}else txtDiv.innerHTML="CRYPT LOCK REQUIRES 350 CREDITS."}return;
+      
+      let hbHit = raycaster.intersectObjects([hiddenButtonMesh]);
+      if(hbHit.length>0 && playerRig.position.distanceTo(hiddenButtonMesh.position)<15){
+        if(!secretPermanentlyOpen){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;secretPermanentlyOpen=true;secretActive=true;txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN."}else txtDiv.innerHTML="CRYPT LOCK REQUIRES 350 CREDITS.";}
+        return;
       }
       if(secretPermanentlyOpen){
         let bwP=new V3();pButton.getWorldPosition(bwP);
-        if(raycaster.intersectObjects([pButton]).length>0&&playerRig.position.distanceTo(bwP)<15){
-          if(elevatorActive)return;if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;elevatorActive=true;elevatorDirection=(elevatorProgress>=0.5)?1:-1;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);txtDiv.innerHTML="DESCENDING CRYPT LIFT! COST: 350 CREDITS."}else txtDiv.innerHTML="LIFT TOLL: 350 CREDITS.";return;
+        let pBtnHit = raycaster.intersectObjects([pButton]);
+        if(pBtnHit.length>0 && playerRig.position.distanceTo(bwP)<15){
+          if(elevatorActive)return;if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;elevatorActive=true;elevatorDirection=(elevatorProgress>=0.5)?1:-1;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);txtDiv.innerHTML="DESCENDING CRYPT LIFT! COST: 350 CREDITS."}else txtDiv.innerHTML="LIFT TOLL: 350 CREDITS.";
+          return;
         }
       }
+
       let wbh=raycaster.intersectObjects(wallBuyInteractiveObjects,true);
       if(wbh.length>0&&wbh[0].distance<8){
         let ct=wbh[0].object.userData.materialType;
@@ -1170,7 +1194,7 @@
         }else{
           let diff=new V3().subVectors(robotAIState.target,machineGroup.position);
           if(diff.length()<1.5)robotAIState.target=getNewUpperLevelTarget();
-          else{diff.normalize();machineGroup.position.addScaledVector(diff,robotAIState.speed);machineGroup.rotation.y=Math.atan2(diff.x,diff.z);machineGroup.rotation.x=0;machineGroup.rotation.z=0;}
+          else{diff.normalize();machineGroup.position.addScaledVector(diff,robotAIState.speed);machineGroup.rotation.y=Math.atan2(diff.x,diff.z);mainWheelMesh.rotation.x+=0.1}
         }
       }
       if(elevatorActive){

@@ -173,11 +173,11 @@
       window.location.href = "https://zombies-3az2.onrender.com";
     };
 
-    document.getElementById('btn-multiplayer').addEventListener('click', () => {
+    $('btn-multiplayer').addEventListener('click', () => {
       initAudio();
       if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-      document.getElementById('audio-overlay').style.display = 'none';
-      const lobbyScreen = document.getElementById('lobby-screen');
+      $('audio-overlay').style.display = 'none';
+      const lobbyScreen = $('lobby-screen');
       lobbyScreen.style.setProperty('display', 'flex', 'important');
     });
 
@@ -677,6 +677,12 @@
       secretActive = data.secretActive;
     });
 
+    socket.on('client_robot_sync', data => {
+      if (isHost) return;
+      machineGroup.position.set(data.x, data.y, data.z);
+      machineGroup.rotation.y = data.yaw;
+    });
+
     function throwGrenade(){
       if(isGameOver)return;if(grenadeCount<=0){txtDiv.innerHTML="OUT OF GRENADES! RESTOCK AT WALL STAND.";return}
       grenadeCount--;updateEquipmentUI();const dir=new V3(0,0,-1).applyQuaternion(camera.getWorldQuaternion(new T.Quaternion())).normalize(),sp=playerRig.position.clone().add(new V3(0,2.5,0)),m=MESH(SG(0.2,12,12),SM({color:0x444433,roughness:0.7}),sp.x,sp.y,sp.z);scene.add(m);const v=dir.multiplyScalar(0.7);v.y+=0.25;activeGrenades.push({mesh:m,velocity:v,fuse:2});txtDiv.innerHTML="GRENADE DISPATCHED!";
@@ -1174,7 +1180,7 @@
           activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.emergenceStage===3){let d=machineGroup.position.distanceTo(z.meshParts.group.position);if(d<minD){minD=d;nz=z}}});
           if(nz){
             let ld=new V3().subVectors(nz.meshParts.group.position,machineGroup.position);ld.y=0;ld.normalize();
-            machineGroup.rotation.y = Math.atan2(ld.x, ld.z);
+            machineGroup.rotation.y=Math.atan2(ld.x,ld.z);
           }
           else if(rd.length()>0.8){rd.normalize();machineGroup.position.addScaledVector(rd,0.45);machineGroup.rotation.y=Math.atan2(rd.x,rd.z);mainWheelMesh.rotation.x+=0.3}
           else machineGroup.rotation.y=playerYaw;

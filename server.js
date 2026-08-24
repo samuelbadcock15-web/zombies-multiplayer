@@ -88,7 +88,6 @@ io.on('connection', socket => {
         lobby.started = true;
         const hostSocketId = lobby.slots[0].socketId;
         
-        // Emit game_start to everyone inside this room
         io.to(lobby.id).emit('game_start', {
           hostSocketId: hostSocketId,
           players: lobby.slots.map(pl => ({
@@ -143,7 +142,6 @@ io.on('connection', socket => {
     socket.to(loc.lobbyId).emit('client_round_sync', r);
   });
 
-  // Fixed Door Unlocking to broadcast to everyone in the room (including host)
   socket.on('unlock_door', doorIndex => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;
@@ -165,6 +163,19 @@ io.on('connection', socket => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;
     socket.to(loc.lobbyId).emit('sync_hole_fill', data);
+  });
+
+  // Machine & Relic State Synchronization Handlers
+  socket.on('sync_mystery_box_state', data => {
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    socket.to(loc.lobbyId).emit('update_mystery_box_state', data);
+  });
+
+  socket.on('sync_upgrade_machine_state', data => {
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    socket.to(loc.lobbyId).emit('update_upgrade_machine_state', data);
   });
 
   socket.on('disconnect', () => {

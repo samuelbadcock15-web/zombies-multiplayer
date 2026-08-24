@@ -33,18 +33,20 @@
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
     
-    #dpad { position: absolute; bottom: 55px; left: 15px; width: 150px; height: 150px; }
-    .dpad-btn { position: absolute; width: 48px; height: 48px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 8px; color: #d4af37; font-size: 18px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-    #dpad-up { top: 0; left: 51px; }
-    #dpad-down { bottom: 0; left: 51px; }
-    #dpad-left-dir { top: 51px; left: 0; }
-    #dpad-right-dir { top: 51px; right: 0; }
+    /* Compact, slightly shifted left D-Pad with inline Core Icons */
+    #dpad { position: absolute; bottom: 45px; left: 5px; width: 130px; height: 130px; }
+    .dpad-btn { position: absolute; width: 40px; height: 40px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 8px; color: #d4af37; font-size: 16px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #dpad-up { top: 0; left: 45px; }
+    #dpad-down { bottom: 0; left: 45px; }
+    #dpad-left-dir { top: 45px; left: 0; }
+    #dpad-right-dir { top: 45px; right: 0; }
 
-    .core-icon-btn { position: absolute; top: 51px; width: 24px; height: 48px; background: rgba(50,35,25,0.95); border: 1.5px solid #fa0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.6); z-index: 5; }
-    #btn-nade { left: 51px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
-    #btn-clay { left: 75px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
+    .core-icon-btn { position: absolute; top: 45px; width: 20px; height: 40px; background: rgba(50,35,25,0.95); border: 1.5px solid #fa0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.6); z-index: 5; }
+    #btn-nade { left: 45px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
+    #btn-clay { left: 65px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
 
-    #look-pad { position: absolute; bottom: 15px; right: 15px; width: 48vw; height: 34vh; background: rgba(212,175,55,0.06); border: 2px dashed rgba(212,175,55,0.3); border-radius: 12px; touch-action: none; }
+    /* Much wider, less tall Look-Pad */
+    #look-pad { position: absolute; bottom: 15px; right: 10px; left: 145px; height: 26vh; background: rgba(212,175,55,0.06); border: 2px dashed rgba(212,175,55,0.3); border-radius: 12px; touch-action: none; }
 
     #weapon-bar { position: absolute; top: 40px; left: 8px; display: flex; gap: 3px; pointer-events: auto; }
     .w-btn { width: 28px; height: 28px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; }
@@ -128,13 +130,13 @@
       <div class="dpad-btn" id="dpad-right-dir">▶</div>
 
       <div id="btn-nade" class="touch-interactive core-icon-btn" title="Frag Grenade">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="#fa0">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#fa0">
           <path d="M12 2C10.34 2 9 3.34 9 5V6H7C5.9 6 5 6.9 5 8V10C5 11.1 5.9 12 7 12H8V18C8 19.66 9.34 21 11 21H13C14.66 21 16 19.66 16 18V12H17C18.1 12 19 11.1 19 10V8C19 6.9 18.1 6 17 6H15V5C15 3.34 13.66 2 12 2M11 4H13V6H11V4Z"/>
         </svg>
       </div>
 
       <div id="btn-clay" class="touch-interactive core-icon-btn" title="Claymore Mine">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="#fa0">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#fa0">
           <path d="M2 18H22V20H2V18M4 6H20L22 16H2L4 6M11 2H13V5H11V2Z"/>
         </svg>
       </div>
@@ -615,9 +617,7 @@
         if (localZ) {
           localZ.meshParts.group.position.set(nz.x, nz.y, nz.z);
           localZ.meshParts.group.rotation.y = nz.yaw;
-          if (localZ.stage !== nz.stage) {
-            setZombieStage(localZ, nz.stage);
-          }
+          setZombieStage(localZ, nz.stage); // Ensures identical stage & scaling across all client screens!
         }
       });
       rebuildZombieHitboxes();
@@ -900,11 +900,11 @@
           if(tz&&!tz.deadAndShrinking){
             setZombieStage(tz,tz.stage-zDmg);
             if(tz.deadAndShrinking){
-              addPoints(isH?20:10); // --- FIX: Host immediately adds local points ---
+              addPoints(isH?20:10);
               txtDiv.innerHTML=isH?"CRITICAL HEADSHOT KILL! +20 CREDITS":"TARGET BANISHED! +10 CREDITS";
               rebuildZombieHitboxes();checkRoundEnd();
             } else {
-              addPoints(10); // --- FIX: Host immediately adds local points for hits ---
+              addPoints(10);
               txtDiv.innerHTML=isH?"HEADSHOT HIT! -3 STAGES! +20 CREDITS":"HIT REGISTERED! STAGE REDUCED. +10 CREDITS";
             }
           }
@@ -1230,7 +1230,7 @@
       let ws=hasStaminUp?0.5:0.35;if(playerRig.position.z<-275&&playerRig.position.z>-385&&playerRig.position.x>-55&&playerRig.position.x<55&&!secretPermanentlyOpen&&playerRig.position.y<=3.5&&playerRig.position.y>-40)ws=0.12;
       mirrorMesh.visible=false;renderer.setRenderTarget(mirrorRenderTarget);renderer.render(scene,mirrorCamera);renderer.setRenderTarget(null);mirrorMesh.visible=true;
       if(playerRig.position.y>-75&&playerRig.position.z<-315&&playerRig.position.z>-345&&playerRig.position.x>-15&&playerRig.position.x<15){if(!elevatorActive){if(!secretPermanentlyOpen){if(playerRig.position.y>3.5)playerRig.position.y=3}else playerRig.position.y=secretGalleryGroup.position.y+3}}
-      let np=playerRig.position.clone().addScaledVector(mv,ws);checkWallCollisions(np);playerRig.position.copy(np);
+      let np=playerRig.position.clone().addScaledVector(mv,ws);checkWallCollisions(np);playerRig.position.position=np;
       if(elevatorActive&&playerRig.position.z>=-345&&playerRig.position.z<=-315&&playerRig.position.x>=-15&&playerRig.position.x<=15){playerRig.position.x=Math.max(-13.5,Math.min(13.5,playerRig.position.x));playerRig.position.z=Math.max(-343.5,Math.min(-316.5,playerRig.position.z))}
       if(!elevatorActive){secretProgress=secretActive?Math.min(secretProgress+0.01,1):Math.max(secretProgress-0.01,0);waterLeftMesh.position.x=-27.5-secretProgress*55;waterRightMesh.position.x=27.5+secretProgress*55;secretGalleryGroup.position.y=secretPermanentlyOpen?(-17+secretProgress*17.2):-17}
       if(playerRig.position.y<-40)scene.background=caveBG;

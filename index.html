@@ -33,7 +33,6 @@
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
     
-    /* Plus (+) D-Pad Layout with Split Center Core for Grenade & Mine */
     #dpad { position: absolute; bottom: 55px; left: 15px; width: 150px; height: 150px; }
     .dpad-btn { position: absolute; width: 48px; height: 48px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 8px; color: #d4af37; font-size: 18px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
     #dpad-up { top: 0; left: 51px; }
@@ -41,12 +40,10 @@
     #dpad-left-dir { top: 51px; left: 0; }
     #dpad-right-dir { top: 51px; right: 0; }
 
-    /* Split Center Core Icons */
     .core-icon-btn { position: absolute; top: 51px; width: 24px; height: 48px; background: rgba(50,35,25,0.95); border: 1.5px solid #fa0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.6); z-index: 5; }
     #btn-nade { left: 51px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
     #btn-clay { left: 75px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
 
-    /* Standard Right Look Pad */
     #look-pad { position: absolute; bottom: 15px; right: 15px; width: 48vw; height: 34vh; background: rgba(212,175,55,0.06); border: 2px dashed rgba(212,175,55,0.3); border-radius: 12px; touch-action: none; }
 
     #weapon-bar { position: absolute; top: 40px; left: 8px; display: flex; gap: 3px; pointer-events: auto; }
@@ -124,21 +121,18 @@
   </div>
 
   <div id="mobile-controls">
-    <!-- Plus D-Pad with Central Split Core for Grenade & Mine -->
     <div id="dpad" class="touch-interactive">
       <div class="dpad-btn" id="dpad-up">▲</div>
       <div class="dpad-btn" id="dpad-down">▼</div>
       <div class="dpad-btn" id="dpad-left-dir">◀</div>
       <div class="dpad-btn" id="dpad-right-dir">▶</div>
 
-      <!-- Left half of center core = Frag Grenade -->
       <div id="btn-nade" class="touch-interactive core-icon-btn" title="Frag Grenade">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="#fa0">
           <path d="M12 2C10.34 2 9 3.34 9 5V6H7C5.9 6 5 6.9 5 8V10C5 11.1 5.9 12 7 12H8V18C8 19.66 9.34 21 11 21H13C14.66 21 16 19.66 16 18V12H17C18.1 12 19 11.1 19 10V8C19 6.9 18.1 6 17 6H15V5C15 3.34 13.66 2 12 2M11 4H13V6H11V4Z"/>
         </svg>
       </div>
 
-      <!-- Right half of center core = Claymore Mine -->
       <div id="btn-clay" class="touch-interactive core-icon-btn" title="Claymore Mine">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="#fa0">
           <path d="M2 18H22V20H2V18M4 6H20L22 16H2L4 6M11 2H13V5H11V2Z"/>
@@ -180,6 +174,11 @@
     const jugCtx=$('jugCanvas').getContext('2d'), jugTex=new T.CanvasTexture($('jugCanvas')), qrCtx=$('quickReviveCanvas').getContext('2d'), qrTex=new T.CanvasTexture($('quickReviveCanvas')), dtCtx=$('doubleTapCanvas').getContext('2d'), dtTex=new T.CanvasTexture($('doubleTapCanvas')), suCtx=$('staminUpCanvas').getContext('2d'), suTex=new T.CanvasTexture($('staminUpCanvas'));
 
     const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+    // Points grant listener from server
+    socket.on('grant_points', amt => {
+      addPoints(amt);
+    });
 
     $('btn-single-player').onclick = () => {
       window.location.href = "https://zombies-3az2.onrender.com";
@@ -1025,8 +1024,6 @@
     setupTouchButton('dpad-down', 's');
     setupTouchButton('dpad-left-dir', 'a');
     setupTouchButton('dpad-right-dir', 'd');
-    setupTouchButton('btn-nade', null, true, throwGrenade);   // Frag Grenade in left core
-    setupTouchButton('btn-clay', null, true, placeClaymore);   // Claymore Mine in right core
 
     window.addEventListener('keydown',e=>{if(isGameOver)return;if(e.code==='KeyW')keys.w=1;if(e.code==='KeyS')keys.s=1;if(e.code==='KeyA')keys.a=1;if(e.code==='KeyD')keys.d=1;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=1;if(e.code==='Digit1')switchWeapon(1);if(e.code==='Digit2')switchWeapon(2);if(e.code==='Digit3')switchWeapon(3);if(e.code==='Digit4')switchWeapon(4);if(e.code==='Digit5')switchWeapon(5);if(e.code==='KeyG')throwGrenade();if(e.code==='KeyC')placeClaymore()});
     window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=0;if(e.code==='KeyS')keys.s=0;if(e.code==='KeyA')keys.a=0;if(e.code==='KeyD')keys.d=0;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=0});
@@ -1157,6 +1154,7 @@
         }
         
         if(now - lastNetSendTime > 33){
+          lastNetSendTime = now;
           socket.emit('host_mystery_box_sync', {
             active: mysteryBoxActive,
             readyToCollect: mysteryBoxReadyToCollect,

@@ -1,4 +1,3 @@
-const express = require('http') ? require('express') : null; // standard express setup
 const expressApp = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -40,10 +39,8 @@ io.on('connection', socket => {
     const lobby = lobbies.find(l => l.id === data.lobbyId);
     if (!lobby || lobby.started) return;
 
-    // Check if player is already in a slot here
     leaveCurrentLobby(socket);
 
-    // Find first available slot
     let slotIdx = lobby.slots.findIndex(s => s === null);
     if (slotIdx === -1) return;
 
@@ -81,22 +78,27 @@ io.on('connection', socket => {
       slot.ready = !slot.ready;
       broadcastLobbyList();
 
-      // Check if all slots are filled and everyone is ready
-      const allFilled = lobby.slots.every(s => s !== null && s.length !== 0);
-      const allReady = lobby.slots.every(s => s && s.ready);
+      // Check if lobby is completely filled and every player is ready
+      const allFilled = lobby.playerCount === lobby.maxPlayers && lobby.slots.every(s => s !== null);
+      const allReady = lobby.slots.every(s => s !== null && s.ready);
 
       if (allFilled && allReady) {
         lobby.started = true;
         const hostSocketId = lobby.slots[0].socketId;
-        io.to(lobby.id).emit('game_start', {
-          hostSocketId: hostSocketId,
-          players: lobby.slots.map(s => ({
-            socketId: s.socketId,
-            slotNumber: s.slotNumber,
-            name: s.name,
-            color: s.color
-          }))
+        
+        // Use io.in(lobby.id) or direct socket emission to all occupants
+        lobby.slots.forEach(s => {
+          io.to(s.socketId).emit('game_start', {
+            hostSocketId: hostSocketId,
+            players: lobby.slots.map(pl => ({
+              socketId: pl.socketId,
+              slotNumber: pl.slotNumber,
+              name: pl.name,
+              color: pl.color
+            }))
+          });
         });
+        
         broadcastLobbyList();
       }
     }

@@ -12,7 +12,7 @@
     #stats { position: absolute; top: 12px; left: 12px; font-size: 13px; font-weight: 700; background: rgba(30,20,15,.9); color: #d4af37; padding: 6px 10px; border: 1px solid #6b4c35; line-height: 1.3; }
     #score-board { position: absolute; top: 12px; right: 12px; font-size: 18px; font-weight: 700; background: #140d0a; color: #fa0; padding: 8px 16px; border: 2px solid #8b5a2b; pointer-events: auto; }
     #team-hud { position: absolute; top: 60px; right: 12px; background: rgba(20,13,10,0.85); border: 1px solid #8b5a2b; padding: 6px 10px; font-size: 12px; line-height: 1.5; }
-    #round-display { position: absolute; bottom: 85px; left: 16px; font-size: 40px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; }
+    #round-display { position: absolute; bottom: 25px; left: 16px; font-size: 38px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; }
     #msg-box { position: absolute; top: 60px; width: 100%; text-align: center; left: 0; }
     #text { display: inline-block; background: rgba(35,24,18,.95); color: #f0e0d0; border: 2px solid #8b5a2b; padding: 8px 16px; font-size: 13px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,.5); }
     #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; transform: translate(-50%,-50%); pointer-events: none; }
@@ -25,14 +25,18 @@
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
     
-    #dpad { position: absolute; bottom: 95px; left: 35px; width: 150px; height: 150px; transform: scale(1.8); transform-origin: bottom left; }
-    .dpad-btn { position: absolute; width: 46px; height: 46px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 8px; color: #d4af37; font-size: 22px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-    #dpad-up { top: 0; left: 52px; }
-    #dpad-down { bottom: 0; left: 52px; }
-    #dpad-left { top: 52px; left: 0; }
-    #dpad-right { top: 52px; right: 0; }
+    /* Scaled down to half previous size and positioned safely above Round Display */
+    #dpad { position: absolute; bottom: 135px; left: 16px; width: 130px; height: 130px; transform: scale(1.0); transform-origin: bottom left; }
+    .dpad-btn { position: absolute; width: 40px; height: 40px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 8px; color: #d4af37; font-size: 18px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    #dpad-up { top: 0; left: 45px; }
+    #dpad-down { bottom: 0; left: 45px; }
+    #dpad-left { top: 45px; left: 0; }
+    #dpad-right { top: 45px; right: 0; }
 
+    /* Right-Side Look Pad */
     #look-pad { position: absolute; bottom: 25px; right: 20px; width: 48vw; height: 35vh; background: rgba(212,175,55,0.08); border: 2px dashed rgba(212,175,55,0.4); border-radius: 14px; }
+    
+    /* Square Grenade & Mine Buttons */
     #btn-nade { position: absolute; bottom: 225px; right: 20px; width: 60px; height: 60px; border-radius: 10px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 11px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
     #btn-clay { position: absolute; bottom: 225px; right: 90px; width: 60px; height: 60px; border-radius: 10px; background: rgba(50,40,30,0.9); border: 2px solid #fa0; color: #fa0; font-size: 11px; font-weight: 900; font-family: monospace; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
@@ -529,7 +533,7 @@
       rebuildZombieHitboxes();
     }
 
-    // Client Zombie Sync with correct forward-facing orientation (No extra Math.PI offset needed since host yaw matches lookAt vector)
+    // Client Zombie Sync with correct forward-facing orientation
     socket.on('client_zombie_sync', networkZombies => {
       if (isHost) return;
       while(activeZombies.length < networkZombies.length) {

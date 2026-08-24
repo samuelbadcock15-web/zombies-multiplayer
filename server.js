@@ -14,11 +14,13 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Fixed lobbies 1 to 6
 const LOBBIES = {};
 for (let i = 1; i <= 6; i++) {
   LOBBIES[i] = {
     id: i,
     started: false,
+    hostSocketId: null,
     slots: [null, null, null, null],
     doorState: [false, false, false, false]
   };
@@ -57,6 +59,10 @@ io.on('connection', (socket) => {
 
     joinedLobbyId = lobbyId;
     mySlotIdx = openIdx;
+
+    if (!lobby.hostSocketId) {
+      lobby.hostSocketId = socket.id;
+    }
 
     lobby.slots[openIdx] = {
       socketId: socket.id,
@@ -106,12 +112,11 @@ io.on('connection', (socket) => {
     lobby.started = true;
     const activePlayers = lobby.slots.filter(Boolean);
     
-    // Slot 1 is always the Host
-    const hostSocketId = activePlayers[0].socketId;
+    lobby.hostSocketId = activePlayers[0].socketId;
 
     io.to(`lobby_${lobbyId}`).emit('game_start', {
       lobbyId,
-      hostSocketId,
+      hostSocketId: lobby.hostSocketId,
       players: activePlayers
     });
     io.emit('lobby_list', getLobbiesSummary());

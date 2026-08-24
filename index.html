@@ -111,7 +111,7 @@
   </div>
 
   <div id="gui">
-    <div id="stats">D-PAD | SWIPE LOOK | TAP TO SHOOT/FILL HOLES</div>
+    <div id="stats">D-PAD | EXPANDED LOOK PAD | TAP TO SHOOT</div>
     <div id="score-board">CREDITS:<span id="score-val">500</span></div>
     <div id="team-hud"><b style="color:#d4af37;">SQUAD</b><div id="team-list-hud"></div></div>
     <div id="round-display">ROUND<span id="round-val">I</span></div>
@@ -129,8 +129,19 @@
 
     <div id="look-pad" class="touch-interactive"></div>
 
-    <button id="btn-nade" class="touch-interactive">NADE</button>
-    <button id="btn-clay" class="touch-interactive">MINE</button>
+    <!-- Frag Grenade Icon Button -->
+    <button id="btn-nade" class="touch-interactive action-btn" title="Frag Grenade">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#fa0">
+        <path d="M12 2C10.34 2 9 3.34 9 5V6H7C5.9 6 5 6.9 5 8V10C5 11.1 5.9 12 7 12H8V18C8 19.66 9.34 21 11 21H13C14.66 21 16 19.66 16 18V12H17C18.1 12 19 11.1 19 10V8C19 6.9 18.1 6 17 6H15V5C15 3.34 13.66 2 12 2M11 4H13V6H11V4Z"/>
+      </svg>
+    </button>
+
+    <!-- Claymore Mine Icon Button -->
+    <button id="btn-clay" class="touch-interactive action-btn" title="Claymore Mine">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#fa0">
+        <path d="M2 18H22V20H2V18M4 6H20L22 16H2L4 6M11 2H13V5H11V2Z"/>
+      </svg>
+    </button>
 
     <div id="weapon-bar" class="touch-interactive">
       <div class="w-btn" onclick="switchWeapon(1)">1</div>
@@ -291,19 +302,25 @@
       let c=boxScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=mysteryBoxReadyToCollect?'#fa0':'#b8860b';c.lineWidth=14;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("CURSED RELIC CHEST",256,48);c.fillStyle='#fff';c.font='900 48px monospace';c.fillText(mysteryBoxActive?"SUMMONING...":(mysteryBoxReadyToCollect?"CLAIM RELIC":"READY TO OPEN"),256,120);c.fillStyle='#140c08';c.fillRect(40,150,432,200);c.strokeStyle='#8b5a2b';c.lineWidth=4;c.strokeRect(40,150,432,200);c.fillStyle=mysteryBoxReadyToCollect?'#00ff66':'#ff0';c.font='bold 30px monospace';c.fillText(mysteryBoxCyclingReward,256,260);c.fillStyle='#ffd700';c.font='bold 22px monospace';c.fillText("COST: 350 CREDITS",256,395);c.fillStyle='#f36';c.fillText(`LOC: ${boxRoomLocations[mysteryBoxCurrentRoom].name}`,256,435);boxScreenTexture.needsUpdate=true;
     }
 
+    // --- REPOSITIONED AMMO DISPLAY (Shifted inward/centered for readability) ---
     function updateTacticalHUD(){
       let cur=ammoReserves[currentWeapon],max=getWeaponStat(currentWeapon,'maxAmmo'),pct=Math.max(0,Math.min(1,cur/max)),lvl=weaponUpgradeLevels[currentWeapon],c=tacticalCtx;
-      c.fillStyle='#21140e';c.fillRect(0,0,512,512);c.strokeStyle=currentWeapon===5?'#0ff':(lvl>0?'#fa0':'#b8860b');c.lineWidth=12;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 22px monospace';c.textAlign='left';c.fillText("AMMO",30,42);c.fillStyle='#fff';c.font='900 76px monospace';c.fillText(cur<10?`00${cur}`:(cur<100?`0${cur}`:`${cur}`),30,110);c.font='bold 30px monospace';c.textAlign='right';c.fillStyle=lvl>0?'#fa0':'#ffd700';c.fillText(lvl>0?`LVL ${toRoman(lvl)}`:'STD',482,65);c.fillStyle='#b8860b';c.fillText(`/${max}`,482,105);c.fillStyle='#3a2418';c.fillRect(30,135,452,26);c.fillStyle=pct<=0.15?'#f22':(pct<=0.35?'#f80':'#fa0');c.fillRect(34,139,Math.max(0,444*pct),18);
-      if(hasQuickRevive){c.fillStyle='#00a8ff';c.font='bold 18px monospace';c.textAlign='left';c.fillText("QUICK REVIVE SHIELD",30,185);c.fillStyle='#3a2418';c.fillRect(30,195,452,18);c.fillStyle='#00a8ff';c.fillRect(34,198,Math.max(0,444*(quickReviveShield/2)),12)}
-      c.strokeStyle='#5a3d28';c.lineWidth=4;c.beginPath();c.moveTo(30,230);c.lineTo(482,230);c.stroke();c.fillStyle='#ffd700';c.font='bold 22px monospace';c.fillText(`GRENADES (LVL ${toRoman(grenadeUpgradeLevel+1)})`,30,265);
-      for(let i=0;i<2;i++){let gx=40+i*55,gy=285;c.fillStyle=i<grenadeCount?'#f50':'#443322';c.beginPath();c.arc(gx+15,gy+22,14,0,Math.PI*2);c.fill();c.fillRect(gx+10,gy+3,10,8)}
-      c.fillStyle='#ffd700';c.fillText(`CLAYMORES (LVL ${toRoman(claymoreUpgradeLevel+1)})`,260,265);
-      for(let i=0;i<2;i++){let cx=270+i*75,cy=290;c.fillStyle=i<claymoreCount?'#fa0':'#554422';c.beginPath();c.moveTo(cx,cy+18);c.lineTo(cx+45,cy+18);c.lineTo(cx+38,cy);c.lineTo(cx+7,cy);c.closePath();c.fill()}
-      c.strokeStyle='#5a3d28';c.beginPath();c.moveTo(30,340);c.lineTo(482,340);c.stroke();
-      [{name:"JUG",active:hasJuggerNog,color:"#f22"},{name:"REV",active:hasQuickRevive,color:"#00a8ff"},{name:"DT2",active:hasDoubleTap,color:"#fa0"},{name:"STA",active:hasStaminUp,color:"#ff0"}].forEach((p,idx)=>{let bx=30+idx*115,by=378;c.fillStyle=p.active?p.color:'#3a2418';c.fillRect(bx,by,100,28);c.strokeStyle=p.active?'#fff':'#6b4c35';c.lineWidth=2;c.strokeRect(bx,by,100,28);c.fillStyle=p.active?'#000':'#b8860b';c.font='bold 16px monospace';c.textAlign='center';c.fillText(p.name,bx+50,by+19)});
-      c.fillStyle=playerBites>=maxBites?'#f05':'#ffd700';c.font='bold 18px monospace';c.textAlign='left';c.fillText(`HEALTH (${maxBites-playerBites}/${maxBites} BITES)`,30,440);
-      let ah=Math.max(0,maxBites-playerBites);
-      for(let i=0;i<maxBites;i++){let hx=30+i*(420/maxBites),hy=450,x=hx+15,y=hy+12;c.fillStyle=i<ah?'#f05':'#44222a';c.beginPath();c.moveTo(x,y);c.bezierCurveTo(x,y-6,x-15,y-15,x-15,y-3);c.bezierCurveTo(x-15,y+9,x,y+18,x,y+24);c.bezierCurveTo(x,y+18,x+15,y+9,x+15,y-3);c.bezierCurveTo(x+15,y-15,x,y-6,x,y);c.fill()}
+      c.fillStyle='#21140e';c.fillRect(0,0,512,512);c.strokeStyle=currentWeapon===5?'#0ff':(lvl>0?'#fa0':'#b8860b');c.lineWidth=12;c.strokeRect(10,10,492,492);
+      
+      c.fillStyle='#ffd700';c.font='bold 28px monospace';c.textAlign='center';c.fillText("TACTICAL AMMO",256,52);
+      c.fillStyle='#fff';c.font='900 110px monospace';c.fillText(cur<10?`00${cur}`:(cur<100?`0${cur}`:`${cur}`),190,175);
+      c.font='bold 36px monospace';c.fillStyle='#b8860b';c.textAlign='left';c.fillText(`/${max}`,360,165);
+      
+      c.fillStyle=lvl>0?'#fa0':'#ffd700';c.font='bold 26px monospace';c.textAlign='center';c.fillText(lvl>0?`LVL ${toRoman(lvl)}`:'STANDARD ISSUE',256,220);
+      
+      c.fillStyle='#3a2418';c.fillRect(60,245,392,30);
+      c.fillStyle=pct<=0.15?'#f22':(pct<=0.35?'#f80':'#fa0');c.fillRect(64,249,Math.max(0,384*pct),22);
+
+      if(hasQuickRevive){c.fillStyle='#00a8ff';c.font='bold 18px monospace';c.textAlign='left';c.fillText("QUICK REVIVE SHIELD",60,305);c.fillStyle='#3a2418';c.fillRect(60,315,392,18);c.fillStyle='#00a8ff';c.fillRect(64,318,Math.max(0,384*(quickReviveShield/2)),12)}
+      
+      [{name:"JUG",active:hasJuggerNog,color:"#f22"},{name:"REV",active:hasQuickRevive,color:"#00a8ff"},{name:"DT2",active:hasDoubleTap,color:"#fa0"},{name:"STA",active:hasStaminUp,color:"#ff0"}].forEach((p,idx)=>{let bx=60+idx*98,by=355;c.fillStyle=p.active?p.color:'#3a2418';c.fillRect(bx,by,90,26);c.strokeStyle=p.active?'#fff':'#6b4c35';c.lineWidth=2;c.strokeRect(bx,by,90,26);c.fillStyle=p.active?'#000':'#b8860b';c.font='bold 14px monospace';c.textAlign='center';c.fillText(p.name,bx+45,by+18)});
+      
+      c.fillStyle=playerBites>=maxBites?'#f05':'#ffd700';c.font='bold 16px monospace';c.textAlign='center';c.fillText(`HEALTH: ${maxBites-playerBites}/${maxBites} BITES`,256,430);
       gunTacticalTexture.needsUpdate=true;
     }
     function updateEquipmentUI(){updateTacticalHUD()}
@@ -451,8 +468,12 @@
     let secretPermanentlyOpen=false,secretActive=false,secretProgress=0;const secretGalleryGroup=GRP();secretGalleryGroup.position.set(0,-17,-330);scene.add(secretGalleryGroup);
     secretGalleryGroup.add(MESH(BG(30,1.5,30),SM({color:0x3a2418,roughness:0.6})));
     const texLoad=new T.TextureLoader();texLoad.setCrossOrigin('anonymous');const buttonTexture=texLoad.load('https://i.postimg.cc/t4z4kyWh/9a8eb0ab-e478-4750-9a22-694757e56c87.png');
+    
     const pButton=MESH(BG(1.5,1.5,0.2),BM({map:buttonTexture}),0,2.5,14.8);secretGalleryGroup.add(pButton);
+    pButton.userData={materialType:"secret_button"};
+    
     const hiddenButtonMesh=MESH(BG(1.5,1.5,0.2),BM({map:buttonTexture}),0,7.5,-404.8);scene.add(hiddenButtonMesh);
+    hiddenButtonMesh.userData={materialType:"hidden_button"};
 
     const mirrorRenderTarget=new T.WebGLRenderTarget(512,512),mirrorCamera=new T.PerspectiveCamera(60,1,0.1,100);mirrorCamera.position.set(0,3.5,-404.5);mirrorCamera.rotation.set(0,Math.PI,0);
     const mirrorMesh=MESH(PG(6,4),BM({map:mirrorRenderTarget.texture}),0,3.5,-404.7);scene.add(mirrorMesh);
@@ -635,7 +656,6 @@
       }
     });
 
-    // --- Synchronized Machine State Listeners ---
     socket.on('client_mystery_box_sync', data => {
       mysteryBoxActive = data.active;
       mysteryBoxReadyToCollect = data.readyToCollect;
@@ -804,10 +824,20 @@
         let td=dh[0].object,di=td.userData.doorIndex;
         if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
       }
+      
       let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
-      if(raycaster.intersectObjects(upgradeMachineGroup.children,true).length>0&&playerRig.position.distanceTo(mwPos)<15){
-        if(!upgradeMachineActive&&!upgradeMachineReadyToCollect){let cost=500+weaponUpgradeLevels[currentWeapon]*250;if(playerPoints>=cost){playerPoints-=cost;$('score-val').innerText=playerPoints;upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY."}else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`}return;
+      let upgHit = raycaster.intersectObjects(upgradeMachineGroup.children,true);
+      if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
+        if(!upgradeMachineActive&&!upgradeMachineReadyToCollect){
+          let cost=500+weaponUpgradeLevels[currentWeapon]*250;
+          if(playerPoints>=cost){
+            playerPoints-=cost;$('score-val').innerText=playerPoints;upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;
+            fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
+          }else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`;
+        }
+        return;
       }
+
       if(mysteryBoxReadyToCollect){
         let bwPos=new V3();mysteryBoxGroup.getWorldPosition(bwPos);
         if((raycaster.intersectObjects(boxWeaponHolo.children,true).length>0||raycaster.intersectObjects(mysteryBoxGroup.children).length>0)&&playerRig.position.distanceTo(bwPos)<15){
@@ -823,15 +853,21 @@
       if(raycaster.intersectObjects(mysteryBoxGroup.children).length>0&&playerRig.position.distanceTo(bwCheck)<15){
         if(!mysteryBoxActive&&!mysteryBoxReadyToCollect){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;mysteryBoxActive=true;mysteryBoxTimer=0;txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS..."}else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS."}return;
       }
-      if(raycaster.intersectObjects([hiddenButtonMesh]).length>0&&playerRig.position.distanceTo(hiddenButtonMesh.position)<15){
-        if(!secretPermanentlyOpen){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;secretPermanentlyOpen=true;secretActive=true;txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN."}else txtDiv.innerHTML="CRYPT LOCK REQUIRES 350 CREDITS."}return;
+      
+      let hbHit = raycaster.intersectObjects([hiddenButtonMesh]);
+      if(hbHit.length>0 && playerRig.position.distanceTo(hiddenButtonMesh.position)<15){
+        if(!secretPermanentlyOpen){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;secretPermanentlyOpen=true;secretActive=true;txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN."}else txtDiv.innerHTML="CRYPT LOCK REQUIRES 350 CREDITS.";}
+        return;
       }
       if(secretPermanentlyOpen){
         let bwP=new V3();pButton.getWorldPosition(bwP);
-        if(raycaster.intersectObjects([pButton]).length>0&&playerRig.position.distanceTo(bwP)<15){
-          if(elevatorActive)return;if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;elevatorActive=true;elevatorDirection=(elevatorProgress>=0.5)?1:-1;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);txtDiv.innerHTML="DESCENDING CRYPT LIFT! COST: 350 CREDITS."}else txtDiv.innerHTML="LIFT TOLL: 350 CREDITS.";return;
+        let pBtnHit = raycaster.intersectObjects([pButton]);
+        if(pBtnHit.length>0 && playerRig.position.distanceTo(bwP)<15){
+          if(elevatorActive)return;if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;elevatorActive=true;elevatorDirection=(elevatorProgress>=0.5)?1:-1;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);txtDiv.innerHTML="DESCENDING CRYPT LIFT! COST: 350 CREDITS."}else txtDiv.innerHTML="LIFT TOLL: 350 CREDITS.";
+          return;
         }
       }
+
       let wbh=raycaster.intersectObjects(wallBuyInteractiveObjects,true);
       if(wbh.length>0&&wbh[0].distance<8){
         let ct=wbh[0].object.userData.materialType;
@@ -1061,8 +1097,14 @@
       activeClaymores.forEach((c,idx)=>{activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(c.position)<4){triggerExplosion(c.position,7.5+claymoreUpgradeLevel*2,3+claymoreUpgradeLevel);scene.remove(c.group);activeClaymores.splice(idx,1)}})});
       upgReactorRing.rotation.x+=0.05;
       
-      // Host-driven Mystery Box & Upgrade Altar Logic Broadcast
-      if (isHost) {
+      if(!isHost){
+        if(upgradeMachineActive){upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.12;upgHoloWeapon.position.y=4.2+(upgradeMachineTimer/3)*0.8;}
+        else if(upgradeMachineReadyToCollect){upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.02;upgHoloWeapon.position.y=4.8+Math.sin(upgradeMachineTimer*4)*0.15;}
+        if(mysteryBoxActive){mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.08;}
+        else if(mysteryBoxReadyToCollect){mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.03;boxWeaponHolo.position.y=3.5+Math.sin(mysteryBoxTimer*3)*0.15;}
+      }
+
+      if(isHost){
         if(upgradeMachineActive){
           upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.12;upgHoloWeapon.position.y=4.2+(upgradeMachineTimer/3)*0.8;
           if(upgradeMachineTimer>=3){upgradeMachineActive=false;upgradeMachineReadyToCollect=true;upgradeMachineTimer=0;upgHoloWeapon.position.set(0,4.8,0)}
@@ -1090,7 +1132,6 @@
           if(mysteryBoxTimer>=8){mysteryBoxFadeAlpha=Math.max(0,mysteryBoxFadeAlpha-0.016);if(mysteryBoxTimer>=10){mysteryBoxReadyToCollect=false;mysteryBoxTimer=0;mysteryBoxFadeAlpha=1;while(boxWeaponHolo.children.length>0)boxWeaponHolo.remove(boxWeaponHolo.children[0]);txtDiv.innerHTML="RELIC FADED BACK INTO THE SHADOWS..."}}
         }
         
-        // Broadcast Host Machine states to clients 30x/sec
         if(now - lastNetSendTime > 33){
           socket.emit('host_mystery_box_sync', {
             active: mysteryBoxActive,
@@ -1129,7 +1170,7 @@
         }else{
           let diff=new V3().subVectors(robotAIState.target,machineGroup.position);
           if(diff.length()<1.5)robotAIState.target=getNewUpperLevelTarget();
-          else{diff.normalize();machineGroup.position.addScaledVector(diff,robotAIState.speed);machineGroup.rotation.y=Math.atan2(diff.x,diff.z);mainWheelMesh.rotation.x+=0.1}
+          else{diff.normalize();machineGroup.position.addScaledVector(diff,robotAIState.speed);machineGroup.rotation.y=Math.atan2(diff.x,diff.z);machineGroup.rotation.x+=0.1}
         }
       }
       if(elevatorActive){

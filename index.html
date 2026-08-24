@@ -21,6 +21,11 @@
     #crosshair::after { top: -10px; left: 4px; width: 2px; height: 30px; }
     #damage-overlay { position: absolute; inset: 0; background: rgba(255,0,0,0); pointer-events: none; transition: background .1s ease; z-index: 5; }
 
+    /* Hide Crosshair Automatically on Mobile Touchscreens */
+    @media (pointer: coarse) {
+      #crosshair { display: none !important; }
+    }
+
     /* Mobile Controls */
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
@@ -660,7 +665,6 @@
     function fillHoloGroupWithRewardModel(g,rt){while(g.children.length>0)g.remove(g.children[0]);g.add(buildWeaponGeometry((rt>=1&&rt<=5)?rt:1,false))}
     function fillHoloGroupWithWeaponModel(g,wid,upg){while(g.children.length>0)g.remove(g.children[0]);g.add(buildWeaponGeometry(wid,upg))}
 
-    // --- Tap-to-Shoot Raycasting (Shoots exactly where you tap on mobile or click on PC) ---
     function executeWeaponFireRaycast(clientX, clientY){
       if(isGameOver||!gunMeshGroup.visible)return;
       
@@ -669,7 +673,7 @@
         mouse.x = (clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(clientY / window.innerHeight) * 2 + 1;
       } else {
-        mouse.set(0, 0); // Center crosshair for desktop pointer lock
+        mouse.set(0, 0);
       }
 
       raycaster.setFromCamera(mouse, camera);
@@ -885,7 +889,6 @@
     });
     lookPad.addEventListener('touchend', e => { e.preventDefault(); lastTouchX = lastTouchY = null; });
 
-    // Tap anywhere on screen to shoot at what you touch on mobile
     window.addEventListener('touchstart', e => {
       if (!gameActive || isGameOver || !isMobile || e.target.tagName.includes('BUTTON') || e.target.closest('#mobile-controls')) return;
       const touch = e.touches[0];

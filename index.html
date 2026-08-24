@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Haunted Mansion Vault - 4P Co-op Outbreak</title>
+  <style>
+    body { margin: 0; background: #0c0806; color: #fff; font-family: monospace; overflow: hidden; width: 100vw; height: 100vh; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #gui { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: none; }
+    #stats { position: absolute; top: 20px; left: 20px; font-size: 13px; font-weight: 700; background: rgba(30,20,15,.9); color: #d4af37; padding: 8px 12px; border: 1px solid #6b4c35; line-height: 1.4; }
+    #score-board { position: absolute; top: 20px; right: 20px; font-size: 20px; font-weight: 700; background: #140d0a; color: #fa0; padding: 10px 20px; border: 2px solid #8b5a2b; pointer-events: auto; }
+    #team-hud { position: absolute; top: 80px; right: 20px; background: rgba(20,13,10,0.85); border: 1px solid #8b5a2b; padding: 8px 14px; font-size: 13px; line-height: 1.6; }
+    #round-display { position: absolute; bottom: 40px; left: 20px; font-size: 48px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; }
+    #msg-box { position: absolute; bottom: 40px; width: 100%; text-align: center; left: 0; }
+    #text { display: inline-block; background: rgba(35,24,18,.95); color: #f0e0d0; border: 2px solid #8b5a2b; padding: 12px 20px; min-width: 320px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,.5); }
+    #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; transform: translate(-50%,-50%); pointer-events: none; }
+    #crosshair::after,#crosshair::before { content:''; position: absolute; background: #fa0; }
+    #crosshair::before { top: 4px; left: -10px; width: 30px; height: 2px; }
+    #crosshair::after { top: -10px; left: 4px; width: 2px; height: 30px; }
+    #damage-overlay { position: absolute; inset: 0; background: rgba(255,0,0,0); pointer-events: none; transition: background .1s ease; z-index: 5; }
+
+    /* Lobby Screen Overlay */
+    #lobby-screen { position: absolute; inset: 0; background: radial-gradient(circle, #24140d 0%, #0c0806 90%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; font-family: monospace; }
+    .lobby-card { background: rgba(20,13,10,0.95); border: 2px solid #8b5a2b; padding: 30px 40px; border-radius: 8px; text-align: center; width: 380px; box-shadow: 0 8px 30px rgba(0,0,0,0.8); }
+    .lobby-title { font-size: 26px; color: #d4af37; font-weight: 900; margin-bottom: 20px; letter-spacing: 2px; text-shadow: 0 0 10px rgba(212,175,55,0.4); }
+    .input-box { width: 100%; box-sizing: border-box; background: #140c08; border: 1px solid #6b4c35; color: #fff; padding: 10px; font-size: 16px; font-family: monospace; margin-bottom: 12px; text-transform: uppercase; }
+    .btn { width: 100%; background: #8b5a2b; color: #fff; border: none; padding: 12px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: monospace; text-transform: uppercase; margin-bottom: 8px; transition: background 0.2s; }
+    .btn:hover { background: #b8793b; }
+    .btn-secondary { background: #3a2418; border: 1px solid #6b4c35; }
+    .btn-secondary:hover { background: #553422; }
+    #player-list { list-style: none; padding: 0; margin: 15px 0; text-align: left; background: #120a07; border: 1px solid #4a3324; }
+    #player-list li { padding: 8px 12px; border-bottom: 1px solid #2b1810; font-weight: bold; }
+    #error-label { color: #ff3344; font-weight: bold; margin-top: 8px; min-height: 20px; }
+  </style>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <div id="damage-overlay"></div>
+
+  <!-- Multiplayer Room Lobby -->
+  <div id="lobby-screen">
+    <div class="lobby-card" id="menu-initial">
+      <div class="lobby-title">HAUNTED OUTBREAK<br><span style="font-size:14px;color:#fa0;">4-PLAYER CO-OP</span></div>
+      <input id="player-name-input" class="input-box" maxlength="12" placeholder="ENTER YOUR CALLSIGN" value="MARINE">
+      <button class="btn" id="btn-create">CREATE SQUAD ROOM</button>
+      <div style="margin:10px 0;color:#888;">— OR JOIN WITH CODE —</div>
+      <input id="room-code-input" class="input-box" maxlength="4" placeholder="4-LETTER CODE">
+      <button class="btn btn-secondary" id="btn-join">JOIN SQUAD</button>
+      <div id="error-label"></div>
+    </div>
+
+    <div class="lobby-card" id="menu-room" style="display:none;">
+      <div class="lobby-title">SQUAD READY ROOM</div>
+      <div style="font-size:18px;color:#fa0;margin-bottom:10px;">ROOM CODE: <span id="display-room-code" style="color:#fff;letter-spacing:3px;">----</span></div>
+      <ul id="player-list"></ul>
+      <button class="btn" id="btn-start" style="display:none;background:#2e7d32;">START MISSION</button>
+      <div id="waiting-label" style="color:#aaa;font-size:13px;">Waiting for squad leader to deploy...</div>
+    </div>
+  </div>
+
+  <!-- In-Game HUD -->
+  <div id="gui">
+    <div id="stats">WASD + LOOK | KEYS 1-5 SWITCH | G GRENADE | C CLAYMORE<br>SURVIVE THE HAUNTED OUTBREAK TOGETHER!</div>
+    <div id="score-board">CREDITS: <span id="score-val">500</span></div>
+    <div id="team-hud"><b style="color:#d4af37;">SQUAD STATUS</b><div id="team-list-hud"></div></div>
+    <div id="round-display">ROUND <span id="round-val">I</span></div>
+    <div id="crosshair"></div>
+    <div id="msg-box"><div id="text">CONNECTED TO VAULT NET.</div></div>
+  </div>
+
+  <!-- Hidden 2D Canvas Buffers -->
+  <canvas id="virtualArcadeCanvas" style="display:none" width="512" height="512"></canvas>
+  <canvas id="gunTacticalCanvas" style="display:none" width="512" height="512"></canvas>
+  <canvas id="mysteryBoxScreenCanvas" style="display:none" width="512" height="512"></canvas>
+  <canvas id="upgradeMachineScreenCanvas" style="display:none" width="512" height="512"></canvas>
+  <canvas id="jugCanvas" style="display:none" width="512" height="512"></canvas>
+  <canvas id="quickReviveCanvas" style="display:none" width="512" height="512"></canvas>
+  <canvas id="doubleTapCanvas" style="display:none" width="512" height="512"></canvas>
+  <canvas id="staminUpCanvas" style="display:none" width="512" height="512"></canvas>
+
+  <script>
+    const socket = io();
+    let myPlayerId = null, isHost = false, myRoomCode = null, gameActive = false;
+    const remotePlayers = {}; // id -> { mesh, data }
+
+    const $ = i => document.getElementById(i), T = THREE, V3 = T.Vector3, BG = (w,h,d)=>new T.BoxGeometry(w,h,d), CG = (rt,rb,h,s=16)=>new T.CylinderGeometry(rt,rb,h,s), PG = (w,h)=>new T.PlaneGeometry(w,h), SG = (r,s=16,p=16)=>new T.SphereGeometry(r,s,p), SM = m=>new T.MeshStandardMaterial(m), BM = m=>new T.MeshBasicMaterial(m), GRP = ()=>new T.Group();
+    const MESH = (g,m,x=0,y=0,z=0,rx=0,ry=0)=>{ let o=new T.Mesh(g,m); o.position.set(x,y,z); if(rx)o.rotation.x=rx; if(ry)o.rotation.y=ry; return o; };
+    const sCanvas=$('virtualArcadeCanvas'), sCtx=sCanvas.getContext('2d'), txtDiv=$('text');
+    const tacticalCanvas=$('gunTacticalCanvas'), tacticalCtx=tacticalCanvas.getContext('2d'), gunTacticalTexture=new T.CanvasTexture(tacticalCanvas);
+    const boxScreenCanvas=$('mysteryBoxScreenCanvas'), boxScreenCtx=boxScreenCanvas.getContext('2d'), boxScreenTexture=new T.CanvasTexture(boxScreenCanvas);
+    const upgScreenCanvas=$('upgradeMachineScreenCanvas'), upgScreenCtx=upgScreenCanvas.getContext('2d'), upgScreenTexture=new T.CanvasTexture(upgScreenCanvas);
+    const jugCtx=$('jugCanvas').getContext('2d'), jugTex=new T.CanvasTexture($('jugCanvas')), qrCtx=$('quickReviveCanvas').getContext('2d'), qrTex=new T.CanvasTexture($('quickReviveCanvas')), dtCtx=$('doubleTapCanvas').getContext('2d'), dtTex=new T.CanvasTexture($('doubleTapCanvas')), suCtx=$('staminUpCanvas').getContext('2d'), suTex=new T.CanvasTexture($('staminUpCanvas'));
+
+    // Lobby UI Event Listeners
+    $('btn-create').onclick = () => { socket.emit('create_room', $('player-name-input').value.trim()); };
+    $('btn-join').onclick = () => { socket.emit('join_room', { code: $('room-code-input').value.trim(), playerName: $('player-name-input').value.trim() }); };
+    $('btn-start').onclick = () => { socket.emit('start_game'); };
+
+    socket.on('error_msg', msg => { $('error-label').innerText = msg; });
+
+    socket.on('room_joined', data => {
+      myPlayerId = data.myId;
+      isHost = data.isHost;
+      myRoomCode = data.code;
+      $('menu-initial').style.display = 'none';
+      $('menu-room').style.display = 'block';
+      $('display-room-code').innerText = data.code;
+      if (isHost) {
+        $('btn-start').style.display = 'block';
+        $('waiting-label').style.display = 'none';
+      }
+    });
+
+    socket.on('host_promoted', () => {
+      isHost = true;
+      $('btn-start').style.display = 'block';
+      $('waiting-label').style.display = 'none';
+    });
+
+    socket.on('lobby_update', data => {
+      const list = $('player-list');
+      list.innerHTML = '';
+      data.players.forEach(p => {
+        const li = document.createElement('li');
+        li.style.color = '#' + p.color.toString(16).padStart(6,'0');
+        li.innerText = `${p.name} ${p.id === data.hostId ? '★ (Leader)' : ''} ${p.id === myPlayerId ? '(You)' : ''}`;
+        list.appendChild(li);
+      });
+    });
+
+    socket.on('game_started', data => {
+      $('lobby-screen').style.display = 'none';
+      $('gui').style.display = 'block';
+      gameActive = true;
+      document.body.requestPointerLock();
+      initAudio();
+      setupRemotePlayers(data.players);
+      if (isHost) startRound(1);
+    });
+
+    // 3D Teammate Model Generator
+    function createTeammateMesh(colorHex, name) {
+      const g = GRP();
+      const suitMat = SM({ color: 0x2b332b, roughness: 0.7 });
+      const accentMat = SM({ color: colorHex, metalness: 0.8, roughness: 0.2 });
+
+      // Body & Armor
+      g.add(MESH(BG(0.9, 1.3, 0.5), suitMat, 0, 1.8, 0));
+      g.add(MESH(BG(0.94, 0.6, 0.54), accentMat, 0, 2.0, 0)); // Plate carrier
+      
+      // Helmet & Visor
+      g.add(MESH(BG(0.6, 0.6, 0.6), suitMat, 0, 2.8, 0));
+      g.add(MESH(BG(0.45, 0.2, 0.1), BM({ color: colorHex }), 0, 2.8, 0.31));
+
+      // Gun model in hand
+      const gunMesh = buildWeaponGeometry(1, false);
+      gunMesh.position.set(0.4, 1.7, 0.5);
+      gunMesh.scale.setScalar(1.4);
+      g.add(gunMesh);
+      g.userData.gunMesh = gunMesh;
+
+      scene.add(g);
+      return g;
+    }
+
+    function setupRemotePlayers(players) {
+      Object.keys(players).forEach(id => {
+        if (id !== myPlayerId) {
+          remotePlayers[id] = {
+            data: players[id],
+            mesh: createTeammateMesh(players[id].color, players[id].name)
+          };
+        }
+      });
+      updateTeamHUD();
+    }
+
+    socket.on('remote_player_update', data => {
+      if (remotePlayers[data.id]) {
+        const rp = remotePlayers[data.id];
+        rp.mesh.position.set(data.x, data.y - 3.0, data.z);
+        rp.mesh.rotation.y = data.yaw;
+      }
+    });
+
+    socket.on('player_left', id => {
+      if (remotePlayers[id]) {
+        scene.remove(remotePlayers[id].mesh);
+        delete remotePlayers[id];
+        updateTeamHUD();
+      }
+    });
+
+    function updateTeamHUD() {
+      const el = $('team-list-hud');
+      el.innerHTML = '';
+      el.innerHTML += `<div style="color:#00ffcc;">• You (Active)</div>`;
+      Object.values(remotePlayers).forEach(rp => {
+        el.innerHTML += `<div style="color:#${rp.data.color.toString(16).padStart(6,'0')}">• ${rp.data.name}</div>`;
+      });
+    }
+
+    // --- GAME ENGINE & THREE.JS LOGIC ---
+    let playerPoints = 500, currentWeapon = 1, playerBites = 0, maxBites = 3, isGameOver = false, hasJuggerNog = false, hasQuickRevive = false, quickReviveShield = 2, hasDoubleTap = false, hasStaminUp = false, currentRound = 1, zombiesToSpawnRemaining = 0, roundActive = false, lastSpawnTime = 0, spawnInterval = 2500;
+    let baseWeaponData = { 1:{name:"PISTOL",damage:1,maxAmmo:200,range:60,headDamage:3}, 2:{name:"AUTO PISTOL",damage:1,maxAmmo:200,range:60,headDamage:3}, 3:{name:"HEAVY SHOTGUN / RIFLE",damage:2,maxAmmo:150,range:80,headDamage:5}, 4:{name:"AUTOMATIC RIFLE",damage:2,maxAmmo:150,range:75,headDamage:4}, 5:{name:"RAY PISTOL",damage:10,maxAmmo:100,range:140,headDamage:25}, 6:{name:"FRAG GRENADE",damage:0,maxAmmo:0,range:0,headDamage:0}, 7:{name:"CLAYMORE MINE",damage:0,maxAmmo:0,range:0,headDamage:0} };
+    let ammoReserves = { 1: 200, 2: 0, 3: 0, 4: 0, 5: 0 }, weaponUpgradeLevels = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, hasAutomaticPistol = false, hasRifle = false, hasAutoRifle = false, hasRayPistol = false, isLmbHeldDown = false, lastShotTime = 0, autoFireRateMs = 120, grenadeCount = 2, grenadeUpgradeLevel = 0, claymoreCount = 2, claymoreUpgradeLevel = 0;
+    const activeGrenades = [], activeClaymores = [];
+    let robotMercState = { active: false, health: 100, maxHealth: 100, durationTimer: 0, level: 1, isBeingOverrun: false, overrunProgress: 0, lastProximitySpeechTime: 0 };
+    const unhiredLines = ["Penumbra industries veteran at your service, marine! 500 credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
+    const hiredLines = ["Heavy metal activated! Locking and loading for Vanguard Company!","Get to the extraction point! I've got your flank covered, marine!","Come on! Let's party! No ghoul gets past these dual barrels!","Vanguard ship is waiting in the clouds! Stay frosty and keep pumping lead!"];
+    let lastUnhiredLineIdx = -1, lastHiredLineIdx = -1;
+
+    function getUniqueRandomLine(h){ let p=h?hiredLines:unhiredLines,l=h?lastHiredLineIdx:lastUnhiredLineIdx,i; do{i=Math.floor(Math.random()*p.length)}while(i===l&&p.length>1); if(h)lastHiredLineIdx=i;else lastUnhiredLineIdx=i; return p[i]; }
+    function updatePerkScreens(){ [{c:jugCtx,t:jugTex,b:'#220000',s:'#ff2222',n:'JUGGER-NOG',m:hasJuggerNog?"ACQUIRED (+1 HEART)":"COST: 2500 CREDITS"},{c:qrCtx,t:qrTex,b:'#001122',s:'#00a8ff',n:'QUICK REVIVE',m:hasQuickRevive?`SHIELD: ${quickReviveShield}/2`:"COST: 1500 CREDITS"},{c:dtCtx,t:dtTex,b:'#221100',s:'#ffaa00',n:'DOUBLE TAP II',m:hasDoubleTap?"ACQUIRED (2X FIRE/DMG)":"COST: 2000 CREDITS"},{c:suCtx,t:suTex,b:'#002200',s:'#ffff00',n:'STAMIN-UP',m:hasStaminUp?"ACQUIRED (SPEED BOOST)":"COST: 2000 CREDITS"}].forEach(k=>{k.c.fillStyle=k.b;k.c.fillRect(0,0,512,512);k.c.strokeStyle=k.s;k.c.lineWidth=14;k.c.strokeRect(10,10,492,492);k.c.fillStyle=k.s;k.c.font='bold 36px monospace';k.c.textAlign='center';k.c.fillText(k.n,256,80);k.c.fillStyle='#fff';k.c.font='bold 24px monospace';k.c.fillText(k.m,256,200);k.t.needsUpdate=true;}); }
+    
+    let mysteryBoxActive = false, mysteryBoxReadyToCollect = false, mysteryBoxTimer = 0, mysteryBoxUsesCount = 0, mysteryBoxCurrentRoom = 0, mysteryBoxCyclingReward = "PISTOL", mysteryBoxRewardType = 1, mysteryBoxFadeAlpha = 1, mysteryBoxMapHologramGroup = GRP();
+    const boxRoomLocations = [{name:"GRAND HAUNTED HALL",pos:new V3(0,0,-140)},{name:"BALLROOM ARENA",pos:new V3(0,0,-140)},{name:"FLOODED CRYPT",pos:new V3(0,0,-310)},{name:"UNDERGROUND CATACOMBS",pos:new V3(0,-79.8,-330)}];
+    let upgradeMachineActive = false, upgradeMachineReadyToCollect = false, upgradeMachineTimer = 0, upgradeMachineWeaponSlot = 1;
+
+    function toRoman(n){const l={M:1000,CM:900,D:500,CD:400,C:100,XC:90,L:50,XL:40,X:10,IX:9,V:5,IV:4,I:1};let r='';for(let i in l){while(n>=l[i]){r+=i;n-=l[i]}}return r||"I"}
+    function getWeaponStat(i,s){let b=baseWeaponData[i][s],l=weaponUpgradeLevels[i];if(s==='damage'||s==='headDamage'){let d=Math.floor(b+l*2.5);return hasDoubleTap?d*2:d}if(!l)return b;if(s==='maxAmmo')return Math.floor(b+l*60);if(s==='range')return b*(1+l*0.15);return b;}
+    function addPoints(a){if(isGameOver)return;playerPoints+=a;$('score-val').innerText=playerPoints;}
+    function updateUpgradeMachineScreen(){let c=upgScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=upgradeMachineReadyToCollect?'#fa0':(upgradeMachineActive?'#f50':'#b8860b');c.lineWidth=14;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("OCCULT RITUAL UPGRADE ALTAR",256,48);c.fillStyle='#fff';c.font='900 42px monospace';c.fillText(upgradeMachineActive?"BLESSING...":(upgradeMachineReadyToCollect?"AUTO-COLLECTING!":"READY"),256,120);c.fillStyle='#140c08';c.fillRect(40,150,432,200);c.strokeStyle='#ffd700';c.lineWidth=4;c.strokeRect(40,150,432,200);c.fillStyle='#fa0';c.font='bold 30px monospace';c.fillText(baseWeaponData[currentWeapon].name,256,220);c.fillStyle='#ff0';c.font='bold 24px monospace';c.fillText(`CURRENT LVL: ${toRoman(weaponUpgradeLevels[currentWeapon])}`,256,265);c.fillStyle='#ffd700';c.fillText(`COST: ${500+weaponUpgradeLevels[currentWeapon]*250} CREDITS`,256,310);c.fillStyle='#f36';c.font='bold 22px monospace';c.fillText("WALK CLOSE TO AUTO-RETRIEVE!",256,415);upgScreenTexture.needsUpdate=true;}
+    function updateMysteryBoxScreen(){let c=boxScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=mysteryBoxReadyToCollect?'#fa0':'#b8860b';c.lineWidth=14;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("CURSED RELIC CHEST",256,48);c.fillStyle='#fff';c.font='900 48px monospace';c.fillText(mysteryBoxActive?"SUMMONING...":(mysteryBoxReadyToCollect?"CLAIM RELIC":"READY TO OPEN"),256,120);c.fillStyle='#140c08';c.fillRect(40,150,432,200);c.strokeStyle='#b8860b';c.lineWidth=4;c.strokeRect(40,150,432,200);c.fillStyle=mysteryBoxReadyToCollect?'#00ff66':'#ff0';c.font='bold 30px monospace';c.fillText(mysteryBoxCyclingReward,256,260);c.fillStyle='#ffd700';c.font='bold 22px monospace';c.fillText("COST: 350 CREDITS",256,395);c.fillStyle='#f36';c.fillText(`LOC: ${boxRoomLocations[mysteryBoxCurrentRoom].name}`,256,435);boxScreenTexture.needsUpdate=true;}
+
+    function updateTacticalHUD(){
+      let cur=ammoReserves[currentWeapon],max=getWeaponStat(currentWeapon,'maxAmmo'),pct=Math.max(0,Math.min(1,cur/max)),lvl=weaponUpgradeLevels[currentWeapon],c=tacticalCtx;
+      c.fillStyle='#21140e';c.fillRect(0,0,512,512);c.strokeStyle=currentWeapon===5?'#0ff':(lvl>0?'#fa0':'#b8860b');c.lineWidth=12;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 22px monospace';c.textAlign='left';c.fillText("AMMO",30,42);c.fillStyle='#fff';c.font='900 76px monospace';c.fillText(cur<10?`00${cur}`:(cur<100?`0${cur}`:`${cur}`),30,110);c.font='bold 30px monospace';c.textAlign='right';c.fillStyle=lvl>0?'#fa0':'#ffd700';c.fillText(lvl>0?`LVL ${toRoman(lvl)}`:'STD',482,65);c.fillStyle='#b8860b';c.fillText(`/${max}`,482,105);c.fillStyle='#3a2418';c.fillRect(30,135,452,26);c.fillStyle=pct<=0.15?'#f22':(pct<=0.35?'#f80':'#fa0');c.fillRect(34,139,Math.max(0,444*pct),18);
+      if(hasQuickRevive){c.fillStyle='#00a8ff';c.font='bold 18px monospace';c.textAlign='left';c.fillText("QUICK REVIVE SHIELD",30,185);c.fillStyle='#3a2418';c.fillRect(30,195,452,18);c.fillStyle='#00a8ff';c.fillRect(34,198,Math.max(0,444*(quickReviveShield/2)),12);}
+      c.strokeStyle='#5a3d28';c.lineWidth=4;c.beginPath();c.moveTo(30,230);c.lineTo(482,230);c.stroke();c.fillStyle='#ffd700';c.font='bold 22px monospace';c.fillText(`GRENADES (LVL ${toRoman(grenadeUpgradeLevel+1)})`,30,265);
+      for(let i=0;i<2;i++){let gx=40+i*55,gy=285;c.fillStyle=i<grenadeCount?'#f50':'#443322';c.beginPath();c.arc(gx+15,gy+22,14,0,Math.PI*2);c.fill();c.fillRect(gx+10,gy+3,10,8);}
+      c.fillStyle='#ffd700';c.fillText(`CLAYMORES (LVL ${toRoman(claymoreUpgradeLevel+1)})`,260,265);
+      for(let i=0;i<2;i++){let cx=270+i*75,cy=290;c.fillStyle=i<claymoreCount?'#fa0':'#554422';c.beginPath();c.moveTo(cx,cy+18);c.lineTo(cx+45,cy+18);c.lineTo(cx+38,cy);c.lineTo(cx+7,cy);c.closePath();c.fill();}
+      c.strokeStyle='#5a3d28';c.beginPath();c.moveTo(30,340);c.lineTo(482,340);c.stroke();
+      [{name:"JUG",active:hasJuggerNog,color:"#f22"},{name:"REV",active:hasQuickRevive,color:"#00a8ff"},{name:"DT2",active:hasDoubleTap,color:"#fa0"},{name:"STA",active:hasStaminUp,color:"#ff0"}].forEach((p,idx)=>{let bx=30+idx*115,by=378;c.fillStyle=p.active?p.color:'#3a2418';c.fillRect(bx,by,100,28);c.strokeStyle=p.active?'#fff':'#6b4c35';c.lineWidth=2;c.strokeRect(bx,by,100,28);c.fillStyle=p.active?'#000':'#b8860b';c.font='bold 16px monospace';c.textAlign='center';c.fillText(p.name,bx+50,by+19);});
+      c.fillStyle=playerBites>=maxBites?'#f05':'#ffd700';c.font='bold 18px monospace';c.textAlign='left';c.fillText(`HEALTH (${maxBites-playerBites}/${maxBites} BITES)`,30,440);
+      let ah=Math.max(0,maxBites-playerBites);
+      for(let i=0;i<maxBites;i++){let hx=30+i*(420/maxBites),hy=450,x=hx+15,y=hy+12;c.fillStyle=i<ah?'#f05':'#44222a';c.beginPath();c.moveTo(x,y);c.bezierCurveTo(x,y-6,x-15,y-15,x-15,y-3);c.bezierCurveTo(x-15,y+9,x,y+18,x,y+24);c.bezierCurveTo(x,y+18,x+15,y+9,x+15,y-3);c.bezierCurveTo(x+15,y-15,x,y-6,x,y);c.fill();}
+      gunTacticalTexture.needsUpdate=true;
+    }
+
+    function damagePlayer(){
+      if(isGameOver)return;
+      if(hasQuickRevive&&quickReviveShield>0){quickReviveShield--;updateTacticalHUD();$('damage-overlay').style.backgroundColor="rgba(0,168,255,0.4)";setTimeout(()=>{$('damage-overlay').style.backgroundColor="rgba(255,0,0,0)"},150);txtDiv.innerHTML="QUICK REVIVE SHIELD ABSORBED BITE!";if(quickReviveShield<=0){hasQuickRevive=false;updateTacticalHUD();txtDiv.innerHTML="QUICK REVIVE SHIELD DEPLETED!"}return;}
+      playerBites++;updateTacticalHUD();$('damage-overlay').style.backgroundColor="rgba(255,0,0,0.4)";setTimeout(()=>{$('damage-overlay').style.backgroundColor="rgba(255,0,0,0)"},150);
+      if(playerBites>=maxBites)triggerGameOver();else txtDiv.innerHTML="YOU WERE BITTEN! FALL BACK!";
+    }
+
+    function triggerGameOver(){isGameOver=true;document.exitPointerLock();txtDiv.innerHTML=`YOU FELL IN ROUND ${currentRound}. SPECTATING SQUAD...`;}
+
+    function startRound(r){currentRound=r;$('round-val').innerText=toRoman(currentRound);zombiesToSpawnRemaining=4+Math.floor(currentRound*2.5);spawnInterval=Math.max(600,2500-currentRound*120);roundActive=true;txtDiv.innerHTML=`ROUND ${toRoman(currentRound)} HAS COMMENCED!`;}
+
+    function checkRoundEnd(){
+      if(!roundActive)return;
+      if(zombiesToSpawnRemaining===0&&activeZombies.filter(z=>!z.deadAndShrinking).length===0){
+        roundActive=false;
+        txtDiv.innerHTML=`ROUND ${toRoman(currentRound)} CLEARED. THE MANSION QUIETS...`;
+        setTimeout(()=>{if(!isGameOver&&isHost)startRound(currentRound+1);},4000);
+      }
+    }
+
+    function attachTacticalDisplay(g,s=1){let h=MESH(BG(0.09*s,0.11*s,0.015*s),SM({color:0x2b1d14,metalness:0.5,roughness:0.4}),-0.048,0.07,-0.02,0,-Math.PI/2),f=MESH(PG(0.082*s,0.102*s),BM({map:gunTacticalTexture,toneMapped:false}),0,0,0.009*s);h.add(f);g.add(h);}
+
+    function buildWeaponGeometry(id,upg){
+      const g=GRP();let mc=id===2?0x4a3b32:(id===3?0x5c4a3d:(id===4?0x333333:(id===5?0x00ffcc:0x3a2e25)));
+      if(id===6){g.add(MESH(SG(0.2,12,12),SM({color:0x444433,roughness:0.7})));return g;}
+      if(id===7){g.add(MESH(BG(0.4,0.25,0.1),SM({color:0x555544})));return g;}
+      let fm=SM({color:upg?0xffaa00:mc,metalness:upg?0.95:0.6,roughness:upg?0.1:0.4,emissive:upg?0xff5500:0,emissiveIntensity:upg?0.4:0}),am=SM({color:upg?0xffff00:0xffd700,metalness:0.7});
+      if(id===1){let r=MESH(BG(0.08,0.14,0.3),fm),gp=MESH(BG(0.07,0.16,0.08),fm,0,-0.12,-0.06,-0.2),s=MESH(BG(0.076,0.06,0.31),am,0,0.09,0.005);g.add(r,gp,s);}
+      else if(id===2){let r=MESH(BG(0.08,0.15,0.32),fm),gp=MESH(BG(0.07,0.18,0.09),fm,0,-0.13,-0.05),m=MESH(BG(0.06,0.12,0.06),am,0,-0.22,-0.03),c=MESH(BG(0.084,0.07,0.08),am,0,0.08,0.18);g.add(r,gp,m,c);}
+      else if(id===3){let r=MESH(BG(0.12,0.18,0.6),fm),b=MESH(CG(0.04,0.04,0.8,12),am,0,0.04,0.6,Math.PI/2),st=MESH(BG(0.1,0.24,0.4),fm,0,-0.08,-0.45),p=MESH(CG(0.05,0.05,0.3,12),am,0,-0.02,0.45,Math.PI/2);g.add(r,b,st,p);}
+      else if(id===4){let bd=MESH(BG(0.1,0.18,0.6),fm),h=MESH(BG(0.09,0.14,0.4),am,0,-0.01,0.4),b=MESH(CG(0.018,0.018,0.5),fm,0,0.02,0.85,Math.PI/2),m=MESH(BG(0.06,0.26,0.12),am,0,-0.18,0.15,0.15);g.add(bd,h,b,m);}
+      else if(id===5){let gen=MESH(SG(0.14),fm),em=MESH(CG(0.02,0.08,0.45,12),am,0,0.25,0,Math.PI/2),er=MESH(new T.TorusGeometry(0.12,0.02,6,16),fm,0,0.38,0),gp=MESH(BG(0.06,0.18,0.07),am,0,-0.16,-0.06);g.add(gen,em,er,gp);let sh=MESH(BG(0.09,0.11,0.015),SM({color:0x2b1d14,metalness:0.5,roughness:0.4}),-0.16,0.06,-0.02,0.1,-Math.PI/2+0.2),sf=MESH(PG(0.082,0.102),BM({map:gunTacticalTexture,toneMapped:false}),0,0,0.009);sh.rotation.z=0.1;sh.add(sf);g.add(sh);}
+      return g;
+    }
+
+    function switchWeapon(id){
+      if(id===2&&!hasAutomaticPistol){txtDiv.innerHTML="BUY AUTO PISTOL FROM THE WALL!";return;}
+      if(id===3&&!hasRifle){txtDiv.innerHTML="BUY SHOTGUN FROM THE WALL!";return;}
+      if(id===4&&!hasAutoRifle){txtDiv.innerHTML="BUY ASSAULT RIFLE FROM THE WALL!";return;}
+      if(id===5&&!hasRayPistol){txtDiv.innerHTML="FIND RAY PISTOL IN RELIC CHEST!";return;}
+      currentWeapon=id;let upg=weaponUpgradeLevels[currentWeapon]>0;while(gunMeshGroup.children.length>0)gunMeshGroup.remove(gunMeshGroup.children[0]);
+      gunMeshGroup.add(buildWeaponGeometry(currentWeapon,upg));attachTacticalDisplay(gunMeshGroup,1.3);updateTacticalHUD();
+      txtDiv.innerHTML=`WEAPON: ${baseWeaponData[currentWeapon].name}${upg?` [LVL ${toRoman(weaponUpgradeLevels[currentWeapon])}]`:""}`;
+    }
+
+    document.body.addEventListener('click',()=>{if(gameActive&&!isGameOver&&document.pointerLockElement!==document.body)document.body.requestPointerLock();});
+
+    let audioCtx=null,audioListener=null;const scene=new T.Scene(),defaultBG=new T.Color(0x120d0a),underwaterBG=new T.Color(0x0a1624),caveBG=new T.Color(0x080605);scene.background=defaultBG;
+    const camera=new T.PerspectiveCamera(65,window.innerWidth/window.innerHeight,0.1,1000);camera.rotation.order='YXZ';
+    const playerRig=GRP();playerRig.position.set(0,3,15);scene.add(playerRig);
+    const cameraPitchObject=GRP();playerRig.add(cameraPitchObject);cameraPitchObject.add(camera);
+    const pistolGroup=GRP();pistolGroup.position.set(0.28,-0.28,-0.55);cameraPitchObject.add(pistolGroup);
+    const gunMeshGroup=GRP();pistolGroup.add(gunMeshGroup);
+    const muzzleFlash=new T.PointLight(0xffaa00,0,10);pistolGroup.add(muzzleFlash);
+    let playerYaw=0,playerPitch=0;const raycaster=new T.Raycaster();
+
+    scene.add(new T.AmbientLight(0xffeedd,1.4));const sunLight=new T.DirectionalLight(0xfff5ee,1);sunLight.position.set(30,60,30);scene.add(sunLight);
+    [[0,8,0],[0,12,-140],[0,12,-330]].forEach(p=>{let pl=new T.PointLight(0xffaa44,2.5,30);pl.position.set(...p);scene.add(pl);});
+
+    function initAudio(){if(audioCtx)return;audioCtx=new(window.AudioContext||window.webkitAudioContext)();audioListener=new T.AudioListener();camera.add(audioListener);}
+    function playPianoNote(f,d,type='sine',vol=0.08){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.setValueAtTime(f,audioCtx.currentTime);g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+d);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d);}
+    function playZombieBiteSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(90,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(40,audioCtx.currentTime+0.4);g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.001,audioCtx.currentTime+0.4);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.4);}
+    function playPistolShotSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();let pm=1+weaponUpgradeLevels[currentWeapon]*0.1;o.type=currentWeapon===5?'sine':'triangle';o.frequency.setValueAtTime((currentWeapon===5?1200:400)*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(10,audioCtx.currentTime+0.1);g.gain.setValueAtTime(0.25,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.1);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.1);}
+    function playExplosionSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(120,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(10,audioCtx.currentTime+0.5);g.gain.setValueAtTime(0.6,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.5);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.5);}
+    function playMysteryBoxSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.setValueAtTime(587.33,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(880,audioCtx.currentTime+0.4);g.gain.setValueAtTime(0.15,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.4);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.4);}
+
+    // Environment Construction
+    function createHauntedWoodFloorTexture(){const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#4a3324';ctx.fillRect(0,0,512,512);ctx.strokeStyle='#1f140e';ctx.lineWidth=6;for(let i=0;i<=512;i+=64){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,512);ctx.stroke();}const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(4,4);return tex;}
+    function createHauntedWallTexture(){const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#5c4033';ctx.fillRect(0,0,512,512);ctx.strokeStyle='#2b1b12';ctx.lineWidth=10;ctx.strokeRect(20,20,472,472);const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(3,2);return tex;}
+    
+    const generalEnvironmentMeshes=[],wallMat=SM({map:createHauntedWallTexture(),roughness:0.6,side:T.DoubleSide}),ceilingMat=SM({color:0x332218,roughness:0.8}),floorMat=SM({map:createHauntedWoodFloorTexture(),roughness:0.5,metalness:0.1});
+    function addStructuralMesh(geo,mat,px,py,pz,rx=0,ry=0){const m=MESH(geo,mat,px,py,pz,rx,ry);scene.add(m);generalEnvironmentMeshes.push(m);return m;}
+    
+    addStructuralMesh(PG(50,50),floorMat,0,0,0,-Math.PI/2,0);addStructuralMesh(PG(50,50),ceilingMat,0,16,0,Math.PI/2,0);addStructuralMesh(PG(12,40),floorMat,0,0,-45,-Math.PI/2,0);addStructuralMesh(PG(12,40),ceilingMat,0,16,-45,Math.PI/2,0);
+    addStructuralMesh(PG(19,16),wallMat,-15.5,8,-25);addStructuralMesh(PG(19,16),wallMat,15.5,8,-25);addStructuralMesh(PG(50,16),wallMat,-25,8,0,0,Math.PI/2);addStructuralMesh(PG(50,16),wallMat,25,8,0,0,-Math.PI/2);addStructuralMesh(PG(50,16),wallMat,0,8,25);addStructuralMesh(PG(40,16),wallMat,-6,8,-45,0,Math.PI/2);addStructuralMesh(PG(40,16),wallMat,6,8,-45,0,-Math.PI/2);
+    addStructuralMesh(PG(150,150),floorMat,0,0,-140,-Math.PI/2,0);addStructuralMesh(PG(150,150),ceilingMat,0,30,-140,Math.PI/2,0);addStructuralMesh(PG(12,40),floorMat,0,0,-235,-Math.PI/2,0);addStructuralMesh(PG(12,40),ceilingMat,0,16,-235,Math.PI/2,0);
+    addStructuralMesh(PG(69,30),wallMat,-40.5,15,-65);addStructuralMesh(PG(69,30),wallMat,40.5,15,-65);addStructuralMesh(PG(69,30),wallMat,-40.5,15,-215);addStructuralMesh(PG(69,30),wallMat,40.5,15,-215);addStructuralMesh(PG(150,30),wallMat,-75,15,-140,0,Math.PI/2);addStructuralMesh(PG(150,30),wallMat,75,15,-140,0,-Math.PI/2);addStructuralMesh(PG(40,16),wallMat,-6,8,-235,0,Math.PI/2);addStructuralMesh(PG(40,16),wallMat,6,8,-235,0,-Math.PI/2);
+    addStructuralMesh(PG(150,150),floorMat,0,0,-330,-Math.PI/2,0);addStructuralMesh(PG(150,150),ceilingMat,0,30,-330,Math.PI/2,0);
+    addStructuralMesh(PG(69,30),wallMat,-40.5,15,-255);addStructuralMesh(PG(69,30),wallMat,40.5,15,-255);addStructuralMesh(PG(150,30),wallMat,0,15,-405);addStructuralMesh(PG(150,30),wallMat,-75,15,-330,0,Math.PI/2);addStructuralMesh(PG(150,30),wallMat,75,15,-330,0,-Math.PI/2);
+
+    // Shared Doors
+    let unlockedDoors=[false,false,false,false],barrierMat=SM({color:0xaa2222,transparent:true,opacity:0.6,emissive:0xff0000,emissiveIntensity:0.5});
+    let doorArray=[-24.8,-64.8,-214.8,-254.8].map((z,i)=>{let d=MESH(BG(12,16,0.4),barrierMat,0,8,z);scene.add(d);d.userData={materialType:"door",doorIndex:i};return d;});
+    
+    socket.on('door_unlocked', data => {
+      unlockedDoors[data.doorIndex] = true;
+      scene.remove(doorArray[data.doorIndex]);
+      txtDiv.innerHTML = `DOOR ${data.doorIndex + 1} UNLOCKED FOR SQUAD!`;
+    });
+
+    // Mystery Box Setup
+    const mysteryBoxGroup = GRP(); mysteryBoxGroup.position.copy(boxRoomLocations[0].pos); scene.add(mysteryBoxGroup);
+    const boxBaseMesh = MESH(BG(3.6,2.2,2.2),SM({color:0x3a2418,metalness:0.5,roughness:0.4}),0,1.1,0); mysteryBoxGroup.add(boxBaseMesh);
+    const boxScreenFaceFront = MESH(PG(2.8,2.8),BM({map:boxScreenTexture,toneMapped:false}),0,1.8,1.12); mysteryBoxGroup.add(boxScreenFaceFront);
+    const boxWeaponHolo = GRP(); boxWeaponHolo.position.set(0,3.5,0); mysteryBoxGroup.add(boxWeaponHolo);
+    boxBaseMesh.userData = boxScreenFaceFront.userData = { materialType:"mystery_box" };
+
+    // Zombies Array & Hitbox Registration
+    const activeZombies = [], zombieInteractiveMeshes = [];
+    function createZombieMesh(){
+      const zg=GRP(),sm=SM({color:0x5a7360,roughness:0.8}),ct=SM({color:0x4a2323,roughness:0.6}),cb=SM({color:0x222834,roughness:0.7});
+      const hb=MESH(BG(0.7,0.7,0.7),sm,0,2.4,0);hb.userData={hitBoxPart:"head"};
+      const bo=MESH(BG(1.2,1.8,0.7),ct,0,1.0,0);bo.userData={hitBoxPart:"torso"};
+      zg.add(hb,bo);return {group:zg};
+    }
+
+    function rebuildZombieHitboxes(){
+      zombieInteractiveMeshes.length=0;
+      activeZombies.forEach((zb,idx)=>{
+        if(!zb.deadAndShrinking){
+          zb.mesh.traverse(c=>{
+            if(c.isMesh){c.userData.parentZombieIndex=idx;c.userData.materialType="flesh";zombieInteractiveMeshes.push(c);}
+          });
+        }
+      });
+    }
+
+    function spawnZombie(x,y,z){
+      const zm = createZombieMesh();
+      zm.group.position.set(x,y,z);
+      scene.add(zm.group);
+      activeZombies.push({ mesh: zm.group, stage: 3, speed: 0.08 + Math.random()*0.03, deadAndShrinking: false });
+      rebuildZombieHitboxes();
+    }
+
+    // Host authoritative zombie networking
+    socket.on('client_zombie_sync', data => {
+      if (isHost) return;
+      while(activeZombies.length < data.length) spawnZombie(0,0,0);
+      while(activeZombies.length > data.length) {
+        const removed = activeZombies.pop();
+        scene.remove(removed.mesh);
+      }
+      data.forEach((zd, i) => {
+        if (activeZombies[i]) {
+          activeZombies[i].mesh.position.set(zd.x, zd.y, zd.z);
+          activeZombies[i].mesh.rotation.y = zd.yaw;
+          activeZombies[i].stage = zd.stage;
+        }
+      });
+      rebuildZombieHitboxes();
+    });
+
+    socket.on('host_apply_zombie_hit', data => {
+      if (!isHost) return;
+      const tz = activeZombies[data.zombieIndex];
+      if (tz && !tz.deadAndShrinking) {
+        tz.stage -= data.damage;
+        if (tz.stage <= 0) {
+          tz.deadAndShrinking = true;
+          scene.remove(tz.mesh);
+          io.to(myRoomCode).emit('zombie_died', { shooterId: data.shooterId, points: data.isHeadshot ? 20 : 10 });
+        }
+      }
+    });
+
+    socket.on('zombie_died', data => {
+      if (data.shooterId === myPlayerId) addPoints(data.points);
+    });
+
+    // Weapon Raycast Shooting
+    function executeWeaponFireRaycast(){
+      if(isGameOver||!gunMeshGroup.visible)return;
+      raycaster.setFromCamera(new T.Vector2(0,0),camera);
+
+      // Check door interaction
+      let dh = raycaster.intersectObjects(doorArray.filter((d,i)=>!unlockedDoors[i]));
+      if(dh.length>0&&dh[0].distance<12){
+        let di = dh[0].object.userData.doorIndex;
+        if(playerPoints>=50){
+          playerPoints-=50; $('score-val').innerText=playerPoints;
+          socket.emit('unlock_door', di);
+        } else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK.";
+        return;
+      }
+
+      if(ammoReserves[currentWeapon]<=0){txtDiv.innerHTML="OUT OF AMMO!";return;}
+      ammoReserves[currentWeapon]--; updateTacticalHUD(); playPistolShotSound();
+      muzzleFlash.intensity=5; pistolGroup.position.z+=0.1; setTimeout(()=>{muzzleFlash.intensity=0;pistolGroup.position.z-=0.1;},45);
+
+      let zh = raycaster.intersectObjects(zombieInteractiveMeshes, true);
+      if(zh.length>0){
+        let isH = (zh[0].object.userData.hitBoxPart==="head");
+        let zIdx = zh[0].object.userData.parentZombieIndex;
+        socket.emit('zombie_hit', {
+          zombieIndex: zIdx,
+          damage: isH ? getWeaponStat(currentWeapon,'headDamage') : getWeaponStat(currentWeapon,'damage'),
+          isHeadshot: isH
+        });
+      }
+    }
+
+    // Input Controls
+    window.addEventListener('mousemove',e=>{
+      if(document.pointerLockElement!==document.body||isGameOver)return;
+      playerYaw -= e.movementX*0.0025; playerRig.rotation.y = playerYaw;
+      playerPitch = Math.max(-1.4,Math.min(1.4,playerPitch - e.movementY*0.0025)); cameraPitchObject.rotation.x = playerPitch;
+    });
+
+    window.addEventListener('mousedown',e=>{
+      if(document.pointerLockElement!==document.body||isGameOver)return;
+      if(e.button===0){ isLmbHeldDown=true; executeWeaponFireRaycast(); lastShotTime=performance.now(); }
+    });
+    window.addEventListener('mouseup',e=>{ if(e.button===0) isLmbHeldDown=false; });
+
+    const keys={w:0,a:0,s:0,d:0};
+    window.addEventListener('keydown',e=>{
+      if(isGameOver)return;
+      if(e.code==='KeyW')keys.w=1;if(e.code==='KeyS')keys.s=1;if(e.code==='KeyA')keys.a=1;if(e.code==='KeyD')keys.d=1;
+      if(e.code==='Digit1')switchWeapon(1);if(e.code==='Digit2')switchWeapon(2);if(e.code==='Digit3')switchWeapon(3);if(e.code==='Digit4')switchWeapon(4);if(e.code==='Digit5')switchWeapon(5);
+    });
+    window.addEventListener('keyup',e=>{
+      if(e.code==='KeyW')keys.w=0;if(e.code==='KeyS')keys.s=0;if(e.code==='KeyA')keys.a=0;if(e.code==='KeyD')keys.d=0;
+    });
+
+    // Constrained bounds movement
+    function checkWallCollisions(p){
+      if(!unlockedDoors[0]&&p.z<-23)p.z=-23;
+      if(!unlockedDoors[1]&&p.z<-63)p.z=-63;
+      if(!unlockedDoors[2]&&p.z<-213)p.z=-213;
+      if(!unlockedDoors[3]&&p.z<-254)p.z=-254;
+      p.x=Math.max(-70,Math.min(70,p.x));
+    }
+
+    const renderer=new T.WebGLRenderer({antialias:true});
+    renderer.setSize(window.innerWidth,window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    switchWeapon(1); updatePerkScreens();
+
+    let lastNetSendTime = 0;
+
+    function animate(t){
+      requestAnimationFrame(animate);
+      let now = performance.now();
+      if(!gameActive) return;
+
+      // Player Movement
+      let mv = new V3(0,0,0);
+      if(keys.w)mv.z-=1;if(keys.s)mv.z+=1;if(keys.a)mv.x-=1;if(keys.d)mv.x+=1;
+      mv.normalize().applyQuaternion(playerRig.quaternion); mv.y=0;
+      let np = playerRig.position.clone().addScaledVector(mv, 0.35);
+      checkWallCollisions(np); playerRig.position.copy(np);
+
+      // Send networking packets 30 times a second
+      if(now - lastNetSendTime > 33){
+        lastNetSendTime = now;
+        socket.emit('player_update', {
+          x: playerRig.position.x,
+          y: playerRig.position.y,
+          z: playerRig.position.z,
+          yaw: playerYaw,
+          pitch: playerPitch,
+          weapon: currentWeapon
+        });
+
+        // Host updates and broadcasts zombie movements
+        if(isHost){
+          if(roundActive && zombiesToSpawnRemaining > 0 && t - lastSpawnTime > spawnInterval){
+            spawnZombie((Math.random()-0.5)*20, 0, -100 + (Math.random()-0.5)*40);
+            zombiesToSpawnRemaining--;
+            lastSpawnTime = t;
+          }
+
+          const zombieNetworkPacket = [];
+          for(let i=activeZombies.length-1; i>=0; i--){
+            const zb = activeZombies[i];
+            if(!zb.deadAndShrinking){
+              let dir = new V3().subVectors(playerRig.position, zb.mesh.position);
+              dir.y = 0; dir.normalize();
+              zb.mesh.position.addScaledVector(dir, zb.speed);
+              zb.mesh.lookAt(playerRig.position.x, zb.mesh.position.y, playerRig.position.z);
+              
+              if(zb.mesh.position.distanceTo(playerRig.position) < 2.2){
+                damagePlayer();
+              }
+
+              zombieNetworkPacket.push({
+                x: zb.mesh.position.x,
+                y: zb.mesh.position.y,
+                z: zb.mesh.position.z,
+                yaw: zb.mesh.rotation.y,
+                stage: zb.stage
+              });
+            }
+          }
+          socket.emit('host_zombie_sync', zombieNetworkPacket);
+          checkRoundEnd();
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize',()=>{
+      camera.aspect=window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth,window.innerHeight);
+    });
+
+    animate(0);
+  </script>
+</body>
+</html>

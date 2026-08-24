@@ -128,6 +128,11 @@ io.on('connection', socket => {
     });
   });
 
+  // --- NEW: Direct Point Granting to Shooters and Hole Sealers ---
+  socket.on('award_points', amount => {
+    socket.emit('grant_points', amount);
+  });
+
   socket.on('host_zombie_sync', zombies => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;
@@ -159,6 +164,8 @@ io.on('connection', socket => {
   socket.on('fill_hole', data => {
     const loc = socketToPlayerMap[socket.id];
     if (!loc) return;
+    // Reward the player who sealed the hole with 5 credits
+    socket.emit('grant_points', 5);
     socket.to(loc.lobbyId).emit('sync_hole_fill', data);
   });
 

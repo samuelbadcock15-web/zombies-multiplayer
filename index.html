@@ -518,7 +518,7 @@
 
     function clearHoleDirtLayer(i){
       const h=allBurrowHoles[i];
-      if(h.dirtCount>0){
+      if(h && h.dirtCount>0){
         h.dirtCount--;
         h.layers[h.dirtCount].visible=false;
         playProceduralDigSound();
@@ -527,7 +527,7 @@
 
     function fillHoleWithDirt(i){
       const h=allBurrowHoles[i];
-      if(h.dirtCount<h.maxDirt){
+      if(h && h.dirtCount<h.maxDirt){
         h.layers[h.dirtCount].visible=true;
         h.dirtCount++;
         addPoints(5);
@@ -537,7 +537,9 @@
 
     const activeZombies=[],zombieInteractiveMeshes=[];
     function createZombieMesh(){
-      const zg=GRP(),sm=SM({color:0x5a7360,roughness:0.8}),ct=SM({color:0x4a2323,roughness:0.6}),cb=SM({color:0x222834,roughness:0.7}),bm=SM({color:0x1a1a1a,roughness:0.9}),em=BM({color:0xff3300});
+      const zg=GRP();
+      zg.rotation.order = 'YXZ';
+      const sm=SM({color:0x5a7360,roughness:0.8}),ct=SM({color:0x4a2323,roughness:0.6}),cb=SM({color:0x222834,roughness:0.7}),bm=SM({color:0x1a1a1a,roughness:0.9}),em=BM({color:0xff3300});
       const hg=GRP(),hb=MESH(BG(0.7,0.7,0.7),sm);hb.userData={hitBoxPart:"head"};let le=MESH(BG(0.12,0.12,0.12),em,-0.2,0.1,0.31);le.userData={hitBoxPart:"head"};let re=le.clone();re.position.x=0.2;re.userData={hitBoxPart:"head"};let jw=MESH(BG(0.5,0.15,0.2),sm,0,-0.2,0.2);jw.userData={hitBoxPart:"head"};hg.add(hb,le,re,jw);hg.visible=false;zg.add(hg);
       const bg=GRP(),ut=MESH(BG(1.2,1.2,0.7),ct,0,0.5,0);ut.userData={hitBoxPart:"torso"};let lt=MESH(BG(1.15,0.6,0.65),cb,0,-0.4,0);lt.userData={hitBoxPart:"torso"};let ll=MESH(BG(0.35,1,0.4),cb,-0.3,-1.2,0);ll.userData={hitBoxPart:"limbs"};let rl=ll.clone();rl.position.x=0.3;rl.userData={hitBoxPart:"limbs"};let lb=MESH(BG(0.38,0.2,0.5),bm,-0.3,-1.7,0.05);lb.userData={hitBoxPart:"limbs"};let rb=lb.clone();rb.position.x=0.3;rb.userData={hitBoxPart:"limbs"};bg.add(ut,lt,ll,rl,lb,rb);bg.visible=false;zg.add(bg);
       const ag=GRP(),ls=MESH(BG(0.25,0.25,0.8),ct,-0.65,0.7,0.4);ls.userData={hitBoxPart:"limbs"};let lf=MESH(BG(0.22,0.22,0.8),sm,-0.65,0.7,1.1);lf.userData={hitBoxPart:"limbs"};let rs=MESH(BG(0.25,0.25,0.8),ct,0.65,0.7,0.4);rs.userData={hitBoxPart:"limbs"};let rf=MESH(BG(0.22,0.22,0.8),sm,0.65,0.7,1.1);rf.userData={hitBoxPart:"limbs"};ag.add(ls,lf,rs,rf);ag.visible=false;zg.add(ag);
@@ -606,12 +608,22 @@
         const localZ = activeZombies[idx];
         if (localZ) {
           localZ.meshParts.group.position.set(nz.x, nz.y, nz.z);
-          // FORCE EXACT YAW ROTATION TO MATCH HOST (Eliminates backwards-walking / moonwalking)
+          // Apply exact rotation and force world matrix recalculation
           localZ.meshParts.group.rotation.y = nz.yaw;
+          localZ.meshParts.group.updateMatrixWorld(true);
           setZombieStage(localZ, nz.stage);
         }
       });
       rebuildZombieHitboxes();
+    });
+
+    socket.on('sync_hole_dig', data => {
+      const h = allBurrowHoles[data.holeIndex];
+      if (h) {
+        h.dirtCount = data.dirtCount;
+        h.layers.forEach((l, idx) => { l.visible = idx < h.dirtCount; });
+        playProceduralDigSound();
+      }
     });
 
     socket.on('sync_hole_fill', data => {
@@ -795,7 +807,9 @@
 
           let d=new V3().subVectors(tgt,zp);d.y=0;d.normalize();
           let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));
+          
           parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
+          parts.group.updateMatrixWorld(true);
 
           let flatZombiePos = new V3(parts.group.position.x, nearestPlayer.pos.y, parts.group.position.z);
           if(flatZombiePos.distanceTo(nearestPlayer.pos) < 2.5 && Math.abs(parts.group.position.y - nearestPlayer.pos.y) < 5.0 && zb.emergenceStage === 3 && now - zb.lastAttackTime > 1500){

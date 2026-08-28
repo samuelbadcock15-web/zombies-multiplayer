@@ -723,6 +723,15 @@
       }
     });
 
+    socket.on('trigger_hidden_button', () => {
+      if (isHost && !secretPermanentlyOpen) {
+        secretPermanentlyOpen = true;
+        secretActive = true;
+        hiddenButtonMesh.position.z -= 0.1; setTimeout(() => hiddenButtonMesh.position.z += 0.1, 150);
+        txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN.";
+      }
+    });
+
     socket.on('client_throw_grenade', data => {
       const m = MESH(SG(0.2,12,12),SM({color:0x444433,roughness:0.7}), data.x, data.y, data.z);
       scene.add(m);
@@ -960,9 +969,15 @@
       if(hbHit.length>0 && playerRig.position.distanceTo(hiddenButtonMesh.position)<15){
         if(!secretPermanentlyOpen){
           if(playerPoints>=350){
-            playerPoints-=350;$('score-val').innerText=playerPoints;secretPermanentlyOpen=true;secretActive=true;
-            hiddenButtonMesh.position.z -= 0.1; setTimeout(() => hiddenButtonMesh.position.z += 0.1, 150);
-            txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN.";
+            playerPoints-=350;$('score-val').innerText=playerPoints;
+            if(isHost){
+              secretPermanentlyOpen=true;secretActive=true;
+              hiddenButtonMesh.position.z -= 0.1; setTimeout(() => hiddenButtonMesh.position.z += 0.1, 150);
+              txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN.";
+            } else {
+              socket.emit('request_hidden_button');
+              txtDiv.innerHTML="REQUESTING CRYPT UNLOCK...";
+            }
           }else txtDiv.innerHTML="CRYPT LOCK REQUIRES 350 CREDITS.";
         }
         return;

@@ -669,6 +669,24 @@
       machineGroup.rotation.y = data.yaw;
     });
 
+    socket.on('trigger_mystery_box_start', () => {
+      if (isHost && !mysteryBoxActive && !mysteryBoxReadyToCollect) {
+        mysteryBoxActive = true;
+        mysteryBoxTimer = 0;
+        txtDiv.innerHTML = "SUMMONING RELIC FROM THE SHADOWS...";
+      }
+    });
+
+    socket.on('trigger_upgrade_start', data => {
+      if (isHost && !upgradeMachineActive && !upgradeMachineReadyToCollect) {
+        upgradeMachineActive = true;
+        upgradeMachineTimer = 0;
+        upgradeMachineWeaponSlot = data.weaponSlot;
+        fillHoloGroupWithWeaponModel(upgHoloWeapon, upgradeMachineWeaponSlot, true);
+        txtDiv.innerHTML = "RITUAL BLESSING STARTED. STAND BY.";
+      }
+    });
+
     function throwGrenade(){
       if(isGameOver)return;if(grenadeCount<=0){txtDiv.innerHTML="OUT OF GRENADES! RESTOCK AT WALL STAND.";return}
       grenadeCount--;updateEquipmentUI();const dir=new V3(0,0,-1).applyQuaternion(camera.getWorldQuaternion(new T.Quaternion())).normalize(),sp=playerRig.position.clone().add(new V3(0,2.5,0)),m=MESH(SG(0.2,12,12),SM({color:0x444433,roughness:0.7}),sp.x,sp.y,sp.z);scene.add(m);const v=dir.multiplyScalar(0.7);v.y+=0.25;activeGrenades.push({mesh:m,velocity:v,fuse:2});txtDiv.innerHTML="GRENADE DISPATCHED!";
@@ -811,8 +829,14 @@
         if(!upgradeMachineActive&&!upgradeMachineReadyToCollect){
           let cost=500+weaponUpgradeLevels[currentWeapon]*250;
           if(playerPoints>=cost){
-            playerPoints-=cost;$('score-val').innerText=playerPoints;upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;
-            fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
+            playerPoints-=cost;$('score-val').innerText=playerPoints;
+            if(isHost){
+              upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;
+              fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;
+            } else {
+              socket.emit('request_upgrade', { weaponSlot: currentWeapon });
+            }
+            txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
           }else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`;
         }
         return;
@@ -831,7 +855,19 @@
       }
       let bwCheck=new V3();mysteryBoxGroup.getWorldPosition(bwCheck);
       if(raycaster.intersectObjects(mysteryBoxGroup.children).length>0&&playerRig.position.distanceTo(bwCheck)<15){
-        if(!mysteryBoxActive&&!mysteryBoxReadyToCollect){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;mysteryBoxActive=true;mysteryBoxTimer=0;txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS..."}else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS."}return;
+        if(!mysteryBoxActive&&!mysteryBoxReadyToCollect){
+          if(playerPoints>=350){
+            playerPoints-=350;$('score-val').innerText=playerPoints;
+            if(isHost){
+              mysteryBoxActive=true;mysteryBoxTimer=0;
+              txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS...";
+            } else {
+              socket.emit('request_mystery_box');
+              txtDiv.innerHTML="REQUESTING RELIC SUMMON...";
+            }
+          }else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS.";
+        }
+        return;
       }
       
       let hbHit = raycaster.intersectObjects([hiddenButtonMesh]);
@@ -1306,7 +1342,7 @@
 
       chassis.position.y = 3.6 + Math.sin(t * 0.01) * 0.04;
 
-      // Independent movement for ALL players (no locking/glitching)
+      // Independent movement for ALL players
       let moveSpeed = hasStaminUp ? 18.0 : 12.0;
       if(playerRig.position.z < -275 && playerRig.position.z > -385 && playerRig.position.x > -55 && playerRig.position.x < 55 && !secretPermanentlyOpen && playerRig.position.y <= 3.5 && playerRig.position.y > -40){
         moveSpeed = 4.0;

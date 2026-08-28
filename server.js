@@ -169,6 +169,15 @@ io.on('connection', (socket) => {
     io.emit('trigger_hidden_button');
   });
 
+  // Weapon / Reward Claim Relays for Non-Hosts
+  socket.on('request_claim_mystery_box', () => {
+    io.emit('trigger_claim_mystery_box');
+  });
+
+  socket.on('request_claim_upgrade', () => {
+    io.emit('trigger_claim_upgrade');
+  });
+
   socket.on('player_update', (data) => {
     socket.broadcast.emit('remote_player_update', { id: socket.id, ...data });
   });

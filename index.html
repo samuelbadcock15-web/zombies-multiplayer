@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <title>Haunted Mansion Vault - Protect the Host Edition</title>
+  <title>Haunted Mansion Vault - Co-Op Outbreak Edition</title>
   <style>
     * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
     body { margin: 0; background: #0c0806; color: #fff; font-family: monospace; overflow: hidden; width: 100vw; height: 100vh; touch-action: none; }
@@ -84,16 +84,16 @@
 
   <div id="audio-overlay">
     <div style="font-size:28px;color:#d4af37;font-weight:900;margin-bottom:10px;letter-spacing:2px;">HAUNTED MANSION VAULT</div>
-    <div style="color:#b8860b;margin-bottom:30px;font-size:13px;">PROTECT THE HOST CO-OP</div>
+    <div style="color:#b8860b;margin-bottom:30px;font-size:13px;">CHOOSE GAME MODE</div>
     <div class="arcade-btn-group">
       <button class="audio-btn audio-btn-sec" id="btn-single-player">SINGLE PLAYER</button>
-      <button class="audio-btn" id="btn-multiplayer">MULTIPLAYER CO-OP</button>
+      <button class="audio-btn" id="btn-multiplayer">MULTIPLIER CO-OP</button>
     </div>
   </div>
 
   <div id="lobby-screen">
     <div id="browser-view" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-      <div class="lobby-header">PROTECT THE HOST OUTBREAK<br><span style="font-size:13px;color:#fa0;">SELECT SQUAD LOBBY (SLOT 1 = HOST)</span></div>
+      <div class="lobby-header">MULTIPLAYER OUTBREAK<br><span style="font-size:13px;color:#fa0;">SELECT SQUAD LOBBY (2P / 3P / 4P)</span></div>
       <input id="player-name-input" class="input-box" maxlength="12" placeholder="CALLSIGN" value="MARINE">
       <div id="lobbies-container"></div>
     </div>
@@ -113,7 +113,7 @@
     <div id="team-hud"><b style="color:#d4af37;">SQUAD</b><div id="team-list-hud"></div></div>
     <div id="round-display">ROUND<span id="round-val">I</span></div>
     <div id="crosshair"></div>
-    <div id="msg-box"><div id="text">HAUNTED PROTOCOL ENGAGED. PROTECT THE HOST!</div></div>
+    <div id="msg-box"><div id="text">HAUNTED PROTOCOL ENGAGED. 500 CREDITS LOADED.</div></div>
   </div>
 
   <div id="mobile-controls">
@@ -197,7 +197,7 @@
             const slot = lobby.slots[i];
             if (slot) {
               slotsHtml += `<div class="slot-row" style="color:#${slot.color.toString(16).padStart(6,'0')};">
-                <span>SLOT ${i+1}: ${slot.name} ${i===0?'(HOST)':''}</span>
+                <span>SLOT ${i+1}: ${slot.name}</span>
                 <span class="${slot.ready ? 'status-ready':'status-waiting'}">${slot.ready ? 'READY':'WAITING'}</span>
               </div>`;
             } else {
@@ -211,7 +211,7 @@
 
           card.innerHTML = `
             <div class="lobby-box-title">
-              <span>LOBBY ${lobby.id} — PROTECT THE HOST</span>
+              <span>LOBBY ${lobby.id} — ${lobby.maxPlayers} PLAYER SQUAD</span>
               <span style="color:#fff;">${lobby.playerCount}/${lobby.maxPlayers}</span>
             </div>
             ${slotsHtml}
@@ -246,7 +246,7 @@
         const isMe = (i + 1 === mySlotNumber);
         if (slot) {
           cont.innerHTML += `<div class="slot-row" style="color:#${slot.color.toString(16).padStart(6,'0')}; font-size:14px; padding:10px;">
-            <span>SLOT ${i+1}: ${slot.name} ${i===0?'[HOST]':''} ${isMe ? '(YOU)':''}</span>
+            <span>SLOT ${i+1}: ${slot.name} ${isMe ? '(YOU)':''}</span>
             <span class="${slot.ready ? 'status-ready':'status-waiting'}">${slot.ready ? 'READY ✓':'WAITING...'}</span>
           </div>`;
           if (isMe) {
@@ -323,12 +323,12 @@
       if(isGameOver)return;
       if(hasQuickRevive&&quickReviveShield>0){quickReviveShield--;updateTacticalHUD();$('damage-overlay').style.backgroundColor="rgba(0,168,255,0.4)";setTimeout(()=>{$('damage-overlay').style.backgroundColor="rgba(255,0,0,0)"},150);txtDiv.innerHTML="QUICK REVIVE SHIELD ABSORBED BITE!";if(quickReviveShield<=0){hasQuickRevive=false;updateTacticalHUD();txtDiv.innerHTML="QUICK REVIVE SHIELD DEPLETED!"}return}
       playerBites++;updateTacticalHUD();$('damage-overlay').style.backgroundColor="rgba(255,0,0,0.4)";setTimeout(()=>{$('damage-overlay').style.backgroundColor="rgba(255,0,0,0)"},150);
-      if(playerBites>=maxBites)triggerGameOver();else txtDiv.innerHTML="HOST ATTACKED! DEFEND!";
+      if(playerBites>=maxBites)triggerGameOver();else txtDiv.innerHTML="YOU WERE BITTEN! FALL BACK!";
     }
 
     socket.on('force_damage_player', () => { damagePlayer(); });
 
-    function triggerGameOver(){isGameOver=true;document.exitPointerLock();txtDiv.innerHTML=`YOU FELL IN ROUND ${currentRound}. SQUAD WIPED!`}
+    function triggerGameOver(){isGameOver=true;document.exitPointerLock();txtDiv.innerHTML=`YOU FELL IN ROUND ${currentRound}. SPECTATING SQUAD...`}
 
     function startRound(r){
       currentRound=r;$('round-val').innerText=toRoman(currentRound);zombiesToSpawnRemaining=4+Math.floor(currentRound*2.5);spawnInterval=Math.max(600,2500-currentRound*120);roundActive=true;txtDiv.innerHTML=`ROUND ${toRoman(currentRound)} HAS COMMENCED!`;
@@ -611,15 +611,6 @@
       rebuildZombieHitboxes();
     });
 
-    socket.on('sync_host_viewport', data => {
-      if (isHost) return;
-      playerRig.position.set(data.x, data.y, data.z);
-      playerYaw = data.yaw;
-      playerPitch = data.pitch;
-      playerRig.rotation.y = playerYaw;
-      cameraPitchObject.rotation.x = playerPitch;
-    });
-
     socket.on('sync_hole_fill', data => {
       const h = allBurrowHoles[data.holeIndex];
       if (h) {
@@ -749,7 +740,16 @@
             zb.lastAttackTime = now;
           }
         }
+
+        if(robotMercState.active&&zb.emergenceStage===3&&!zb.deadAndShrinking){
+          let gr=120+robotMercState.level*25,dr=parts.group.position.distanceTo(machineGroup.position);
+          if(dr<gr){
+            if(Math.random()<0.35){setZombieStage(zb,zb.stage-1);playPistolShotSound();if(zb.deadAndShrinking){addPoints(10);chg=true}}
+            if(dr<2.5&&now-zb.lastAttackTime>1000){robotMercState.health-=10;zb.lastAttackTime=now;txtDiv.innerHTML=`VETERAN ROBOT TAKING DAMAGE! HEALTH: ${robotMercState.health}/${robotMercState.maxHealth}`;if(robotMercState.health<=0){robotMercState.active=false;robotMercState.isBeingOverrun=true;speakRobotVoice("Argh! They got me! Get to the ship, marine!");txtDiv.innerHTML="ROBOT OVERRUN! ZOMBIES DRAGGING HIM INTO THE FLOOR!"}}
+          }
+        }
       }
+      if(!isGameOver&&machineGroup.parent&&playerRig.position.distanceTo(machineGroup.position)<10&&now-robotMercState.lastProximitySpeechTime>15000){robotMercState.lastProximitySpeechTime=now;speakRobotVoice(getUniqueRandomLine(robotMercState.active))}
       if(chg){rebuildZombieHitboxes();checkRoundEnd()}
     }
 
@@ -931,7 +931,7 @@
 
     function updateTeamHUD() {
       const el = $('team-list-hud');
-      el.innerHTML = `<div style="color:#${myColor ? myColor.toString(16).padStart(6,'0') : '00ffcc'};">• Slot ${mySlotNumber} ${isHost?'[HOST]':'(Guard)'}</div>`;
+      el.innerHTML = `<div style="color:#${myColor ? myColor.toString(16).padStart(6,'0') : '00ffcc'};">• Slot ${mySlotNumber} (You)</div>`;
       Object.values(remotePlayers).forEach(rp => {
         el.innerHTML += `<div style="color:#${rp.data.color.toString(16).padStart(6,'0')};">• Slot ${rp.data.slotNumber}: ${rp.data.name}</div>`;
       });
@@ -1256,13 +1256,6 @@
             z: machineGroup.position.z,
             yaw: machineGroup.rotation.y
           });
-          socket.emit('sync_host_viewport', {
-            x: playerRig.position.x,
-            y: playerRig.position.y,
-            z: playerRig.position.z,
-            yaw: playerYaw,
-            pitch: playerPitch
-          });
         }
       }
 
@@ -1313,25 +1306,19 @@
 
       chassis.position.y = 3.6 + Math.sin(t * 0.01) * 0.04;
 
-      // Only the Host moves physically; Bodyguards send input or watch the Host view
-      if (isHost) {
-        let moveSpeed = hasStaminUp ? 18.0 : 12.0;
-        if(playerRig.position.z < -275 && playerRig.position.z > -385 && playerRig.position.x > -55 && playerRig.position.x < 55 && !secretPermanentlyOpen && playerRig.position.y <= 3.5 && playerRig.position.y > -40){
-          moveSpeed = 4.0;
-        }
-
-        let mv = new V3(0,0,0);
-        if(keys.w) mv.z -= 1;
-        if(keys.s) mv.z += 1;
-        if(keys.a) mv.x -= 1;
-        if(keys.d) mv.x += 1;
-        mv.normalize().applyQuaternion(playerRig.quaternion);
-        mv.y = 0;
-
-        let np = playerRig.position.clone().addScaledVector(mv, moveSpeed * delta);
-        checkWallCollisions(np);
-        playerRig.position.copy(np);
+      // Independent movement for ALL players (no locking/glitching)
+      let moveSpeed = hasStaminUp ? 18.0 : 12.0;
+      if(playerRig.position.z < -275 && playerRig.position.z > -385 && playerRig.position.x > -55 && playerRig.position.x < 55 && !secretPermanentlyOpen && playerRig.position.y <= 3.5 && playerRig.position.y > -40){
+        moveSpeed = 4.0;
       }
+
+      let mv = new V3(0,0,0);
+      if(keys.w) mv.z -= 1;
+      if(keys.s) mv.z += 1;
+      if(keys.a) mv.x -= 1;
+      if(keys.d) mv.x += 1;
+      mv.normalize().applyQuaternion(playerRig.quaternion);
+      mv.y = 0;
 
       mirrorMesh.visible = false;
       renderer.setRenderTarget(mirrorRenderTarget);
@@ -1348,6 +1335,10 @@
           }
         }
       }
+
+      let np = playerRig.position.clone().addScaledVector(mv, moveSpeed * delta);
+      checkWallCollisions(np);
+      playerRig.position.copy(np);
 
       if(elevatorActive && playerRig.position.z >= -345 && playerRig.position.z <= -315 && playerRig.position.x >= -15 && playerRig.position.x <= 15){
         playerRig.position.x = Math.max(-13.5, Math.min(13.5, playerRig.position.x));

@@ -120,7 +120,9 @@ io.on('connection', socket => {
   });
 
   socket.on('zombie_hit', data => {
-    io.emit('host_apply_zombie_hit', {
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    socket.to(loc.lobbyId).emit('host_apply_zombie_hit', {
       zombieIndex: data.zombieIndex,
       damage: data.damage,
       isHeadshot: data.isHeadshot,

@@ -616,7 +616,6 @@
       networkZombies.forEach((nz, idx) => {
         const localZ = activeZombies[idx];
         if (localZ) {
-          // Smooth interpolation for non-host zombie movement
           localZ.targetPos = new V3(nz.x, nz.y, nz.z);
           localZ.targetYaw = nz.yaw;
           setZombieStage(localZ, nz.stage);
@@ -832,7 +831,6 @@
             zb.meshParts.group.position.lerp(zb.targetPos, 0.2);
             zb.meshParts.group.rotation.y += (zb.targetYaw - zb.meshParts.group.rotation.y) * 0.2;
           }
-          // Ensure emergence parts are fully visible on client sync
           zb.meshParts.head.visible = zb.meshParts.body.visible = zb.meshParts.arms.visible = true;
           zb.meshParts.head.position.y = 2.4;
           zb.meshParts.body.position.y = 1.1;

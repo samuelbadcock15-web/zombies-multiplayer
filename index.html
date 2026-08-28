@@ -606,6 +606,7 @@
         const localZ = activeZombies[idx];
         if (localZ) {
           localZ.meshParts.group.position.set(nz.x, nz.y, nz.z);
+          // FORCE EXACT YAW ROTATION TO MATCH HOST (Eliminates backwards-walking / moonwalking)
           localZ.meshParts.group.rotation.y = nz.yaw;
           setZombieStage(localZ, nz.stage);
         }

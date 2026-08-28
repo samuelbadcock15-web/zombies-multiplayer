@@ -1011,9 +1011,13 @@
     });
 
     window.addEventListener('mousemove',e=>{if(document.pointerLockElement!==document.body||isGameOver)return;playerYaw-=e.movementX*0.0025;playerRig.rotation.y=playerYaw;playerPitch=Math.max(-1.4,Math.min(1.4,playerPitch-e.movementY*0.0025));cameraPitchObject.rotation.x=playerPitch});
+    
+    // PC Single-Click interaction (fires immediately on click without requiring holding)
     window.addEventListener('mousedown',e=>{
       if(isMobile||document.pointerLockElement!==document.body||isGameOver)return;
-      if(e.button===0){isLmbHeldDown=true;executeWeaponFireRaycast();lastShotTime=performance.now()}
+      if(e.button===0){
+        executeWeaponFireRaycast();
+      }
       if(e.button===2){
         raycaster.setFromCamera(new T.Vector2(0,0),camera);
         let hi=raycaster.intersectObjects(holeInteractiveMeshes);
@@ -1099,6 +1103,7 @@
     lookPad.addEventListener('touchend', resetLookPad);
     lookPad.addEventListener('touchcancel', resetLookPad);
 
+    // Mobile single-tap interaction (fires immediately on screen touch)
     window.addEventListener('touchstart', e => {
       if (!gameActive || isGameOver || !isMobile || e.target.tagName.includes('BUTTON') || e.target.closest('#mobile-controls')) return;
       const touch = e.touches[0];
@@ -1130,8 +1135,7 @@
       requestAnimationFrame(animate);updateUpgradeMachineScreen();upgScreenTexture.needsUpdate=true;drawAnimatedHostScreen(t);arcadeScreenTexture.needsUpdate=true;updateMysteryBoxScreen();boxScreenTexture.needsUpdate=true;
       let now=performance.now();if(!gameActive||isGameOver)return;
       redOrbMesh.position.y=7+Math.sin(t*0.003)*0.8;
-      let efr=hasDoubleTap?autoFireRateMs/2:autoFireRateMs;
-      if(isLmbHeldDown&&(currentWeapon===2||currentWeapon===4||currentWeapon===5)){if(now-lastShotTime>(currentWeapon===5?efr*0.8:efr)){executeWeaponFireRaycast();lastShotTime=now}}
+      
       if(robotMercState.active){robotMercState.durationTimer-=0.016;if(robotMercState.durationTimer<=0){robotMercState.active=false;robotMercState.level++;speakRobotVoice(`Contract completed! Upgraded to level ${robotMercState.level}, marine!`);txtDiv.innerHTML=`GOODY CONTRACT COMPLETED! UPGRADED TO LEVEL ${toRoman(robotMercState.level)}!`}}
       else if(robotMercState.isBeingOverrun){robotMercState.overrunProgress+=0.01;machineGroup.position.y-=0.02;if(robotMercState.overrunProgress>=1){scene.remove(machineGroup);robotMercState.isBeingOverrun=false}}
       for(let i=activeGrenades.length-1;i>=0;i--){let n=activeGrenades[i];n.fuse-=0.016;n.velocity.y-=0.015;n.mesh.position.add(n.velocity);let fb=(playerRig.position.y<-45)?-79.8:0;if(n.mesh.position.y<=fb+0.2){n.mesh.position.y=fb+0.2;n.velocity.set(0,0,0)}if(n.fuse<=0){triggerExplosion(n.mesh.position,8.5+grenadeUpgradeLevel*2,3+grenadeUpgradeLevel);scene.remove(n.mesh);activeGrenades.splice(i,1)}}

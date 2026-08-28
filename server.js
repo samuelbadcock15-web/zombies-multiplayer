@@ -49,6 +49,7 @@ io.on('connection', (socket) => {
     };
     lobby.playerCount++;
 
+    // Slot 1 is always the designated Host
     if (openSlotIdx === 0) {
       lobby.hostSocketId = socket.id;
     }
@@ -132,7 +133,7 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('client_round_sync', round);
   });
 
-  // Action Relays
+  // Action & Visibility Relays
   socket.on('sync_hole_dig', (data) => {
     socket.broadcast.emit('sync_hole_dig', data);
   });

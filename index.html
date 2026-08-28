@@ -870,9 +870,13 @@
       if(hbHit.length>0 && playerRig.position.distanceTo(hiddenButtonMesh.position)<15){
         if(!secretPermanentlyOpen){
           if(playerPoints>=350){
-            playerPoints-=350;$('score-val').innerText=playerPoints;secretPermanentlyOpen=true;secretActive=true;
+            playerPoints-=350;$('score-val').innerText=playerPoints;
+            secretPermanentlyOpen=true;secretActive=true;
             hiddenButtonMesh.position.z -= 0.1; setTimeout(() => hiddenButtonMesh.position.z += 0.1, 150);
             txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN.";
+            if(isHost) {
+              socket.emit('host_elevator_sync', { active: elevatorActive, progress: elevatorProgress, direction: elevatorDirection, permanentlyOpen: secretPermanentlyOpen, secretActive: secretActive });
+            }
           }else txtDiv.innerHTML="CRYPT LOCK REQUIRES 350 CREDITS.";
         }
         return;
@@ -883,9 +887,13 @@
         if(pBtnHit.length>0 && playerRig.position.distanceTo(bwP)<15){
           if(elevatorActive)return;
           if(playerPoints>=350){
-            playerPoints-=350;$('score-val').innerText=playerPoints;elevatorActive=true;elevatorDirection=(elevatorProgress>=0.5)?1:-1;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);
+            playerPoints-=350;$('score-val').innerText=playerPoints;
+            elevatorActive=true;elevatorDirection=(elevatorProgress>=0.5)?1:-1;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);
             pButton.position.z -= 0.1; setTimeout(() => pButton.position.z += 0.1, 150);
             txtDiv.innerHTML="DESCENDING CRYPT LIFT! COST: 350 CREDITS.";
+            if(isHost) {
+              socket.emit('host_elevator_sync', { active: elevatorActive, progress: elevatorProgress, direction: elevatorDirection, permanentlyOpen: secretPermanentlyOpen, secretActive: secretActive });
+            }
           }else txtDiv.innerHTML="LIFT TOLL: 350 CREDITS.";
           return;
         }

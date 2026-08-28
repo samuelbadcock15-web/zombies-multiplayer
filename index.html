@@ -616,8 +616,9 @@
       networkZombies.forEach((nz, idx) => {
         const localZ = activeZombies[idx];
         if (localZ) {
-          localZ.meshParts.group.position.set(nz.x, nz.y, nz.z);
-          localZ.meshParts.group.rotation.y = nz.yaw;
+          // Smooth interpolation for non-host zombie movement
+          localZ.targetPos = new V3(nz.x, nz.y, nz.z);
+          localZ.targetYaw = nz.yaw;
           setZombieStage(localZ, nz.stage);
         }
       });
@@ -695,7 +696,6 @@
       machineGroup.rotation.y = data.yaw;
     });
 
-    // NETWORKED GRENADES & EXPLOSIONS
     socket.on('client_spawn_grenade', data => {
       let m = MESH(SG(0.2,12,12), SM({color:0x444433,roughness:0.7}), data.x, data.y, data.z);
       scene.add(m);
@@ -707,7 +707,6 @@
       triggerExplosion(pos, data.r, data.dmg);
     });
 
-    // NETWORKED CLAYMORES
     socket.on('client_spawn_claymore', data => {
       let sp = new V3(data.x, data.y, data.z);
       let g = GRP();
@@ -755,7 +754,7 @@
       const rg=MESH(new T.RingGeometry(0.1,r,16),BM({color:0xff3300,side:T.DoubleSide}),pos.x,pos.y+0.1,pos.z,Math.PI/2);scene.add(rg);setTimeout(()=>scene.remove(rg),250);
       let k=false;
       activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(pos)<=r){setZombieStage(z,z.stage-dmg);if(z.deadAndShrinking){addPoints(10);k=true}}});
-      if(k){rebuildZombieHitboxes();checkRoundEnd()}
+      if(k&&isHost){rebuildZombieHitboxes();checkRoundEnd()}
     }
 
     function getConstrainedPosition(p){
@@ -770,63 +769,76 @@
     }
 
     function updateZombies(now){
-      if(isGameOver||!isHost)return;
-      let chg=false;
+      if(isHost){
+        let chg=false;
+        let allPlayers = [{ id: myId, pos: playerRig.position }];
+        Object.values(remotePlayers).forEach(rp => {
+          if(rp.mesh) allPlayers.push({ id: rp.data.socketId, pos: rp.mesh.position });
+        });
 
-      let allPlayers = [{ id: myId, pos: playerRig.position }];
-      Object.values(remotePlayers).forEach(rp => {
-        if(rp.mesh) allPlayers.push({ id: rp.data.socketId, pos: rp.mesh.position });
-      });
+        for(let i=activeZombies.length-1;i>=0;i--){
+          const zb=activeZombies[i],parts=zb.meshParts;
+          if(zb.deadAndShrinking){scene.remove(parts.group);activeZombies.splice(i,1);chg=true;continue}
+          if(zb.emergenceStage<3){
+            zb.stageProgress+=0.035;
+            if(zb.emergenceStage===0){parts.head.visible=true;parts.head.position.y=zb.stageProgress*2.4;if(zb.stageProgress>=1){zb.emergenceStage=1;zb.stageProgress=0;chg=true}}
+            else if(zb.emergenceStage===1){parts.body.visible=true;parts.body.position.y=zb.stageProgress*1.1;if(zb.stageProgress>=1){zb.emergenceStage=2;zb.stageProgress=0;chg=true}}
+            else if(zb.emergenceStage===2){parts.arms.visible=true;parts.arms.position.y=zb.stageProgress*1.1;if(zb.stageProgress>=1){zb.emergenceStage=3;chg=true}}
+          }else{
+            let nearestPlayer = allPlayers[0];
+            let minDist = parts.group.position.distanceTo(nearestPlayer.pos);
+            allPlayers.forEach(pl => {
+              let d = parts.group.position.distanceTo(pl.pos);
+              if(d < minDist){ minDist = d; nearestPlayer = pl; }
+            });
 
-      for(let i=activeZombies.length-1;i>=0;i--){
-        const zb=activeZombies[i],parts=zb.meshParts;
-        if(zb.deadAndShrinking){scene.remove(parts.group);activeZombies.splice(i,1);chg=true;continue}
-        if(zb.emergenceStage<3){
-          zb.stageProgress+=0.035;
-          if(zb.emergenceStage===0){parts.head.visible=true;parts.head.position.y=zb.stageProgress*2.4;if(zb.stageProgress>=1){zb.emergenceStage=1;zb.stageProgress=0;chg=true}}
-          else if(zb.emergenceStage===1){parts.body.visible=true;parts.body.position.y=zb.stageProgress*1.1;if(zb.stageProgress>=1){zb.emergenceStage=2;zb.stageProgress=0;chg=true}}
-          else if(zb.emergenceStage===2){parts.arms.visible=true;parts.arms.position.y=zb.stageProgress*1.1;if(zb.stageProgress>=1){zb.emergenceStage=3;chg=true}}
-        }else{
-          let nearestPlayer = allPlayers[0];
-          let minDist = parts.group.position.distanceTo(nearestPlayer.pos);
-          allPlayers.forEach(pl => {
-            let d = parts.group.position.distanceTo(pl.pos);
-            if(d < minDist){ minDist = d; nearestPlayer = pl; }
-          });
+            let tgt = nearestPlayer.pos.clone();
+            let zp=parts.group.position;
+            if(zp.z>-25&&tgt.z<-25)tgt.set(0,zp.y,-25);
+            else if(zp.z<-25&&zp.z>-65&&tgt.z<-65)tgt.set(0,zp.y,-65);
+            else if(zp.z<-65&&zp.z>-215&&tgt.z<-215)tgt.set(0,zp.y,-215);
+            else if(zp.z<-215&&zp.z>-255&&tgt.z<-255)tgt.set(0,zp.y,-255);
 
-          let tgt = nearestPlayer.pos.clone();
-          let zp=parts.group.position;
-          if(zp.z>-25&&tgt.z<-25)tgt.set(0,zp.y,-25);
-          else if(zp.z<-25&&zp.z>-65&&tgt.z<-65)tgt.set(0,zp.y,-65);
-          else if(zp.z<-65&&zp.z>-215&&tgt.z<-215)tgt.set(0,zp.y,-215);
-          else if(zp.z<-215&&zp.z>-255&&tgt.z<-255)tgt.set(0,zp.y,-255);
+            let d=new V3().subVectors(tgt,zp);d.y=0;d.normalize();
+            let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));
+            parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
 
-          let d=new V3().subVectors(tgt,zp);d.y=0;d.normalize();
-          let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));
-          parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
-
-          let flatZombiePos = new V3(parts.group.position.x, nearestPlayer.pos.y, parts.group.position.z);
-          if(flatZombiePos.distanceTo(nearestPlayer.pos) < 2.5 && Math.abs(parts.group.position.y - nearestPlayer.pos.y) < 5.0 && zb.emergenceStage === 3 && now - zb.lastAttackTime > 1500){
-            playZombieBiteSound();
-            if (nearestPlayer.id === myId) {
-              damagePlayer();
-            } else {
-              socket.emit('player_bitten', nearestPlayer.id);
+            let flatZombiePos = new V3(parts.group.position.x, nearestPlayer.pos.y, parts.group.position.z);
+            if(flatZombiePos.distanceTo(nearestPlayer.pos) < 2.5 && Math.abs(parts.group.position.y - nearestPlayer.pos.y) < 5.0 && zb.emergenceStage === 3 && now - zb.lastAttackTime > 1500){
+              playZombieBiteSound();
+              if (nearestPlayer.id === myId) {
+                damagePlayer();
+              } else {
+                socket.emit('player_bitten', nearestPlayer.id);
+              }
+              zb.lastAttackTime = now;
             }
-            zb.lastAttackTime = now;
           }
-        }
 
-        if(robotMercState.active&&zb.emergenceStage===3&&!zb.deadAndShrinking){
-          let gr=120+robotMercState.level*25,dr=parts.group.position.distanceTo(machineGroup.position);
-          if(dr<gr){
-            if(Math.random()<0.35){setZombieStage(zb,zb.stage-1);playPistolShotSound();if(zb.deadAndShrinking){addPoints(10);chg=true}}
-            if(dr<2.5&&now-zb.lastAttackTime>1000){robotMercState.health-=10;zb.lastAttackTime=now;txtDiv.innerHTML=`VETERAN ROBOT TAKING DAMAGE! HEALTH: ${robotMercState.health}/${robotMercState.maxHealth}`;if(robotMercState.health<=0){robotMercState.active=false;robotMercState.isBeingOverrun=true;speakRobotVoice("Argh! They got me! Get to the ship, marine!");txtDiv.innerHTML="ROBOT OVERRUN! ZOMBIES DRAGGING HIM INTO THE FLOOR!"}}
+          if(robotMercState.active&&zb.emergenceStage===3&&!zb.deadAndShrinking){
+            let gr=120+robotMercState.level*25,dr=parts.group.position.distanceTo(machineGroup.position);
+            if(dr<gr){
+              if(Math.random()<0.35){setZombieStage(zb,zb.stage-1);playPistolShotSound();if(zb.deadAndShrinking){addPoints(10);chg=true}}
+              if(dr<2.5&&now-zb.lastAttackTime>1000){robotMercState.health-=10;zb.lastAttackTime=now;txtDiv.innerHTML=`VETERAN ROBOT TAKING DAMAGE! HEALTH: ${robotMercState.health}/${robotMercState.maxHealth}`;if(robotMercState.health<=0){robotMercState.active=false;robotMercState.isBeingOverrun=true;speakRobotVoice("Argh! They got me! Get to the ship, marine!");txtDiv.innerHTML="ROBOT OVERRUN! ZOMBIES DRAGGING HIM INTO THE FLOOR!"}}
+            }
           }
         }
+        if(!isGameOver&&machineGroup.parent&&playerRig.position.distanceTo(machineGroup.position)<10&&now-robotMercState.lastProximitySpeechTime>15000){robotMercState.lastProximitySpeechTime=now;speakRobotVoice(getUniqueRandomLine(robotMercState.active))}
+        if(chg){rebuildZombieHitboxes();checkRoundEnd()}
+      } else {
+        // Smooth non-host zombie lerp interpolation
+        activeZombies.forEach(zb => {
+          if(zb.targetPos){
+            zb.meshParts.group.position.lerp(zb.targetPos, 0.2);
+            zb.meshParts.group.rotation.y += (zb.targetYaw - zb.meshParts.group.rotation.y) * 0.2;
+          }
+          // Ensure emergence parts are fully visible on client sync
+          zb.meshParts.head.visible = zb.meshParts.body.visible = zb.meshParts.arms.visible = true;
+          zb.meshParts.head.position.y = 2.4;
+          zb.meshParts.body.position.y = 1.1;
+          zb.meshParts.arms.position.y = 1.1;
+        });
       }
-      if(!isGameOver&&machineGroup.parent&&playerRig.position.distanceTo(machineGroup.position)<10&&now-robotMercState.lastProximitySpeechTime>15000){robotMercState.lastProximitySpeechTime=now;speakRobotVoice(getUniqueRandomLine(robotMercState.active))}
-      if(chg){rebuildZombieHitboxes();checkRoundEnd()}
     }
 
     function createImpactDamageCrater(hit,type){

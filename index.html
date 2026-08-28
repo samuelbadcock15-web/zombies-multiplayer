@@ -1203,22 +1203,39 @@
 
       upgReactorRing.rotation.x += 0.05;
       
-      // UNIVERSAL MACHINE & RELIC CHEST ANIMATIONS (Runs for both Host and Non-Hosts)
+      // UNIVERSAL ANIMATIONS FOR ALL CLIENTS
       if(upgradeMachineActive){
         upgradeMachineTimer += 0.016;
         upgHoloWeapon.rotation.y += 0.12;
         upgHoloWeapon.position.y = 4.2 + (upgradeMachineTimer / 3) * 0.8;
-        if(isHost && upgradeMachineTimer >= 3){
-          upgradeMachineActive = false;
-          upgradeMachineReadyToCollect = true;
-          upgradeMachineTimer = 0;
-          upgHoloWeapon.position.set(0, 4.8, 0);
-        }
       } else if(upgradeMachineReadyToCollect){
         upgradeMachineTimer += 0.016;
         upgHoloWeapon.rotation.y += 0.02;
         upgHoloWeapon.position.y = 4.8 + Math.sin(upgradeMachineTimer * 4) * 0.15;
-        if(isHost && (playerRig.position.distanceTo(upgradeMachineGroup.position) < 8 || upgradeMachineTimer > 1)){
+      }
+
+      if(mysteryBoxActive){
+        mysteryBoxTimer += 0.016;
+        boxWeaponHolo.rotation.y += 0.08;
+      } else if(mysteryBoxReadyToCollect){
+        mysteryBoxTimer += 0.016;
+        boxWeaponHolo.rotation.y += 0.03;
+        boxWeaponHolo.position.y = 3.5 + Math.sin(mysteryBoxTimer * 3) * 0.15;
+      }
+
+      if(isHost){
+        if(roundActive && zombiesToSpawnRemaining > 0 && t - lastSpawnTime > spawnInterval){
+          spawnZombieAtBurrow();
+          lastSpawnTime = t;
+        }
+
+        // Host updates upgrade machine state if active
+        if(upgradeMachineActive && upgradeMachineTimer >= 3){
+          upgradeMachineActive = false;
+          upgradeMachineReadyToCollect = true;
+          upgradeMachineTimer = 0;
+          upgHoloWeapon.position.set(0, 4.8, 0);
+        } else if(upgradeMachineReadyToCollect && (playerRig.position.distanceTo(upgradeMachineGroup.position) < 8 || upgradeMachineTimer > 1)){
           upgradeMachineReadyToCollect = false;
           while(upgHoloWeapon.children.length > 0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
           weaponUpgradeLevels[upgradeMachineWeaponSlot]++;
@@ -1228,24 +1245,13 @@
           playMysteryBoxSound();
           txtDiv.innerHTML = `${baseWeaponData[upgradeMachineWeaponSlot].name} AUTO-BLESSED TO LVL ${toRoman(weaponUpgradeLevels[upgradeMachineWeaponSlot])}!`;
         }
-      }
 
-      if(mysteryBoxActive){
-        mysteryBoxTimer += 0.016;
-        boxWeaponHolo.rotation.y += 0.08;
-        let rpn = ["PISTOL","AUTO PISTOL","HEAVY SHOTGUN","AUTOMATIC RIFLE","RAY PISTOL","FRAG GRENADES","CLAYMORE MINE","ROBOT GOODY UPGRADE"], rpi = [1,2,3,4,5,6,7,8];
-        if(mysteryBoxTimer < 2.5){
-          if(Math.floor(mysteryBoxTimer * 15) % 2 === 0){
-            let ri = Math.floor(Math.random() * rpn.length);
-            mysteryBoxCyclingReward = rpn[ri];
-            mysteryBoxRewardType = rpi[ri];
-            fillHoloGroupWithRewardModel(boxWeaponHolo, mysteryBoxRewardType);
-          }
-        } else if(isHost) {
+        if(mysteryBoxActive && mysteryBoxTimer >= 2.5){
           mysteryBoxActive = false;
           mysteryBoxReadyToCollect = true;
           mysteryBoxTimer = 0;
           mysteryBoxUsesCount++;
+          let rpn = ["PISTOL","AUTO PISTOL","HEAVY SHOTGUN","AUTOMATIC RIFLE","RAY PISTOL","FRAG GRENADES","CLAYMORE MINE","ROBOT GOODY UPGRADE"], rpi = [1,2,3,4,5,6,7,8];
           let fr = Math.random(), fi = fr < 0.1 ? 4 : (fr < 0.35 ? Math.floor(Math.random() * 4) : (fr < 0.7 ? 5 : (fr < 0.9 ? 6 : 7)));
           mysteryBoxCyclingReward = rpn[fi];
           mysteryBoxRewardType = rpi[fi];
@@ -1260,12 +1266,7 @@
             updateMapHologramSign();
             txtDiv.innerHTML = `CHEST SHIFTED TO ${boxRoomLocations[mysteryBoxCurrentRoom].name}! CHECK MAP.`;
           }
-        }
-      } else if(mysteryBoxReadyToCollect){
-        mysteryBoxTimer += 0.016;
-        boxWeaponHolo.rotation.y += 0.03;
-        boxWeaponHolo.position.y = 3.5 + Math.sin(mysteryBoxTimer * 3) * 0.15;
-        if(isHost && mysteryBoxTimer >= 8){
+        } else if(mysteryBoxReadyToCollect && mysteryBoxTimer >= 8){
           mysteryBoxFadeAlpha = Math.max(0, mysteryBoxFadeAlpha - 0.016);
           if(mysteryBoxTimer >= 10){
             mysteryBoxReadyToCollect = false;
@@ -1274,13 +1275,6 @@
             while(boxWeaponHolo.children.length > 0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
             txtDiv.innerHTML = "RELIC FADED BACK INTO THE SHADOWS...";
           }
-        }
-      }
-
-      if(isHost){
-        if(roundActive && zombiesToSpawnRemaining > 0 && t - lastSpawnTime > spawnInterval){
-          spawnZombieAtBurrow();
-          lastSpawnTime = t;
         }
         
         if(now - lastNetSendTime > 33){
@@ -1316,7 +1310,7 @@
 
       updateZombies(now);
 
-      if(!robotMercState.isBeingOverrun){
+      if(!robotMercState.isBeingOverrun && isHost){
         if(robotMercState.active){
           let tp = playerRig.position.clone().add(new V3(0, 0, -15).applyQuaternion(playerRig.quaternion));
           tp.y = (playerRig.position.y < -40) ? -79.8 : 0;

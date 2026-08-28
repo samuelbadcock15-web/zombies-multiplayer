@@ -825,7 +825,6 @@
         if(!isGameOver&&machineGroup.parent&&playerRig.position.distanceTo(machineGroup.position)<10&&now-robotMercState.lastProximitySpeechTime>15000){robotMercState.lastProximitySpeechTime=now;speakRobotVoice(getUniqueRandomLine(robotMercState.active))}
         if(chg){rebuildZombieHitboxes();checkRoundEnd()}
       } else {
-        // Smooth non-host zombie lerp interpolation
         activeZombies.forEach(zb => {
           if(zb.targetPos){
             zb.meshParts.group.position.lerp(zb.targetPos, 0.2);
@@ -903,8 +902,9 @@
         if(!upgradeMachineActive&&!upgradeMachineReadyToCollect){
           let cost=500+weaponUpgradeLevels[currentWeapon]*250;
           if(playerPoints>=cost){
-            playerPoints-=cost;$('score-val').innerText=playerPoints;upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;
-            fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
+            playerPoints-=cost;$('score-val').innerText=playerPoints;
+            socket.emit('request_upgrade_machine', { cost, weaponSlot: currentWeapon });
+            txtDiv.innerHTML="RITUAL BLESSING REQUEST SENT...";
           }else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`;
         }
         return;
@@ -913,17 +913,22 @@
       if(mysteryBoxReadyToCollect){
         let bwPos=new V3();mysteryBoxGroup.getWorldPosition(bwPos);
         if((raycaster.intersectObjects(boxWeaponHolo.children,true).length>0||raycaster.intersectObjects(mysteryBoxGroup.children).length>0)&&playerRig.position.distanceTo(bwPos)<15){
-          mysteryBoxReadyToCollect=false;while(boxWeaponHolo.children.length>0)boxWeaponHolo.remove(boxWeaponHolo.children[0]);
-          if(mysteryBoxRewardType>=1&&mysteryBoxRewardType<=5){let w=mysteryBoxRewardType;if(w===2)hasAutomaticPistol=true;if(w===3)hasRifle=true;if(w===4)hasAutoRifle=true;if(w===5)hasRayPistol=true;if(weaponUpgradeLevels[w]<=weaponUpgradeLevels[currentWeapon])weaponUpgradeLevels[w]=weaponUpgradeLevels[currentWeapon]+1;ammoReserves[w]=getWeaponStat(w,'maxAmmo');switchWeapon(w);txtDiv.innerHTML=`RELIC CHEST: ${baseWeaponData[w].name} [LVL ${toRoman(weaponUpgradeLevels[w])}] SECURED!`}
-          else if(mysteryBoxRewardType===6){grenadeCount=2;grenadeUpgradeLevel++;updateEquipmentUI();txtDiv.innerHTML=`RELIC CHEST: GRENADES LVL ${toRoman(grenadeUpgradeLevel+1)} SECURED!`}
-          else if(mysteryBoxRewardType===7){claymoreCount=2;claymoreUpgradeLevel++;updateEquipmentUI();txtDiv.innerHTML=`RELIC CHEST: CLAYMORES LVL ${toRoman(claymoreUpgradeLevel+1)} SECURED!`}
-          else if(mysteryBoxRewardType===8){robotMercState.level++;robotMercState.active=true;robotMercState.health=robotMercState.maxHealth;robotMercState.durationTimer+=30;speakRobotVoice(`Smart core upgrade to level ${robotMercState.level}! Let's party!`);txtDiv.innerHTML=`RELIC CHEST: VETERAN ROBOT UPGRADED TO LEVEL ${robotMercState.level}!`}
-          playMysteryBoxSound();return;
+          socket.emit('claim_mystery_box_reward', { rewardType: mysteryBoxRewardType });
+          mysteryBoxReadyToCollect=false;
+          while(boxWeaponHolo.children.length>0)boxWeaponHolo.remove(boxWeaponHolo.children[0]);
+          return;
         }
       }
       let bwCheck=new V3();mysteryBoxGroup.getWorldPosition(bwCheck);
       if(raycaster.intersectObjects(mysteryBoxGroup.children).length>0&&playerRig.position.distanceTo(bwCheck)<15){
-        if(!mysteryBoxActive&&!mysteryBoxReadyToCollect){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;mysteryBoxActive=true;mysteryBoxTimer=0;txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS..."}else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS."}return;
+        if(!mysteryBoxActive&&!mysteryBoxReadyToCollect){
+          if(playerPoints>=350){
+            playerPoints-=350;$('score-val').innerText=playerPoints;
+            socket.emit('request_mystery_box_spin');
+            txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS...";
+          }else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS.";
+        }
+        return;
       }
       
       let hbHit = raycaster.intersectObjects([hiddenButtonMesh]);
@@ -931,12 +936,9 @@
         if(!secretPermanentlyOpen){
           if(playerPoints>=350){
             playerPoints-=350;$('score-val').innerText=playerPoints;
-            secretPermanentlyOpen=true;secretActive=true;
             hiddenButtonMesh.position.z -= 0.1; setTimeout(() => hiddenButtonMesh.position.z += 0.1, 150);
+            socket.emit('request_open_crypt');
             txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN.";
-            if(isHost) {
-              socket.emit('host_elevator_sync', { active: elevatorActive, progress: elevatorProgress, direction: elevatorDirection, permanentlyOpen: secretPermanentlyOpen, secretActive: secretActive });
-            }
           }else txtDiv.innerHTML="CRYPT LOCK REQUIRES 350 CREDITS.";
         }
         return;
@@ -948,12 +950,9 @@
           if(elevatorActive)return;
           if(playerPoints>=350){
             playerPoints-=350;$('score-val').innerText=playerPoints;
-            elevatorActive=true;elevatorDirection=(elevatorProgress>=0.5)?1:-1;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);
             pButton.position.z -= 0.1; setTimeout(() => pButton.position.z += 0.1, 150);
+            socket.emit('request_elevator_toggle');
             txtDiv.innerHTML="DESCENDING CRYPT LIFT! COST: 350 CREDITS.";
-            if(isHost) {
-              socket.emit('host_elevator_sync', { active: elevatorActive, progress: elevatorProgress, direction: elevatorDirection, permanentlyOpen: secretPermanentlyOpen, secretActive: secretActive });
-            }
           }else txtDiv.innerHTML="LIFT TOLL: 350 CREDITS.";
           return;
         }
@@ -976,25 +975,11 @@
         let isH=(zh[0].object.userData.hitBoxPart==="head"),tz=activeZombies[zh[0].object.userData.parentZombieIndex];
         let zDmg = isH?getWeaponStat(currentWeapon,'headDamage'):getWeaponStat(currentWeapon,'damage');
         
-        if (isHost) {
-          if(tz&&!tz.deadAndShrinking){
-            setZombieStage(tz,tz.stage-zDmg);
-            if(tz.deadAndShrinking){
-              addPoints(isH?20:10);
-              txtDiv.innerHTML=isH?"CRITICAL HEADSHOT KILL! +20 CREDITS":"TARGET BANISHED! +10 CREDITS";
-              rebuildZombieHitboxes();checkRoundEnd();
-            } else {
-              addPoints(10);
-              txtDiv.innerHTML=isH?"HEADSHOT HIT! -3 STAGES! +20 CREDITS":"HIT REGISTERED! STAGE REDUCED. +10 CREDITS";
-            }
-          }
-        } else {
-          socket.emit('zombie_hit', {
-            zombieIndex: zh[0].object.userData.parentZombieIndex,
-            damage: zDmg,
-            isHeadshot: isH
-          });
-        }
+        socket.emit('zombie_hit', {
+          zombieIndex: zh[0].object.userData.parentZombieIndex,
+          damage: zDmg,
+          isHeadshot: isH
+        });
         return;
       }
       let eh=raycaster.intersectObjects(generalEnvironmentMeshes.filter(m=>m.visible!==false));

@@ -132,7 +132,7 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('client_round_sync', round);
   });
 
-  // Action, Speech & State Relays
+  // Action & Visibility Relays
   socket.on('sync_hole_dig', (data) => {
     socket.broadcast.emit('sync_hole_dig', data);
   });
@@ -147,10 +147,6 @@ io.on('connection', (socket) => {
 
   socket.on('place_claymore_sync', (data) => {
     socket.broadcast.emit('client_place_claymore', data);
-  });
-
-  socket.on('robot_speech_sync', (line) => {
-    io.emit('sync_robot_speech', line);
   });
 
   socket.on('request_mystery_box', () => {

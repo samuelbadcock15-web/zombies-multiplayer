@@ -608,7 +608,6 @@
         const localZ = activeZombies[idx];
         if (localZ) {
           localZ.meshParts.group.position.set(nz.x, nz.y, nz.z);
-          // Apply exact rotation and force world matrix recalculation
           localZ.meshParts.group.rotation.y = nz.yaw;
           localZ.meshParts.group.updateMatrixWorld(true);
           setZombieStage(localZ, nz.stage);

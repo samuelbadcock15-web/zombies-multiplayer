@@ -291,7 +291,7 @@
     function addPoints(a){if(isGameOver)return;playerPoints+=a;$('score-val').innerText=playerPoints}
 
     function updateUpgradeMachineScreen(){
-      let c=upgScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=upgradeMachineReadyToCollect?'#fa0':(upgradeMachineActive?'#f50':'#b8860b');c.lineWidth=14;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("OCCULT RITUAL UPGRADE ALTAR",256,48);c.fillStyle='#fff';c.font='900 42px monospace';c.fillText(upgradeMachineActive?"BLESSING...":(upgradeMachineReadyToCollect?"READY TO CLAIM!":"READY"),256,120);c.fillStyle='#140c08';c.fillRect(40,150,432,200);c.strokeStyle='#ffd700';c.lineWidth=4;c.strokeRect(40,150,432,200);c.fillStyle='#fa0';c.font='bold 30px monospace';c.fillText(baseWeaponData[currentWeapon].name,256,220);c.fillStyle='#ff0';c.font='bold 24px monospace';c.fillText(`CURRENT LVL: ${toRoman(weaponUpgradeLevels[currentWeapon])}`,256,265);c.fillStyle='#ffd700';c.fillText(`COST: ${500+weaponUpgradeLevels[currentWeapon]*250} CREDITS`,256,310);c.fillStyle='#f36';c.font='bold 22px monospace';c.fillText("CLICK / TAP TO COLLECT",256,415);upgScreenTexture.needsUpdate=true;
+      let c=upgScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=upgradeMachineReadyToCollect?'#fa0':(upgradeMachineActive?'#f50':'#b8860b');c.lineWidth=14;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("OCCULT RITUAL UPGRADE ALTAR",256,48);c.fillStyle='#fff';c.font='900 42px monospace';c.fillText(upgradeMachineActive?"BLESSING...":(upgradeMachineReadyToCollect?"AUTO-COLLECTING!":"READY"),256,120);c.fillStyle='#140c08';c.fillRect(40,150,432,200);c.strokeStyle='#ffd700';c.lineWidth=4;c.strokeRect(40,150,432,200);c.fillStyle='#fa0';c.font='bold 30px monospace';c.fillText(baseWeaponData[currentWeapon].name,256,220);c.fillStyle='#ff0';c.font='bold 24px monospace';c.fillText(`CURRENT LVL: ${toRoman(weaponUpgradeLevels[currentWeapon])}`,256,265);c.fillStyle='#ffd700';c.fillText(`COST: ${500+weaponUpgradeLevels[currentWeapon]*250} CREDITS`,256,310);c.fillStyle='#f36';c.font='bold 22px monospace';c.fillText("WALK CLOSE TO AUTO-RETRIEVE!",256,415);upgScreenTexture.needsUpdate=true;
     }
     function updateMysteryBoxScreen(){
       let c=boxScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=mysteryBoxReadyToCollect?'#fa0':'#b8860b';c.lineWidth=14;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("CURSED RELIC CHEST",256,48);c.fillStyle='#fff';c.font='900 48px monospace';c.fillText(mysteryBoxActive?"SUMMONING...":(mysteryBoxReadyToCollect?"CLAIM RELIC":"READY TO OPEN"),256,120);c.fillStyle='#140c08';c.fillRect(40,150,432,200);c.strokeStyle='#8b5a2b';c.lineWidth=4;c.strokeRect(40,150,432,200);c.fillStyle=mysteryBoxReadyToCollect?'#00ff66':'#ff0';c.font='bold 30px monospace';c.fillText(mysteryBoxCyclingReward,256,260);c.fillStyle='#ffd700';c.font='bold 22px monospace';c.fillText("COST: 350 CREDITS",256,395);c.fillStyle='#f36';c.fillText(`LOC: ${boxRoomLocations[mysteryBoxCurrentRoom].name}`,256,435);boxScreenTexture.needsUpdate=true;
@@ -732,52 +732,9 @@
       }
     });
 
-    // Handle Weapon/Reward Claims for All Players via Socket
-    function processMysteryBoxCollection() {
-      mysteryBoxReadyToCollect = false;
-      while(boxWeaponHolo.children.length > 0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
-      
-      if(mysteryBoxRewardType >= 1 && mysteryBoxRewardType <= 5){
-        let w = mysteryBoxRewardType;
-        if(w === 2) hasAutomaticPistol = true;
-        if(w === 3) hasRifle = true;
-        if(w === 4) hasAutoRifle = true;
-        if(w === 5) hasRayPistol = true;
-        if(weaponUpgradeLevels[w] <= weaponUpgradeLevels[currentWeapon]) weaponUpgradeLevels[w] = weaponUpgradeLevels[currentWeapon] + 1;
-        ammoReserves[w] = getWeaponStat(w, 'maxAmmo');
-        switchWeapon(w);
-        txtDiv.innerHTML = `RELIC CHEST: ${baseWeaponData[w].name} [LVL ${toRoman(weaponUpgradeLevels[w])}] SECURED!`;
-      } else if(mysteryBoxRewardType === 6) {
-        grenadeCount = 2; grenadeUpgradeLevel++; updateEquipmentUI();
-        txtDiv.innerHTML = `RELIC CHEST: GRENADES LVL ${toRoman(grenadeUpgradeLevel+1)} SECURED!`;
-      } else if(mysteryBoxRewardType === 7) {
-        claymoreCount = 2; claymoreUpgradeLevel++; updateEquipmentUI();
-        txtDiv.innerHTML = `RELIC CHEST: CLAYMORES LVL ${toRoman(claymoreUpgradeLevel+1)} SECURED!`;
-      } else if(mysteryBoxRewardType === 8) {
-        robotMercState.level++; robotMercState.active = true; robotMercState.health = robotMercState.maxHealth; robotMercState.durationTimer += 30;
-        speakRobotVoice(`Smart core upgrade to level ${robotMercState.level}! Let's party!`);
-        txtDiv.innerHTML = `RELIC CHEST: VETERAN ROBOT UPGRADED TO LEVEL ${robotMercState.level}!`;
-      }
-      playMysteryBoxSound();
-    }
-
-    socket.on('trigger_claim_mystery_box', () => {
-      processMysteryBoxCollection();
-    });
-
-    function processUpgradeCollection() {
-      upgradeMachineReadyToCollect = false;
-      while(upgHoloWeapon.children.length > 0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
-      weaponUpgradeLevels[upgradeMachineWeaponSlot]++;
-      ammoReserves[upgradeMachineWeaponSlot] = getWeaponStat(upgradeMachineWeaponSlot, 'maxAmmo');
-      gunMeshGroup.visible = true;
-      switchWeapon(upgradeMachineWeaponSlot);
-      playMysteryBoxSound();
-      txtDiv.innerHTML = `${baseWeaponData[upgradeMachineWeaponSlot].name} AUTO-BLESSED TO LVL ${toRoman(weaponUpgradeLevels[upgradeMachineWeaponSlot])}!`;
-    }
-
-    socket.on('trigger_claim_upgrade', () => {
-      processUpgradeCollection();
+    // Handle non-host collection broadcast trigger from server
+    socket.on('force_claim_mystery_box', () => {
+      claimMysteryBoxReward();
     });
 
     socket.on('client_throw_grenade', data => {
@@ -898,6 +855,26 @@
     function fillHoloGroupWithRewardModel(g,rt){while(g.children.length>0)g.remove(g.children[0]);g.add(buildWeaponGeometry((rt>=1&&rt<=5)?rt:1,false))}
     function fillHoloGroupWithWeaponModel(g,wid,upg){while(g.children.length>0)g.remove(g.children[0]);g.add(buildWeaponGeometry(wid,upg))}
 
+    function claimMysteryBoxReward(){
+      mysteryBoxReadyToCollect=false;
+      while(boxWeaponHolo.children.length>0)boxWeaponHolo.remove(boxWeaponHolo.children[0]);
+      if(mysteryBoxRewardType>=1&&mysteryBoxRewardType<=5){
+        let w=mysteryBoxRewardType;
+        if(w===2)hasAutomaticPistol=true;
+        if(w===3)hasRifle=true;
+        if(w===4)hasAutoRifle=true;
+        if(w===5)hasRayPistol=true;
+        if(weaponUpgradeLevels[w]<=weaponUpgradeLevels[currentWeapon])weaponUpgradeLevels[w]=weaponUpgradeLevels[currentWeapon]+1;
+        ammoReserves[w]=getWeaponStat(w,'maxAmmo');
+        switchWeapon(w);
+        txtDiv.innerHTML=`RELIC CHEST: ${baseWeaponData[w].name} [LVL ${toRoman(weaponUpgradeLevels[w])}] SECURED!`;
+      }
+      else if(mysteryBoxRewardType===6){grenadeCount=2;grenadeUpgradeLevel++;updateEquipmentUI();txtDiv.innerHTML=`RELIC CHEST: GRENADES LVL ${toRoman(grenadeUpgradeLevel+1)} SECURED!`}
+      else if(mysteryBoxRewardType===7){claymoreCount=2;claymoreUpgradeLevel++;updateEquipmentUI();txtDiv.innerHTML=`RELIC CHEST: CLAYMORES LVL ${toRoman(claymoreUpgradeLevel+1)} SECURED!`}
+      else if(mysteryBoxRewardType===8){robotMercState.level++;robotMercState.active=true;robotMercState.health=robotMercState.maxHealth;robotMercState.durationTimer+=30;speakRobotVoice(`Smart core upgrade to level ${robotMercState.level}! Let's party!`);txtDiv.innerHTML=`RELIC CHEST: VETERAN ROBOT UPGRADED TO LEVEL ${robotMercState.level}!`}
+      playMysteryBoxSound();
+    }
+
     function executeWeaponFireRaycast(clientX, clientY){
       if(isGameOver||!gunMeshGroup.visible)return;
       
@@ -910,34 +887,6 @@
       }
 
       raycaster.setFromCamera(mouse, camera);
-
-      // Check Upgrade Machine Collection
-      let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
-      if(upgradeMachineReadyToCollect && playerRig.position.distanceTo(mwPos) < 15){
-        if(isHost){
-          processUpgradeCollection();
-        } else {
-          socket.emit('request_claim_upgrade');
-          txtDiv.innerHTML = "REQUESTING UPGRADED WEAPON...";
-        }
-        return;
-      }
-
-      // Check Mystery Box Collection
-      if(mysteryBoxReadyToCollect){
-        let bwPos=new V3();mysteryBoxGroup.getWorldPosition(bwPos);
-        let hitBox = raycaster.intersectObjects(boxWeaponHolo.children,true).length > 0 || raycaster.intersectObjects(mysteryBoxGroup.children).length > 0;
-        
-        if((hitBox || playerRig.position.distanceTo(bwPos) < 12) && playerRig.position.distanceTo(bwPos) < 15){
-          if(isHost){
-            processMysteryBoxCollection();
-          } else {
-            socket.emit('request_claim_mystery_box');
-            txtDiv.innerHTML = "REQUESTING RELIC CLAIM...";
-          }
-          return;
-        }
-      }
 
       let hi=raycaster.intersectObjects(holeInteractiveMeshes);
       if(hi.length>0 && hi[0].distance<25){
@@ -994,6 +943,7 @@
         if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
       }
       
+      let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
       let upgHit = raycaster.intersectObjects(upgradeMachineGroup.children,true);
       if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
         if(!upgradeMachineActive&&!upgradeMachineReadyToCollect){
@@ -1012,6 +962,18 @@
         return;
       }
 
+      if(mysteryBoxReadyToCollect){
+        let bwPos=new V3();mysteryBoxGroup.getWorldPosition(bwPos);
+        if((raycaster.intersectObjects(boxWeaponHolo.children,true).length>0||raycaster.intersectObjects(mysteryBoxGroup.children).length>0)&&playerRig.position.distanceTo(bwPos)<15){
+          if(isHost){
+            claimMysteryBoxReward();
+          } else {
+            socket.emit('request_claim_mystery_box');
+            txtDiv.innerHTML="CLAIMING RELIC...";
+          }
+          return;
+        }
+      }
       let bwCheck=new V3();mysteryBoxGroup.getWorldPosition(bwCheck);
       if(raycaster.intersectObjects(mysteryBoxGroup.children).length>0&&playerRig.position.distanceTo(bwCheck)<15){
         if(!mysteryBoxActive&&!mysteryBoxReadyToCollect){
@@ -1393,6 +1355,16 @@
         upgradeMachineTimer += 0.016;
         upgHoloWeapon.rotation.y += 0.02;
         upgHoloWeapon.position.y = 4.8 + Math.sin(upgradeMachineTimer * 4) * 0.15;
+        if(isHost && (playerRig.position.distanceTo(upgradeMachineGroup.position) < 8 || upgradeMachineTimer > 1)){
+          upgradeMachineReadyToCollect = false;
+          while(upgHoloWeapon.children.length > 0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
+          weaponUpgradeLevels[upgradeMachineWeaponSlot]++;
+          ammoReserves[upgradeMachineWeaponSlot] = getWeaponStat(upgradeMachineWeaponSlot, 'maxAmmo');
+          gunMeshGroup.visible = true;
+          switchWeapon(upgradeMachineWeaponSlot);
+          playMysteryBoxSound();
+          txtDiv.innerHTML = `${baseWeaponData[upgradeMachineWeaponSlot].name} AUTO-BLESSED TO LVL ${toRoman(weaponUpgradeLevels[upgradeMachineWeaponSlot])}!`;
+        }
       }
 
       if(mysteryBoxActive){

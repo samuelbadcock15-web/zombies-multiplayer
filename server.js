@@ -193,6 +193,25 @@ io.on('connection', socket => {
     socket.to(loc.lobbyId).emit('client_robot_sync', data);
   });
 
+  // NEW EQUIPMENT & EXPLOSION RELAYS
+  socket.on('throw_grenade', data => {
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    socket.to(loc.lobbyId).emit('client_spawn_grenade', data);
+  });
+
+  socket.on('place_claymore', data => {
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    socket.to(loc.lobbyId).emit('client_spawn_claymore', data);
+  });
+
+  socket.on('trigger_explosion', data => {
+    const loc = socketToPlayerMap[socket.id];
+    if (!loc) return;
+    socket.to(loc.lobbyId).emit('client_trigger_explosion', data);
+  });
+
   socket.on('disconnect', () => {
     leaveCurrentLobby(socket);
     console.log('Player disconnected:', socket.id);

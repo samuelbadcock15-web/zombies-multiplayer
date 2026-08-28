@@ -681,6 +681,10 @@
       fillHoloGroupWithWeaponModel(upgHoloWeapon, upgradeMachineWeaponSlot, true);
     });
 
+    socket.on('client_ elevator_sync', data => {
+      // handled below
+    });
+    
     socket.on('client_elevator_sync', data => {
       elevatorActive = data.active;
       elevatorProgress = data.progress;
@@ -885,7 +889,7 @@
           if(playerPoints>=350){
             playerPoints-=350;$('score-val').innerText=playerPoints;
             
-            // Trigger elevator activation and notify server/host
+            // Activate elevator locally and tell the host/server to sync it to everyone
             elevatorActive=true;
             elevatorDirection=(elevatorProgress>=0.5)?1:-1;
             robotAIState.status='goToElevator';
@@ -1140,31 +1144,37 @@
     switchWeapon(1);updatePerkScreens();
 
     let lastNetSendTime = 0;
+    let lastFrameTime = performance.now();
 
     function animate(t){
-      requestAnimationFrame(animate);updateUpgradeMachineScreen();upgScreenTexture.needsUpdate=true;drawAnimatedHostScreen(t);arcadeScreenTexture.needsUpdate=true;updateMysteryBoxScreen();boxScreenTexture.needsUpdate=true;
-      let now=performance.now();if(!gameActive||isGameOver)return;
+      requestAnimationFrame(animate);
+      let now = performance.now();
+      let delta = Math.min((now - lastFrameTime) / 1000, 0.1); // Frame-rate independent delta time (capped at 0.1s)
+      lastFrameTime = now;
+
+      updateUpgradeMachineScreen();upgScreenTexture.needsUpdate=true;drawAnimatedHostScreen(t);arcadeScreenTexture.needsUpdate=true;updateMysteryBoxScreen();boxScreenTexture.needsUpdate=true;
+      if(!gameActive||isGameOver)return;
       redOrbMesh.position.y=7+Math.sin(t*0.003)*0.8;
       
-      if(robotMercState.active){robotMercState.durationTimer-=0.016;if(robotMercState.durationTimer<=0){robotMercState.active=false;robotMercState.level++;speakRobotVoice(`Contract completed! Upgraded to level ${robotMercState.level}, marine!`);txtDiv.innerHTML=`GOODY CONTRACT COMPLETED! UPGRADED TO LEVEL ${toRoman(robotMercState.level)}!`}}
-      else if(robotMercState.isBeingOverrun){robotMercState.overrunProgress+=0.01;machineGroup.position.y-=0.02;if(robotMercState.overrunProgress>=1){scene.remove(machineGroup);robotMercState.isBeingOverrun=false}}
-      for(let i=activeGrenades.length-1;i>=0;i--){let n=activeGrenades[i];n.fuse-=0.016;n.velocity.y-=0.015;n.mesh.position.add(n.velocity);let fb=(playerRig.position.y<-45)?-79.8:0;if(n.mesh.position.y<=fb+0.2){n.mesh.position.y=fb+0.2;n.velocity.set(0,0,0)}if(n.fuse<=0){triggerExplosion(n.mesh.position,8.5+grenadeUpgradeLevel*2,3+grenadeUpgradeLevel);scene.remove(n.mesh);activeGrenades.splice(i,1)}}
+      if(robotMercState.active){robotMercState.durationTimer-=delta;if(robotMercState.durationTimer<=0){robotMercState.active=false;robotMercState.level++;speakRobotVoice(`Contract completed! Upgraded to level ${robotMercState.level}, marine!`);txtDiv.innerHTML=`GOODY CONTRACT COMPLETED! UPGRADED TO LEVEL ${toRoman(robotMercState.level)}!`}}
+      else if(robotMercState.isBeingOverrun){robotMercState.overrunProgress+=delta * 0.6;machineGroup.position.y-=0.02;if(robotMercState.overrunProgress>=1){scene.remove(machineGroup);robotMercState.isBeingOverrun=false}}
+      for(let i=activeGrenades.length-1;i>=0;i--){let n=activeGrenades[i];n.fuse-=delta;n.velocity.y-=delta * 0.9;n.mesh.position.addScaledVector(n.velocity, delta * 60);let fb=(playerRig.position.y<-45)?-79.8:0;if(n.mesh.position.y<=fb+0.2){n.mesh.position.y=fb+0.2;n.velocity.set(0,0,0)}if(n.fuse<=0){triggerExplosion(n.mesh.position,8.5+grenadeUpgradeLevel*2,3+grenadeUpgradeLevel);scene.remove(n.mesh);activeGrenades.splice(i,1)}}
       activeClaymores.forEach((c,idx)=>{activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(c.position)<4){triggerExplosion(c.position,7.5+claymoreUpgradeLevel*2,3+claymoreUpgradeLevel);scene.remove(c.group);activeClaymores.splice(idx,1)}})});
-      upgReactorRing.rotation.x+=0.05;
+      upgReactorRing.rotation.x+=delta * 3;
       
       if(!isHost){
-        if(upgradeMachineActive){upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.12;upgHoloWeapon.position.y=4.2+(upgradeMachineTimer/3)*0.8;}
-        else if(upgradeMachineReadyToCollect){upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.02;upgHoloWeapon.position.y=4.8+Math.sin(upgradeMachineTimer*4)*0.15;}
-        if(mysteryBoxActive){mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.08;}
-        else if(mysteryBoxReadyToCollect){mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.03;boxWeaponHolo.position.y=3.5+Math.sin(mysteryBoxTimer*3)*0.15;}
+        if(upgradeMachineActive){upgradeMachineTimer+=delta;upgHoloWeapon.rotation.y+=delta*7.2;upgHoloWeapon.position.y=4.2+(upgradeMachineTimer/3)*0.8;}
+        else if(upgradeMachineReadyToCollect){upgradeMachineTimer+=delta;upgHoloWeapon.rotation.y+=delta*1.2;upgHoloWeapon.position.y=4.8+Math.sin(upgradeMachineTimer*4)*0.15;}
+        if(mysteryBoxActive){mysteryBoxTimer+=delta;boxWeaponHolo.rotation.y+=delta*4.8;}
+        else if(mysteryBoxReadyToCollect){mysteryBoxTimer+=delta;boxWeaponHolo.rotation.y+=delta*1.8;boxWeaponHolo.position.y=3.5+Math.sin(mysteryBoxTimer*3)*0.15;}
       }
 
       if(isHost){
         if(upgradeMachineActive){
-          upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.12;upgHoloWeapon.position.y=4.2+(upgradeMachineTimer/3)*0.8;
+          upgradeMachineTimer+=delta;upgHoloWeapon.rotation.y+=delta*7.2;upgHoloWeapon.position.y=4.2+(upgradeMachineTimer/3)*0.8;
           if(upgradeMachineTimer>=3){upgradeMachineActive=false;upgradeMachineReadyToCollect=true;upgradeMachineTimer=0;upgHoloWeapon.position.set(0,4.8,0)}
         } else if(upgradeMachineReadyToCollect){
-          upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.02;upgHoloWeapon.position.y=4.8+Math.sin(upgradeMachineTimer*4)*0.15;
+          upgradeMachineTimer+=delta;upgHoloWeapon.rotation.y+=delta*1.2;upgHoloWeapon.position.y=4.8+Math.sin(upgradeMachineTimer*4)*0.15;
           if(playerRig.position.distanceTo(upgradeMachineGroup.position)<8||upgradeMachineTimer>1){
             upgradeMachineReadyToCollect=false;
             while(upgHoloWeapon.children.length>0)upgHoloWeapon.remove(upgHoloWeapon.children[0]);
@@ -1180,7 +1190,7 @@
           }
         }
         if(mysteryBoxActive){
-          mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.08;let rpn=["PISTOL","AUTO PISTOL","HEAVY SHOTGUN","AUTOMATIC RIFLE","RAY PISTOL","FRAG GRENADES","CLAYMORE MINE","ROBOT GOODY UPGRADE"],rpi=[1,2,3,4,5,6,7,8];
+          mysteryBoxTimer+=delta;boxWeaponHolo.rotation.y+=delta*4.8;let rpn=["PISTOL","AUTO PISTOL","HEAVY SHOTGUN","AUTOMATIC RIFLE","RAY PISTOL","FRAG GRENADES","CLAYMORE MINE","ROBOT GOODY UPGRADE"],rpi=[1,2,3,4,5,6,7,8];
           if(mysteryBoxTimer<2.5){
             if(Math.floor(mysteryBoxTimer*15)%2===0){let ri=Math.floor(Math.random()*rpn.length);mysteryBoxCyclingReward=rpn[ri];mysteryBoxRewardType=rpi[ri];fillHoloGroupWithRewardModel(boxWeaponHolo,mysteryBoxRewardType)}
           } else {
@@ -1191,8 +1201,8 @@
             if(mysteryBoxUsesCount>=4+Math.floor(Math.random()*3)){mysteryBoxUsesCount=0;mysteryBoxCurrentRoom=(mysteryBoxCurrentRoom+1)%boxRoomLocations.length;mysteryBoxGroup.position.copy(boxRoomLocations[mysteryBoxCurrentRoom].pos);updateMapHologramSign();txtDiv.innerHTML=`CHEST SHIFTED TO ${boxRoomLocations[mysteryBoxCurrentRoom].name}! CHECK MAP.`}
           }
         } else if(mysteryBoxReadyToCollect){
-          mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.03;boxWeaponHolo.position.y=3.5+Math.sin(mysteryBoxTimer*3)*0.15;
-          if(mysteryBoxTimer>=8){mysteryBoxFadeAlpha=Math.max(0,mysteryBoxFadeAlpha-0.016);if(mysteryBoxTimer>=10){mysteryBoxReadyToCollect=false;mysteryBoxTimer=0;mysteryBoxFadeAlpha=1;while(boxWeaponHolo.children.length>0)boxWeaponHolo.remove(boxWeaponHolo.children[0]);txtDiv.innerHTML="RELIC FADED BACK INTO THE SHADOWS..."}}
+          mysteryBoxTimer+=delta;boxWeaponHolo.rotation.y+=delta*1.8;boxWeaponHolo.position.y=3.5+Math.sin(mysteryBoxTimer*3)*0.15;
+          if(mysteryBoxTimer>=8){mysteryBoxFadeAlpha=Math.max(0,mysteryBoxFadeAlpha-delta*0.5);if(mysteryBoxTimer>=10){mysteryBoxReadyToCollect=false;mysteryBoxTimer=0;mysteryBoxFadeAlpha=1;while(boxWeaponHolo.children.length>0)boxWeaponHolo.remove(boxWeaponHolo.children[0]);txtDiv.innerHTML="RELIC FADED BACK INTO THE SHADOWS..."}}
         }
         
         if(now - lastNetSendTime > 33){
@@ -1237,18 +1247,18 @@
             let ld=new V3().subVectors(nz.meshParts.group.position,machineGroup.position);ld.y=0;ld.normalize();
             machineGroup.rotation.y=Math.atan2(ld.x,ld.z);
           }
-          else if(rd.length()>0.8){rd.normalize();machineGroup.position.addScaledVector(rd,0.45);machineGroup.rotation.y=Math.atan2(rd.x,rd.z);mainWheelMesh.rotation.x+=0.3}
+          else if(rd.length()>0.8){rd.normalize();machineGroup.position.addScaledVector(rd, delta * 27);machineGroup.rotation.y=Math.atan2(rd.x,rd.z);mainWheelMesh.rotation.x+=delta * 18}
           else machineGroup.rotation.y=playerYaw;
         }else{
           let diff=new V3().subVectors(robotAIState.target,machineGroup.position);
           if(diff.length()<1.5)robotAIState.target=getNewUpperLevelTarget();
-          else{diff.normalize();machineGroup.position.addScaledVector(diff,robotAIState.speed);machineGroup.rotation.y=Math.atan2(diff.x,diff.z);machineGroup.rotation.x=0;machineGroup.rotation.z=0;}
+          else{diff.normalize();machineGroup.position.addScaledVector(diff, robotAIState.speed * delta * 60);machineGroup.rotation.y=Math.atan2(diff.x,diff.z);machineGroup.rotation.x=0;machineGroup.rotation.z=0;}
         }
       }
       
-      // ELEVATOR MOVEMENT & RIDING FIX (Runs for both host and clients smoothly)
+      // ELEVATOR MOVEMENT & RIDING FIX (Frame-rate independent)
       if(elevatorActive){
-        let step = 0.005;
+        let step = delta * 0.3;
         let oldProgress = elevatorProgress;
         elevatorProgress = (elevatorDirection === -1) ? Math.min(elevatorProgress + step, 1) : Math.max(elevatorProgress - step, 0);
         let progressDelta = elevatorProgress - oldProgress;
@@ -1264,7 +1274,11 @@
 
       chassis.position.y=3.6+Math.sin(t*0.01)*0.04;
       let mv=new V3(0,0,0);if(keys.w)mv.z-=1;if(keys.s)mv.z+=1;if(keys.a)mv.x-=1;if(keys.d)mv.x+=1;mv.normalize().applyQuaternion(playerRig.quaternion);mv.y=0;
-      let ws=hasStaminUp?0.5:0.35;if(playerRig.position.z<-275&&playerRig.position.z>-385&&playerRig.position.x>-55&&playerRig.position.x<55&&!secretPermanentlyOpen&&playerRig.position.y<=3.5&&playerRig.position.y>-40)ws=0.12;
+      
+      // Frame-rate independent movement speed scaling
+      let ws=(hasStaminUp?21:18) * delta;
+      if(playerRig.position.z<-275&&playerRig.position.z>-385&&playerRig.position.x>-55&&playerRig.position.x<55&&!secretPermanentlyOpen&&playerRig.position.y<=3.5&&playerRig.position.y>-40)ws=6 * delta;
+      
       mirrorMesh.visible=false;renderer.setRenderTarget(mirrorRenderTarget);renderer.render(scene,mirrorCamera);renderer.setRenderTarget(null);mirrorMesh.visible=true;
       
       let inElevatorBounds = (playerRig.position.x >= -15 && playerRig.position.x <= 15 && playerRig.position.z >= -345 && playerRig.position.z <= -315);
@@ -1287,9 +1301,9 @@
         playerRig.position.z=Math.max(-343.5,Math.min(-316.5,playerRig.position.z));
       }
 
-      if(!elevatorActive){secretProgress=secretActive?Math.min(secretProgress+0.01,1):Math.max(secretProgress-0.01,0);waterLeftMesh.position.x=-27.5-secretProgress*55;waterRightMesh.position.x=27.5+secretProgress*55;if(!secretPermanentlyOpen)secretGalleryGroup.position.y=-17}
+      if(!elevatorActive){secretProgress=secretActive?Math.min(secretProgress+delta*0.6,1):Math.max(secretProgress-delta*0.6,0);waterLeftMesh.position.x=-27.5-secretProgress*55;waterRightMesh.position.x=27.5+secretProgress*55;if(!secretPermanentlyOpen)secretGalleryGroup.position.y=-17}
       if(playerRig.position.y<-40)scene.background=caveBG;
-      else if(!elevatorActive&&playerRig.position.z<=-275&&playerRig.position.z>= -385&&playerRig.position.x>=-55&&playerRig.position.x<=55&&keys.shift&&!secretPermanentlyOpen){playerRig.position.y+=(-12-playerRig.position.y)*0.1;scene.background=underwaterBG}
+      else if(!elevatorActive&&playerRig.position.z<=-275&&playerRig.position.z>= -385&&playerRig.position.x>=-55&&playerRig.position.x<=55&&keys.shift&&!secretPermanentlyOpen){playerRig.position.y+=( -12-playerRig.position.y)*0.1;scene.background=underwaterBG}
       else if(playerRig.position.y>-5){playerRig.position.y+=(3-playerRig.position.y)*0.1;scene.background=defaultBG}
       simulateStickmanMatch(t);
 

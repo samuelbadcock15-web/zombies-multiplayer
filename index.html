@@ -1,1580 +1,792 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-
   <title>Haunted Mansion Vault - Co-Op Outbreak Edition</title>
-
   <style>
-
     * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
-
     body { margin: 0; background: #0c0806; color: #fff; font-family: monospace; overflow: hidden; width: 100vw; height: 100vh; touch-action: none; }
-
     canvas { display: block; width: 100%; height: 100%; }
-
-   
-
+    
     #gui { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: none; }
-
-   
-
+    
     #stats { position: absolute; top: 6px; left: 8px; font-size: 10px; font-weight: 700; background: rgba(30,20,15,.9); color: #d4af37; padding: 3px 6px; border: 1px solid #6b4c35; max-width: 50vw; line-height: 1.2; }
-
     #score-board { position: absolute; top: 6px; right: 8px; font-size: 13px; font-weight: 700; background: #140d0a; color: #fa0; padding: 4px 10px; border: 2px solid #8b5a2b; pointer-events: auto; }
-
     #team-hud { position: absolute; top: 44px; right: 8px; background: rgba(20,13,10,0.85); border: 1px solid #8b5a2b; padding: 4px 6px; font-size: 10px; line-height: 1.3; }
-
-   
-
+    
     /* Round display safely tucked away at bottom-left, clear of movement pad */
-
     #round-display { position: absolute; bottom: 8px; left: 135px; font-size: 26px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; pointer-events: none; }
-
     #msg-box { position: absolute; top: 85px; width: 100%; text-align: center; left: 0; pointer-events: none; }
-
     #text { display: inline-block; background: rgba(35,24,18,.95); color: #f0e0d0; border: 2px solid #8b5a2b; padding: 4px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,.5); max-width: 90vw; }
-
-   
-
+    
     #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; transform: translate(-50%,-50%); pointer-events: none; }
-
     #crosshair::after,#crosshair::before { content:''; position: absolute; background: #fa0; }
-
     #crosshair::before { top: 4px; left: -10px; width: 30px; height: 2px; }
-
     #crosshair::after { top: -10px; left: 4px; width: 2px; height: 30px; }
-
     #damage-overlay { position: absolute; inset: 0; background: rgba(255,0,0,0); pointer-events: none; transition: background .1s ease; z-index: 5; }
 
-
-
     @media (pointer: coarse) {
-
       #crosshair { display: none !important; }
-
     }
 
-
-
     /* Mobile Controls Dashboard */
-
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
-
     .touch-interactive { pointer-events: auto; }
-
-   
-
+    
     /* Compact D-Pad positioned safely above bottom edge */
-
     #dpad { position: absolute; bottom: 42px; left: 10px; width: 115px; height: 115px; }
-
     .dpad-btn { position: absolute; width: 36px; height: 36px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 6px; color: #d4af37; font-size: 15px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(0,0,0,0.5); }
-
     #dpad-up { top: 0; left: 39.5px; }
-
     #dpad-down { bottom: 0; left: 39.5px; }
-
     #dpad-left-dir { top: 39.5px; left: 0; }
-
     #dpad-right-dir { top: 39.5px; right: 0; }
 
-
-
     .core-icon-btn { position: absolute; top: 39.5px; width: 19px; height: 36px; background: rgba(50,35,25,0.95); border: 1.5px solid #fa0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.6); z-index: 5; }
-
     #btn-nade { left: 39.5px; border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
-
     #btn-clay { left: 58.5px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
 
-
-
     /* Wide and short Look-Pad */
-
     #look-pad { position: absolute; bottom: 12px; right: 10px; left: 130px; height: 22vh; background: rgba(212,175,55,0.06); border: 2px dashed rgba(212,175,55,0.3); border-radius: 10px; touch-action: none; }
 
-
-
     #weapon-bar { position: absolute; top: 40px; left: 8px; display: flex; gap: 3px; pointer-events: auto; }
-
     .w-btn { width: 28px; height: 28px; background: rgba(20,13,10,0.9); border: 1px solid #8b5a2b; color: #ffd700; font-weight: bold; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; }
 
-
-
     /* Arcade Start Gate Screen */
-
     #audio-overlay { position: fixed; inset: 0; background: radial-gradient(circle, #24140d 0%, #0c0806 90%); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; font-family: monospace; }
-
     .arcade-btn-group { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 320px; }
-
     .audio-btn { background: #d4af37; color: #140d0a; border: 2px solid #ffd700; padding: 16px 24px; font-size: 18px; font-weight: 900; font-family: monospace; cursor: pointer; border-radius: 8px; box-shadow: 0 0 20px rgba(212,175,55,0.3); text-transform: uppercase; pointer-events: auto; width: 100%; transition: all 0.2s ease; }
-
     .audio-btn:hover { background: #ffd700; transform: scale(1.03); }
-
     .audio-btn-sec { background: #1a0f0a; color: #fa0; border: 2px solid #8b5a2b; }
-
     .audio-btn-sec:hover { background: #2b1810; color: #ffd700; }
 
-
-
     /* Lobby UI */
-
     #lobby-screen { position: absolute; inset: 0; background: radial-gradient(circle, #24140d 0%, #0c0806 90%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; font-family: monospace; display: none; }
-
     .lobby-header { font-size: 24px; color: #d4af37; font-weight: 900; margin-bottom: 12px; letter-spacing: 2px; text-shadow: 0 0 10px rgba(212,175,55,0.4); text-align: center; }
-
     .input-box { background: #140c08; border: 1px solid #6b4c35; color: #fff; padding: 10px; font-size: 16px; font-family: monospace; text-transform: uppercase; text-align: center; margin-bottom: 16px; width: 240px; }
-
-   
-
+    
     #lobbies-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; max-width: 900px; width: 94%; max-height: 62vh; overflow-y: auto; padding: 4px; }
-
     .lobby-box { background: rgba(20,13,10,0.95); border: 2px solid #8b5a2b; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
-
     .lobby-box-title { font-size: 15px; color: #fa0; font-weight: bold; border-bottom: 1px solid #4a3324; padding-bottom: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; }
-
-   
-
+    
     .slot-row { background: #120a07; border: 1px solid #3a2418; padding: 5px 8px; margin-bottom: 5px; font-size: 11px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; }
-
     .slot-open { color: #665544; border-style: dashed; }
-
     .status-ready { color: #00ff66; font-weight: 900; }
-
     .status-waiting { color: #ffaa00; }
 
-
-
     .btn { background: #8b5a2b; color: #fff; border: none; padding: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: monospace; text-transform: uppercase; margin-top: 6px; border-radius: 4px; }
-
     .btn:hover { background: #b8793b; }
-
     .btn-ready { background: #2e7d32; font-size: 16px; padding: 14px; }
-
     .btn-ready:hover { background: #388e3c; }
-
     .btn-leave { background: #8b2b2b; }
 
-
-
     #room-view { display: none; background: rgba(20,13,10,0.95); border: 2px solid #8b5a2b; border-radius: 6px; padding: 20px 30px; width: 90%; max-width: 400px; text-align: center; }
-
   </style>
-
   <script src="/socket.io/socket.io.js"></script>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
 </head>
-
 <body>
-
   <div id="damage-overlay"></div>
 
-
-
   <!-- Arcade Start Gate -->
-
   <div id="audio-overlay">
-
     <div style="font-size:28px;color:#d4af37;font-weight:900;margin-bottom:10px;letter-spacing:2px;">HAUNTED MANSION VAULT</div>
-
     <div style="color:#b8860b;margin-bottom:30px;font-size:13px;">CHOOSE GAME MODE</div>
-
     <div class="arcade-btn-group">
-
       <button class="audio-btn audio-btn-sec" id="btn-single-player">SINGLE PLAYER</button>
-
       <button class="audio-btn" id="btn-multiplayer">MULTIPLIER CO-OP</button>
-
     </div>
-
   </div>
-
-
 
   <div id="lobby-screen">
-
     <div id="browser-view" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-
       <div class="lobby-header">MULTIPLAYER OUTBREAK<br><span style="font-size:13px;color:#fa0;">SELECT SQUAD LOBBY (2P / 3P / 4P)</span></div>
-
       <input id="player-name-input" class="input-box" maxlength="12" placeholder="CALLSIGN" value="MARINE">
-
       <div id="lobbies-container"></div>
-
     </div>
-
-
 
     <div id="room-view">
-
       <div class="lobby-header" id="current-lobby-title">LOBBY</div>
-
       <div id="active-slots-container" style="margin-bottom: 16px;"></div>
-
       <button class="btn btn-ready" id="btn-toggle-ready">READY UP</button>
-
       <button class="btn btn-leave" id="btn-leave-lobby" style="margin-top: 8px;">LEAVE LOBBY</button>
-
       <div style="font-size:12px;color:#888;margin-top:10px;">Match launches automatically when all slots are filled & ready!</div>
-
     </div>
-
   </div>
-
-
 
   <div id="gui">
-
     <div id="stats">D-PAD | LOOK PAD | TAP TO SHOOT</div>
-
     <div id="score-board">CREDITS:<span id="score-val">500</span></div>
-
     <div id="team-hud"><b style="color:#d4af37;">SQUAD</b><div id="team-list-hud"></div></div>
-
     <div id="round-display">ROUND<span id="round-val">I</span></div>
-
     <div id="crosshair"></div>
-
     <div id="msg-box"><div id="text">HAUNTED PROTOCOL ENGAGED. 500 CREDITS LOADED.</div></div>
-
   </div>
 
-
-
   <div id="mobile-controls">
-
     <div id="dpad" class="touch-interactive">
-
       <div class="dpad-btn" id="dpad-up">▲</div>
-
       <div class="dpad-btn" id="dpad-down">▼</div>
-
       <div class="dpad-btn" id="dpad-left-dir">◀</div>
-
       <div class="dpad-btn" id="dpad-right-dir">▶</div>
 
-
-
       <div id="btn-nade" class="touch-interactive core-icon-btn" title="Frag Grenade">
-
         <svg width="12" height="12" viewBox="0 0 24 24" fill="#fa0">
-
           <path d="M12 2C10.34 2 9 3.34 9 5V6H7C5.9 6 5 6.9 5 8V10C5 11.1 5.9 12 7 12H8V18C8 19.66 9.34 21 11 21H13C14.66 21 16 19.66 16 18V12H17C18.1 12 19 11.1 19 10V8C19 6.9 18.1 6 17 6H15V5C15 3.34 13.66 2 12 2M11 4H13V6H11V4Z"/>
-
         </svg>
-
       </div>
-
-
 
       <div id="btn-clay" class="touch-interactive core-icon-btn" title="Claymore Mine">
-
         <svg width="12" height="12" viewBox="0 0 24 24" fill="#fa0">
-
           <path d="M2 18H22V20H2V18M4 6H20L22 16H2L4 6M11 2H13V5H11V2Z"/>
-
         </svg>
-
       </div>
-
     </div>
-
-
 
     <div id="look-pad" class="touch-interactive"></div>
 
-
-
     <div id="weapon-bar" class="touch-interactive">
-
       <div class="w-btn" onclick="switchWeapon(1)">1</div>
-
       <div class="w-btn" onclick="switchWeapon(2)">2</div>
-
       <div class="w-btn" onclick="switchWeapon(3)">3</div>
-
       <div class="w-btn" onclick="switchWeapon(4)">4</div>
-
       <div class="w-btn" onclick="switchWeapon(5)">5</div>
-
     </div>
-
   </div>
 
-
-
   <canvas id="virtualArcadeCanvas" style="display:none" width="512" height="512"></canvas>
-
   <canvas id="gunTacticalCanvas" style="display:none" width="512" height="512"></canvas>
-
   <canvas id="mysteryBoxScreenCanvas" style="display:none" width="512" height="512"></canvas>
-
   <canvas id="upgradeMachineScreenCanvas" style="display:none" width="512" height="512"></canvas>
-
   <canvas id="jugCanvas" style="display:none" width="512" height="512"></canvas>
-
   <canvas id="quickReviveCanvas" style="display:none" width="512" height="512"></canvas>
-
   <canvas id="doubleTapCanvas" style="display:none" width="512" height="512"></canvas>
-
   <canvas id="staminUpCanvas" style="display:none" width="512" height="512"></canvas>
 
-
-
   <script>
-
     const socket = io();
-
     let myLobbyId = null, mySlotNumber = null, myColor = null, isHost = false, gameActive = false, myId = null;
-
     const remotePlayers = {};
 
-
-
     const $ = i => document.getElementById(i), T = THREE, V3 = T.Vector3, BG = (w,h,d)=>new T.BoxGeometry(w,h,d), CG = (rt,rb,h,s=16)=>new T.CylinderGeometry(rt,rb,h,s), PG = (w,h)=>new T.PlaneGeometry(w,h), SG = (r,s=16,p=16)=>new T.SphereGeometry(r,s,p), SM = m=>new T.MeshStandardMaterial(m), BM = m=>new T.MeshBasicMaterial(m), GRP = ()=>new T.Group();
-
     const MESH = (g,m,x=0,y=0,z=0,rx=0,ry=0)=>{ let o=new T.Mesh(g,m); o.position.set(x,y,z); if(rx)o.rotation.x=rx; if(ry)o.rotation.y=ry; return o; };
-
     const sCanvas=$('virtualArcadeCanvas'), sCtx=sCanvas.getContext('2d'), txtDiv=$('text');
-
     const tacticalCanvas=$('gunTacticalCanvas'), tacticalCtx=tacticalCanvas.getContext('2d'), gunTacticalTexture=new T.CanvasTexture(tacticalCanvas);
-
     const boxScreenCanvas=$('mysteryBoxScreenCanvas'), boxScreenCtx=boxScreenCanvas.getContext('2d'), boxScreenTexture=new T.CanvasTexture(boxScreenCanvas);
-
     const upgScreenCanvas=$('upgradeMachineScreenCanvas'), upgScreenCtx=upgScreenCanvas.getContext('2d'), upgScreenTexture=new T.CanvasTexture(upgScreenCanvas);
-
     const jugCtx=$('jugCanvas').getContext('2d'), jugTex=new T.CanvasTexture($('jugCanvas')), qrCtx=$('quickReviveCanvas').getContext('2d'), qrTex=new T.CanvasTexture($('quickReviveCanvas')), dtCtx=$('doubleTapCanvas').getContext('2d'), dtTex=new T.CanvasTexture($('doubleTapCanvas')), suCtx=$('staminUpCanvas').getContext('2d'), suTex=new T.CanvasTexture($('staminUpCanvas'));
-
-
 
     const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-
-
     socket.on('grant_points', amt => {
-
       addPoints(amt);
-
     });
-
-
 
     $('btn-single-player').onclick = () => {
-
       window.location.href = "https://zombies-3az2.onrender.com";
-
     };
-
-
 
     $('btn-multiplayer').onclick = () => {
-
       initAudio();
-
       if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-
       $('audio-overlay').style.display = 'none';
-
       $('lobby-screen').style.display = 'flex';
-
     };
-
-
 
     socket.on('lobby_list', lobbies => {
-
       if (myLobbyId) {
-
         const currentLobby = lobbies.find(l => l.id === myLobbyId);
-
         if (currentLobby) renderRoomSlots(currentLobby);
-
       } else {
-
         const cont = $('lobbies-container');
-
         cont.innerHTML = '';
-
         lobbies.forEach(lobby => {
-
           const card = document.createElement('div');
-
           card.className = 'lobby-box';
-
           let slotsHtml = '';
-
           for (let i = 0; i < lobby.maxPlayers; i++) {
-
             const slot = lobby.slots[i];
-
             if (slot) {
-
               slotsHtml += `<div class="slot-row" style="color:#${slot.color.toString(16).padStart(6,'0')};">
-
                 <span>SLOT ${i+1}: ${slot.name}</span>
-
                 <span class="${slot.ready ? 'status-ready':'status-waiting'}">${slot.ready ? 'READY':'WAITING'}</span>
-
               </div>`;
-
             } else {
-
               slotsHtml += `<div class="slot-row slot-open"><span>SLOT ${i+1}: [OPEN]</span><span>--</span></div>`;
-
             }
-
           }
-
           const isFull = lobby.playerCount >= lobby.maxPlayers;
-
           const isPlaying = lobby.started;
-
           const btnText = isPlaying ? 'IN PROGRESS' : (isFull ? 'FULL' : `JOIN LOBBY ${lobby.id} (${lobby.maxPlayers}P)`);
-
           const btnDisabled = isFull || isPlaying;
 
-
-
           card.innerHTML = `
-
             <div class="lobby-box-title">
-
               <span>LOBBY ${lobby.id} — ${lobby.maxPlayers} PLAYER SQUAD</span>
-
               <span style="color:#fff;">${lobby.playerCount}/${lobby.maxPlayers}</span>
-
             </div>
-
             ${slotsHtml}
-
             <button class="btn" ${btnDisabled ? 'disabled style="opacity:0.5;cursor:not-allowed;"':''} onclick="joinLobbySlot(${lobby.id})">${btnText}</button>
-
           `;
-
           cont.appendChild(card);
-
         });
-
       }
-
     });
-
-
 
     window.joinLobbySlot = (lobbyId) => {
-
       const name = $('player-name-input').value.trim() || 'MARINE';
-
       socket.emit('join_slot', { lobbyId, name });
-
     };
-
-
 
     socket.on('slot_joined', data => {
-
       myLobbyId = data.lobbyId;
-
       mySlotNumber = data.slotNumber;
-
       myColor = data.myColor;
-
       myId = data.myId;
 
-
-
       $('browser-view').style.display = 'none';
-
       $('room-view').style.display = 'block';
-
       $('current-lobby-title').innerText = `LOBBY ${myLobbyId} — SQUAD ROOM`;
-
     });
 
-
-
     function renderRoomSlots(lobby) {
-
       const cont = $('active-slots-container');
-
       cont.innerHTML = '';
-
       for (let i = 0; i < lobby.maxPlayers; i++) {
-
         const slot = lobby.slots[i];
-
         const isMe = (i + 1 === mySlotNumber);
-
         if (slot) {
-
           cont.innerHTML += `<div class="slot-row" style="color:#${slot.color.toString(16).padStart(6,'0')}; font-size:14px; padding:10px;">
-
             <span>SLOT ${i+1}: ${slot.name} ${isMe ? '(YOU)':''}</span>
-
             <span class="${slot.ready ? 'status-ready':'status-waiting'}">${slot.ready ? 'READY ✓':'WAITING...'}</span>
-
           </div>`;
-
           if (isMe) {
-
             $('btn-toggle-ready').innerText = slot.ready ? 'CANCEL READY' : 'READY UP';
-
             $('btn-toggle-ready').style.background = slot.ready ? '#8b5a2b' : '#2e7d32';
-
           }
-
         } else {
-
           cont.innerHTML += `<div class="slot-row slot-open" style="font-size:14px; padding:10px;"><span>SLOT ${i+1}: WAITING FOR PLAYER...</span><span>--</span></div>`;
-
         }
-
       }
-
     }
-
-
 
     $('btn-toggle-ready').onclick = () => { socket.emit('toggle_ready'); };
-
     $('btn-leave-lobby').onclick = () => {
-
       socket.emit('leave_slot');
-
       myLobbyId = null;
-
       mySlotNumber = null;
-
       $('room-view').style.display = 'none';
-
       $('browser-view').style.display = 'flex';
-
     };
 
-
-
     let playerPoints=500,currentWeapon=1,playerBites=0,maxBites=3,isGameOver=false,hasJuggerNog=false,hasQuickRevive=false,quickReviveShield=2,hasDoubleTap=false,hasStaminUp=false,currentRound=1,zombiesToSpawnRemaining=0,roundActive=false,lastSpawnTime=0,spawnInterval=2500;
-
     let baseWeaponData={1:{name:"PISTOL",damage:1,maxAmmo:200,range:60,headDamage:3},2:{name:"AUTO PISTOL",damage:1,maxAmmo:200,range:60,headDamage:3},3:{name:"HEAVY SHOTGUN / RIFLE",damage:2,maxAmmo:150,range:80,headDamage:5},4:{name:"AUTOMATIC RIFLE",damage:2,maxAmmo:150,range:75,headDamage:4},5:{name:"RAY PISTOL",damage:10,maxAmmo:100,range:140,headDamage:25},6:{name:"FRAG GRENADE",damage:0,maxAmmo:0,range:0,headDamage:0},7:{name:"CLAYMORE MINE",damage:0,maxAmmo:0,range:0,headDamage:0}};
-
     let ammoReserves={1:200,2:0,3:0,4:0,5:0},weaponUpgradeLevels={1:0,2:0,3:0,4:0,5:0},hasAutomaticPistol=false,hasRifle=false,hasAutoRifle=false,hasRayPistol=false,isLmbHeldDown=false,lastShotTime=0,autoFireRateMs=120,grenadeCount=2,grenadeUpgradeLevel=0,claymoreCount=2,claymoreUpgradeLevel=0;
-
     const activeGrenades=[],activeClaymores=[];
-
     let robotMercState={active:false,health:100,maxHealth:100,durationTimer:0,level:1,isBeingOverrun:false,overrunProgress:0,lastProximitySpeechTime:0};
-
     const unhiredLines=["Penumbra industries veteran at your service, marine! Five hundred credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits and watch these phantoms scatter!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
-
     const hiredLines=["Heavy metal activated! Locking and loading for Vanguard Company!","Get to the extraction point! I've got your flank covered, marine!","Come on! Let's party! No ghoul gets past these dual barrels!","Vanguard ship is waiting in the clouds! Stay frosty and keep pumping lead!"];
-
     let lastUnhiredLineIdx=-1,lastHiredLineIdx=-1;
 
-
-
     function getUniqueRandomLine(h){let p=h?hiredLines:unhiredLines,l=h?lastHiredLineIdx:lastUnhiredLineIdx,i;do{i=Math.floor(Math.random()*p.length)}while(i===l&&p.length>1);if(h)lastHiredLineIdx=i;else lastUnhiredLineIdx=i;return p[i]}
-
     function updatePerkScreens(){
-
       [{c:jugCtx,t:jugTex,b:'#220000',s:'#ff2222',n:'JUGGER-NOG',m:hasJuggerNog?"ACQUIRED (+1 HEART)":"COST: 2500 CREDITS"},{c:qrCtx,t:qrTex,b:'#001122',s:'#00a8ff',n:'QUICK REVIVE',m:hasQuickRevive?`SHIELD: ${quickReviveShield}/2`:"COST: 1500 CREDITS"},{c:dtCtx,t:dtTex,b:'#221100',s:'#ffaa00',n:'DOUBLE TAP II',m:hasDoubleTap?"ACQUIRED (2X FIRE/DMG)":"COST: 2000 CREDITS"},{c:suCtx,t:suTex,b:'#002200',s:'#ffff00',n:'STAMIN-UP',m:hasStaminUp?"ACQUIRED (SPEED BOOST)":"COST: 2000 CREDITS"}].forEach(k=>{k.c.fillStyle=k.b;k.c.fillRect(0,0,512,512);k.c.strokeStyle=k.s;k.c.lineWidth=14;k.c.strokeRect(10,10,492,492);k.c.fillStyle=k.s;k.c.font='bold 36px monospace';k.c.textAlign='center';k.c.fillText(k.n,256,80);k.c.fillStyle='#fff';k.c.font='bold 24px monospace';k.c.fillText(k.m,256,200);k.t.needsUpdate=true});
-
     }
-
-
 
     let mysteryBoxActive=false,mysteryBoxReadyToCollect=false,mysteryBoxTimer=0,mysteryBoxUsesCount=0,mysteryBoxCurrentRoom=0,mysteryBoxCyclingReward="PISTOL",mysteryBoxRewardType=1,mysteryBoxFadeAlpha=1,mysteryBoxMapHologramGroup=GRP();
-
     const boxRoomLocations=[{name:"GRAND HAUNTED HALL",pos:new V3(0,0,-140)},{name:"BALLROOM ARENA",pos:new V3(0,0,-140)},{name:"FLOODED CRYPT",pos:new V3(0,0,-310)},{name:"UNDERGROUND CATACOMBS",pos:new V3(0,-79.8,-330)}];
-
     let upgradeMachineActive=false,upgradeMachineReadyToCollect=false,upgradeMachineTimer=0,upgradeMachineWeaponSlot=1;
 
-
-
     function toRoman(n){const l={M:1000,CM:900,D:500,CD:400,C:100,XC:90,L:50,XL:40,X:10,IX:9,V:5,IV:4,I:1};let r='';for(let i in l){while(n>=l[i]){r+=i;n-=l[i]}}return r||"I"}
-
     function getWeaponStat(i,s){let b=baseWeaponData[i][s],l=weaponUpgradeLevels[i];if(s==='damage'||s==='headDamage'){let d=Math.floor(b+l*2.5);return hasDoubleTap?d*2:d}if(!l)return b;if(s==='maxAmmo')return Math.floor(b+l*60);if(s==='range')return b*(1+l*0.15);return b}
-
     function addPoints(a){if(isGameOver)return;playerPoints+=a;$('score-val').innerText=playerPoints}
 
-
-
     function updateUpgradeMachineScreen(){
-
       let c=upgScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=upgradeMachineReadyToCollect?'#fa0':(upgradeMachineActive?'#f50':'#b8860b');c.lineWidth=14;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("OCCULT RITUAL UPGRADE ALTAR",256,48);c.fillStyle='#fff';c.font='900 42px monospace';c.fillText(upgradeMachineActive?"BLESSING...":(upgradeMachineReadyToCollect?"AUTO-COLLECTING!":"READY"),256,120);c.fillStyle='#140c08';c.fillRect(40,150,432,200);c.strokeStyle='#ffd700';c.lineWidth=4;c.strokeRect(40,150,432,200);c.fillStyle='#fa0';c.font='bold 30px monospace';c.fillText(baseWeaponData[currentWeapon].name,256,220);c.fillStyle='#ff0';c.font='bold 24px monospace';c.fillText(`CURRENT LVL: ${toRoman(weaponUpgradeLevels[currentWeapon])}`,256,265);c.fillStyle='#ffd700';c.fillText(`COST: ${500+weaponUpgradeLevels[currentWeapon]*250} CREDITS`,256,310);c.fillStyle='#f36';c.font='bold 22px monospace';c.fillText("WALK CLOSE TO AUTO-RETRIEVE!",256,415);upgScreenTexture.needsUpdate=true;
-
     }
-
     function updateMysteryBoxScreen(){
-
       let c=boxScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=mysteryBoxReadyToCollect?'#fa0':'#b8860b';c.lineWidth=14;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("CURSED RELIC CHEST",256,48);c.fillStyle='#fff';c.font='900 48px monospace';c.fillText(mysteryBoxActive?"SUMMONING...":(mysteryBoxReadyToCollect?"CLAIM RELIC":"READY TO OPEN"),256,120);c.fillStyle='#140c08';c.fillRect(40,150,432,200);c.strokeStyle='#8b5a2b';c.lineWidth=4;c.strokeRect(40,150,432,200);c.fillStyle=mysteryBoxReadyToCollect?'#00ff66':'#ff0';c.font='bold 30px monospace';c.fillText(mysteryBoxCyclingReward,256,260);c.fillStyle='#ffd700';c.font='bold 22px monospace';c.fillText("COST: 350 CREDITS",256,395);c.fillStyle='#f36';c.fillText(`LOC: ${boxRoomLocations[mysteryBoxCurrentRoom].name}`,256,435);boxScreenTexture.needsUpdate=true;
-
     }
-
-
 
     function updateTacticalHUD(){
-
       let cur=ammoReserves[currentWeapon],max=getWeaponStat(currentWeapon,'maxAmmo'),pct=Math.max(0,Math.min(1,cur/max)),lvl=weaponUpgradeLevels[currentWeapon],c=tacticalCtx;
-
       c.fillStyle='#21140e';c.fillRect(0,0,512,512);c.strokeStyle=currentWeapon===5?'#0ff':(lvl>0?'#fa0':'#b8860b');c.lineWidth=12;c.strokeRect(10,10,492,492);
-
-     
-
+      
       c.fillStyle='#ffd700';c.font='bold 28px monospace';c.textAlign='center';c.fillText("TACTICAL AMMO",256,52);
-
       c.fillStyle='#fff';c.font='900 110px monospace';c.fillText(cur<10?`00${cur}`:(cur<100?`0${cur}`:`${cur}`),190,175);
-
       c.font='bold 36px monospace';c.fillStyle='#b8860b';c.textAlign='left';c.fillText(`/${max}`,360,165);
-
-     
-
+      
       c.fillStyle=lvl>0?'#fa0':'#ffd700';c.font='bold 26px monospace';c.textAlign='center';c.fillText(lvl>0?`LVL ${toRoman(lvl)}`:'STANDARD ISSUE',256,220);
-
-     
-
+      
       c.fillStyle='#3a2418';c.fillRect(60,245,392,30);
-
       c.fillStyle=pct<=0.15?'#f22':(pct<=0.35?'#f80':'#fa0');c.fillRect(64,249,Math.max(0,384*pct),22);
 
-
-
       if(hasQuickRevive){c.fillStyle='#00a8ff';c.font='bold 18px monospace';c.textAlign='left';c.fillText("QUICK REVIVE SHIELD",60,305);c.fillStyle='#3a2418';c.fillRect(60,315,392,18);c.fillStyle='#00a8ff';c.fillRect(64,318,Math.max(0,384*(quickReviveShield/2)),12)}
-
-     
-
+      
       [{name:"JUG",active:hasJuggerNog,color:"#f22"},{name:"REV",active:hasQuickRevive,color:"#00a8ff"},{name:"DT2",active:hasDoubleTap,color:"#fa0"},{name:"STA",active:hasStaminUp,color:"#ff0"}].forEach((p,idx)=>{let bx=60+idx*98,by=355;c.fillStyle=p.active?p.color:'#3a2418';c.fillRect(bx,by,90,26);c.strokeStyle=p.active?'#fff':'#6b4c35';c.lineWidth=2;c.strokeRect(bx,by,90,26);c.fillStyle=p.active?'#000':'#b8860b';c.font='bold 14px monospace';c.textAlign='center';c.fillText(p.name,bx+45,by+18)});
-
-     
-
+      
       c.fillStyle=playerBites>=maxBites?'#f05':'#ffd700';c.font='bold 16px monospace';c.textAlign='center';c.fillText(`HEALTH: ${maxBites-playerBites}/${maxBites} BITES`,256,430);
-
       gunTacticalTexture.needsUpdate=true;
-
     }
-
     function updateEquipmentUI(){updateTacticalHUD()}
 
-
-
     function damagePlayer(){
-
       if(isGameOver)return;
-
       if(hasQuickRevive&&quickReviveShield>0){quickReviveShield--;updateTacticalHUD();$('damage-overlay').style.backgroundColor="rgba(0,168,255,0.4)";setTimeout(()=>{$('damage-overlay').style.backgroundColor="rgba(255,0,0,0)"},150);txtDiv.innerHTML="QUICK REVIVE SHIELD ABSORBED BITE!";if(quickReviveShield<=0){hasQuickRevive=false;updateTacticalHUD();txtDiv.innerHTML="QUICK REVIVE SHIELD DEPLETED!"}return}
-
       playerBites++;updateTacticalHUD();$('damage-overlay').style.backgroundColor="rgba(255,0,0,0.4)";setTimeout(()=>{$('damage-overlay').style.backgroundColor="rgba(255,0,0,0)"},150);
-
       if(playerBites>=maxBites)triggerGameOver();else txtDiv.innerHTML="YOU WERE BITTEN! FALL BACK!";
-
     }
-
-
 
     socket.on('force_damage_player', () => { damagePlayer(); });
 
-
-
     function triggerGameOver(){isGameOver=true;document.exitPointerLock();txtDiv.innerHTML=`YOU FELL IN ROUND ${currentRound}. SPECTATING SQUAD...`}
 
-
-
     function startRound(r){
-
       currentRound=r;$('round-val').innerText=toRoman(currentRound);zombiesToSpawnRemaining=4+Math.floor(currentRound*2.5);spawnInterval=Math.max(600,2500-currentRound*120);roundActive=true;txtDiv.innerHTML=`ROUND ${toRoman(currentRound)} HAS COMMENCED!`;
-
       if(isHost) socket.emit('host_round_sync', currentRound);
-
     }
-
-
 
     socket.on('client_round_sync', r => {
-
       currentRound = r;
-
       $('round-val').innerText = toRoman(currentRound);
-
       roundActive = true;
-
       txtDiv.innerHTML = `ROUND ${toRoman(currentRound)} HAS COMMENCED!`;
-
     });
-
-
 
     function checkRoundEnd(){
-
       if(!roundActive)return;
-
       if(zombiesToSpawnRemaining===0&&activeZombies.filter(z=>!z.deadAndShrinking).length===0){
-
         roundActive=false;
-
         txtDiv.innerHTML=`ROUND ${toRoman(currentRound)} CLEARED. THE MANSION QUIETS...`;
-
         setTimeout(()=>{if(!isGameOver&&isHost)startRound(currentRound+1)},4000);
-
       }
-
     }
-
-
 
     function attachTacticalDisplay(g,s=1){let h=MESH(BG(0.09*s,0.11*s,0.015*s),SM({color:0x2b1d14,metalness:0.5,roughness:0.4}),-0.048,0.07,-0.02,0,-Math.PI/2),f=MESH(PG(0.082*s,0.102*s),BM({map:gunTacticalTexture,toneMapped:false}),0,0,0.009*s);h.add(f);g.add(h)}
-
     function buildWeaponGeometry(id,upg){
-
       const g=GRP();let mc=id===2?0x4a3b32:(id===3?0x5c4a3d:(id===4?0x333333:(id===5?0x00ffcc:0x3a2e25)));
-
       if(id===6){g.add(MESH(SG(0.2,12,12),SM({color:0x444433,roughness:0.7})));return g}
-
       if(id===7){g.add(MESH(BG(0.4,0.25,0.1),SM({color:0x555544})));return g}
-
       let fm=SM({color:upg?0xffaa00:mc,metalness:upg?0.95:0.6,roughness:upg?0.1:0.4,emissive:upg?0xff5500:0,emissiveIntensity:upg?0.4:0}),am=SM({color:upg?0xffff00:0xffd700,metalness:0.7});
-
       if(id===1){let r=MESH(BG(0.08,0.14,0.3),fm),gp=MESH(BG(0.07,0.16,0.08),fm,0,-0.12,-0.06,-0.2),s=MESH(BG(0.076,0.06,0.31),am,0,0.09,0.005);g.add(r,gp,s)}
-
       else if(id===2){let r=MESH(BG(0.08,0.15,0.32),fm),gp=MESH(BG(0.07,0.18,0.09),fm,0,-0.13,-0.05),m=MESH(BG(0.06,0.12,0.06),am,0,-0.22,-0.03),c=MESH(BG(0.084,0.07,0.08),am,0,0.08,0.18);g.add(r,gp,m,c)}
-
       else if(id===3){let r=MESH(BG(0.12,0.18,0.6),fm),b=MESH(CG(0.04,0.04,0.8,12),am,0,0.04,0.6,Math.PI/2),st=MESH(BG(0.1,0.24,0.4),fm,0,-0.08,-0.45),p=MESH(CG(0.05,0.05,0.3,12),am,0,-0.02,0.45,Math.PI/2);g.add(r,b,st,p)}
-
       else if(id===4){let bd=MESH(BG(0.1,0.18,0.6),fm),h=MESH(BG(0.09,0.14,0.4),am,0,-0.01,0.4),b=MESH(CG(0.018,0.018,0.5),fm,0,0.02,0.85,Math.PI/2),m=MESH(BG(0.06,0.26,0.12),am,0,-0.18,0.15,0.15);g.add(bd,h,b,m)}
-
       else if(id===5){let gen=MESH(SG(0.14),fm),em=MESH(CG(0.02,0.08,0.45,12),am,0,0.25,0,Math.PI/2),er=MESH(new T.TorusGeometry(0.12,0.02,6,16),fm,0,0.38,0),gp=MESH(BG(0.06,0.18,0.07),am,0,-0.16,-0.06);g.add(gen,em,er,gp);let sh=MESH(BG(0.09,0.11,0.015),SM({color:0x2b1d14,metalness:0.5,roughness:0.4}),-0.16,0.06,-0.02,0.1,-Math.PI/2+0.2),sf=MESH(PG(0.082,0.102),BM({map:gunTacticalTexture,toneMapped:false}),0,0,0.009);sh.rotation.z=0.1;sh.add(sf);g.add(sh)}
-
       return g;
-
     }
-
-
 
     function switchWeapon(id){
-
       if(id===2&&!hasAutomaticPistol){txtDiv.innerHTML="BUY AUTO PISTOL FROM MANSION WALL!";return}
-
       if(id===3&&!hasRifle){txtDiv.innerHTML="BUY SHOTGUN FROM MANSION WALL!";return}
-
       if(id===4&&!hasAutoRifle){txtDiv.innerHTML="BUY ASSAULT RIFLE FROM MANSION WALL!";return}
-
       if(id===5&&!hasRayPistol){txtDiv.innerHTML="RAY PISTOL MUST BE FOUND IN RELIC CHEST!";return}
-
       if(upgradeMachineActive&&upgradeMachineWeaponSlot===id){txtDiv.innerHTML="THAT WEAPON IS BEING BLESSED!";return}
-
       currentWeapon=id;let upg=weaponUpgradeLevels[currentWeapon]>0;while(gunMeshGroup.children.length>0)gunMeshGroup.remove(gunMeshGroup.children[0]);
-
       gunMeshGroup.add(buildWeaponGeometry(currentWeapon,upg));attachTacticalDisplay(gunMeshGroup,1.3);updateTacticalHUD();
-
       txtDiv.innerHTML=`WEAPON: ${baseWeaponData[currentWeapon].name}${upg?` [LEVEL ${toRoman(weaponUpgradeLevels[currentWeapon])}]`:""}`;
-
     }
-
-
 
     document.body.addEventListener('click',()=>{
-
       if(gameActive&&!isGameOver&&!isMobile&&document.pointerLockElement!==document.body){
-
         document.body.requestPointerLock();
-
         if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
-
       }
-
     });
-
-
 
     let audioCtx=null,audioListener=null;const scene=new T.Scene(),defaultBG=new T.Color(0x120d0a),underwaterBG=new T.Color(0x0a1624),caveBG=new T.Color(0x080605);scene.background=defaultBG;
-
     const camera=new T.PerspectiveCamera(isMobile ? 75 : 65, window.innerWidth / window.innerHeight, 0.1, 1000);camera.rotation.order='YXZ';
-
     const playerRig=GRP();playerRig.position.set(0,3,15);scene.add(playerRig);
-
     const cameraPitchObject=GRP();playerRig.add(cameraPitchObject);cameraPitchObject.add(camera);
-
     const pistolGroup=GRP();
-
     pistolGroup.position.set(isMobile ? 0.22 : 0.28, isMobile ? -0.32 : -0.28, isMobile ? -0.48 : -0.55);
-
     cameraPitchObject.add(pistolGroup);
-
     const gunMeshGroup=GRP();pistolGroup.add(gunMeshGroup);
-
     const muzzleFlash=new T.PointLight(0xffaa00,0,10);pistolGroup.add(muzzleFlash);
-
     let playerYaw=0,playerPitch=0;const raycaster=new T.Raycaster();
-
     scene.add(new T.AmbientLight(0xffeedd,1.4));const sunLight=new T.DirectionalLight(0xfff5ee,1);sunLight.position.set(30,60,30);scene.add(sunLight);
-
     [[0,8,0],[0,12,-140],[0,12,-330]].forEach(p=>{let pl=new T.PointLight(0xffaa44,2.5,30);pl.position.set(...p);scene.add(pl)});
 
-
-
     let pianoIntervalId=null,pianoTickCounter=0;
-
     function initAudio(){if(audioCtx)return;audioCtx=new(window.AudioContext||window.webkitAudioContext)();audioListener=new T.AudioListener();camera.add(audioListener);startMusicClock()}
-
     function speakRobotVoice(t){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.pitch=0.55;u.rate=0.92;u.volume=1;let v=window.speechSynthesis.getVoices().find(x=>x.lang.startsWith('en')&&(x.name.includes('Google')||x.name.includes('David')||x.name.includes('Male')));if(v)u.voice=v;window.speechSynthesis.speak(u)}
-
     function playPianoNote(f,d,type='sine',vol=0.08){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.setValueAtTime(f,audioCtx.currentTime);g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+d);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}
-
     function playZombieBiteSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain(),m=audioCtx.createOscillator(),mg=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(90,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(40,audioCtx.currentTime+0.4);m.frequency.value=45;mg.gain.value=35;m.connect(mg);mg.connect(o.frequency);g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.001,audioCtx.currentTime+0.4);o.connect(g);g.connect(audioCtx.destination);m.start();o.start();m.stop(audioCtx.currentTime+0.4);o.stop(audioCtx.currentTime+0.4)}
-
     function playPistolShotSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();let pm=1+weaponUpgradeLevels[currentWeapon]*0.1;if(currentWeapon===5){o.type='sine';o.frequency.setValueAtTime(1200*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(200,audioCtx.currentTime+0.25);g.gain.setValueAtTime(0.35,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.25);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.25)}else if(currentWeapon===3||currentWeapon===4){o.type='sawtooth';o.frequency.setValueAtTime(180*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(10,audioCtx.currentTime+0.25);g.gain.setValueAtTime(0.4,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.25);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.25)}else{o.type=currentWeapon===2?'sawtooth':'triangle';o.frequency.setValueAtTime((currentWeapon===2?320:400)*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(10,audioCtx.currentTime+0.08);g.gain.setValueAtTime(0.25,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.08);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.08)}}
-
     function playExplosionSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(120,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(10,audioCtx.currentTime+0.5);g.gain.setValueAtTime(0.6,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.5);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.5)}
-
     function playProceduralDigSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(70,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(20,audioCtx.currentTime+0.12);g.gain.setValueAtTime(0.2,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.12);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.12)}
-
     function playMysteryBoxSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.setValueAtTime(587.33,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(880,audioCtx.currentTime+0.4);g.gain.setValueAtTime(0.15,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.4);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.4)}
 
-
-
     function createHauntedWoodFloorTexture(){const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#4a3324';ctx.fillRect(0,0,512,512);ctx.strokeStyle='#1f140e';ctx.lineWidth=6;for(let i=0;i<=512;i+=64){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,512);ctx.stroke()}for(let i=0;i<90;i++){ctx.fillStyle=Math.random()>0.5?'rgba(30,20,14,0.35)':'rgba(90,65,45,0.25)';ctx.fillRect(Math.random()*512,Math.random()*512,Math.random()*120+20,Math.random()*12+3)}const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(4,4);return tex}
-
     function createHauntedWallTexture(){const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#5c4033';ctx.fillRect(0,0,512,512);ctx.strokeStyle='#2b1b12';ctx.lineWidth=10;ctx.strokeRect(20,20,472,472);ctx.strokeStyle='#7a523c';ctx.lineWidth=4;ctx.strokeRect(26,26,460,460);ctx.strokeStyle='#2b1b12';ctx.lineWidth=8;ctx.strokeRect(60,60,392,392);ctx.strokeStyle='#7a523c';ctx.lineWidth=3;ctx.strokeRect(65,65,382,382);for(let i=0;i<60;i++){ctx.fillStyle=Math.random()>0.5?'rgba(35,22,14,0.3)':'rgba(110,80,55,0.2)';ctx.fillRect(Math.random()*512,Math.random()*512,Math.random()*100+15,Math.random()*16+4)}const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(3,2);return tex}
 
-
-
     const generalEnvironmentMeshes=[],wallObjects=[],perkMachineObjects=[],outlineMat=new T.LineBasicMaterial({color:0x140d0a,linewidth:2}),wallMat=SM({map:createHauntedWallTexture(),roughness:0.6,side:T.DoubleSide}),ceilingMat=SM({color:0x332218,roughness:0.8}),floorMat=SM({map:createHauntedWoodFloorTexture(),roughness:0.5,metalness:0.1});
-
     function addStructuralMesh(geo,mat,px,py,pz,rx=0,ry=0,mt="stone"){const m=MESH(geo,mat,px,py,pz,rx,ry);scene.add(m);const l=new T.LineSegments(new T.EdgesGeometry(geo),outlineMat);l.position.copy(m.position);l.rotation.copy(m.rotation);scene.add(l);m.userData={materialType:mt};generalEnvironmentMeshes.push(m);return m}
 
-
-
     addStructuralMesh(PG(50,50),floorMat,0,0,0,-Math.PI/2,0,"floor");addStructuralMesh(PG(50,50),ceilingMat,0,16,0,Math.PI/2,0,"ceiling");addStructuralMesh(PG(12,40),floorMat,0,0,-45,-Math.PI/2,0,"floor");addStructuralMesh(PG(12,40),ceilingMat,0,16,-45,Math.PI/2,0,"ceiling");
-
     wallObjects.push(addStructuralMesh(PG(19,16),wallMat,-15.5,8,-25),addStructuralMesh(PG(19,16),wallMat,15.5,8,-25),addStructuralMesh(PG(50,16),wallMat,-25,8,0,0,Math.PI/2),addStructuralMesh(PG(50,16),wallMat,25,8,0,0,-Math.PI/2),addStructuralMesh(PG(50,16),wallMat,0,8,25),addStructuralMesh(PG(40,16),wallMat,-6,8,-45,0,Math.PI/2),addStructuralMesh(PG(40,16),wallMat,6,8,-45,0,-Math.PI/2));
-
     addStructuralMesh(PG(150,150),floorMat,0,0,-140,-Math.PI/2,0,"floor");addStructuralMesh(PG(150,150),ceilingMat,0,30,-140,Math.PI/2,0,"ceiling");addStructuralMesh(PG(12,40),floorMat,0,0,-235,-Math.PI/2,0,"floor");addStructuralMesh(PG(12,40),ceilingMat,0,16,-235,Math.PI/2,0,"ceiling");
-
     wallObjects.push(addStructuralMesh(PG(69,30),wallMat,-40.5,15,-65),addStructuralMesh(PG(69,30),wallMat,40.5,15,-65),addStructuralMesh(PG(69,30),wallMat,-40.5,15,-215),addStructuralMesh(PG(69,30),wallMat,40.5,15,-215),addStructuralMesh(PG(150,30),wallMat,-75,15,-140,0,Math.PI/2),addStructuralMesh(PG(150,30),wallMat,75,15,-140,0,-Math.PI/2),addStructuralMesh(PG(40,16),wallMat,-6,8,-235,0,Math.PI/2),addStructuralMesh(PG(40,16),wallMat,6,8,-235,0,-Math.PI/2));
-
     addStructuralMesh(PG(150,150),floorMat,0,0,-330,-Math.PI/2,0,"floor");addStructuralMesh(PG(150,150),ceilingMat,0,30,-330,Math.PI/2,0,"ceiling");
-
     wallObjects.push(addStructuralMesh(PG(69,30),wallMat,-40.5,15,-255),addStructuralMesh(PG(69,30),wallMat,40.5,15,-255),addStructuralMesh(PG(150,30),wallMat,0,15,-405),addStructuralMesh(PG(150,30),wallMat,-75,15,-330,0,Math.PI/2),addStructuralMesh(PG(150,30),wallMat,75,15,-330,0,-Math.PI/2));
 
-
-
     function createPerkMachine(px,py,pz,ry,pt,tex,col){
-
       const g=GRP();g.position.set(px,py,pz);g.rotation.y=ry;let b=MESH(BG(3,4,2),SM({color:0x3a2418,metalness:0.3,roughness:0.5}),0,2,0),n=MESH(BG(3.2,0.2,2.2),SM({color:col,emissive:col,emissiveIntensity:2}),0,4,0),sh=MESH(BG(2.2,2.2,0.2),SM({color:0x140c08,metalness:0.7}),0,2.2,1.05),sf=MESH(PG(2,2),BM({map:tex,toneMapped:false}),0,2.2,1.16);g.add(b,n,sh,sf);g.traverse(c=>{if(c.isMesh){c.userData={materialType:pt};perkMachineObjects.push(c);generalEnvironmentMeshes.push(c)}});scene.add(g);return g;
-
     }
-
     createPerkMachine(0,0,15,0,"jugger_nog",jugTex,0xff2222);createPerkMachine(-30,0,-140,Math.PI/2,"quick_revive",qrTex,0x00a8ff);createPerkMachine(-65,0,-310,Math.PI/2,"double_tap",dtTex,0xffaa00);createPerkMachine(0,-79.8,-330,0,"stamin_up",suTex,0xffff00);
 
-
-
     const wallBuyInteractiveObjects=[];
-
     function createBadgeTexture(top,bot,hex){const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle="#2b1810";ctx.fillRect(0,0,512,128);ctx.strokeStyle=hex;ctx.lineWidth=8;ctx.strokeRect(6,6,500,116);ctx.fillStyle=hex;ctx.font="bold 26px monospace";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(top,256,42);ctx.fillStyle="#fff";ctx.font="bold 30px monospace";ctx.fillText(bot,256,88);return new T.CanvasTexture(c)}
-
     function createDetailedWallBuySign(px,py,pz,col,tl,wt,ns,cs){
-
       let g=GRP();g.position.set(px,py,pz);let b=MESH(BG(0.15,3.4,4.4),SM({color:0x3a2418,metalness:0.3,roughness:0.5})),nf=MESH(BG(0.18,3.2,4.2),SM({color:col,emissive:col,emissiveIntensity:1.4})),rs=MESH(BG(0.2,2.9,3.9),SM({color:0x140c08,roughness:0.8})),pL=MESH(CG(0.025,0.025,0.35),SM({color:0x8b5a2b,metalness:0.9}),0.15,-0.2,-0.8,0,0,Math.PI/2);pL.rotation.z=Math.PI/2;let pR=pL.clone();pR.position.z=0.8;let lh=MESH(BG(0.35,0.12,1.8),SM({color:0x3a2418,metalness:0.7}),0.2,1.6,0),lb=MESH(BG(0.3,0.04,1.6),BM({color:0xffffff}),0.2,1.52,0),sl=new T.PointLight(col,1.8,8);sl.position.set(0.6,1.2,0);
-
       let bt=MESH(PG(2.4,0.6),BM({map:createBadgeTexture(ns,"PRESS 1-5 TO EQUIP","#"+col.toString(16).padStart(6,'0')),side:T.DoubleSide}),0.15,1.15,0,0,Math.PI/2),bb=MESH(PG(2.4,0.6),BM({map:createBadgeTexture("BUY WEAPON",cs,"#"+col.toString(16).padStart(6,'0')),side:T.DoubleSide}),0.15,-1.15,0,0,Math.PI/2),m=buildWeaponGeometry(wt==="auto_pistol"?2:(wt==="rifle"?3:(wt==="auto_rifle"?4:(wt==="grenade"?6:7))),false);m.position.set(0.25,0,0);g.add(b,nf,rs,pL,pR,lh,lb,sl,bt,bb,m);
-
       g.traverse(c=>{if(c.isMesh){c.userData={materialType:tl,signGroup:g};wallBuyInteractiveObjects.push(c);generalEnvironmentMeshes.push(c)}});scene.add(g);return g;
-
     }
-
     createDetailedWallBuySign(-24.8,4.5,5,0x00a8ff,"wall_buy","auto_pistol","AUTO PISTOL","250 CREDITS");createDetailedWallBuySign(-24.8,4.5,10,0x3f51b5,"rifle_buy","rifle","HEAVY SHOTGUN","250 CREDITS");createDetailedWallBuySign(-24.8,4.5,15,0xe0115f,"auto_rifle_buy","auto_rifle","ASSAULT RIFLE","500 CREDITS");createDetailedWallBuySign(-24.8,4.5,-5,0xff3300,"grenade_buy","grenade","FRAG GRENADES","100 CREDITS");createDetailedWallBuySign(-24.8,4.5,-10,0xffaa00,"claymore_buy","claymore","CLAYMORE MINE","150 CREDITS");
 
-
-
     let unlockedDoors=[false,false,false,false],barrierMat=SM({color:0xaa2222,transparent:true,opacity:0.6,emissive:0xff0000,emissiveIntensity:0.5});
-
     let doorArray=[-24.8,-64.8,-214.8,-254.8].map((z,i)=>{let d=MESH(BG(12,16,0.4),barrierMat,0,8,z);scene.add(d);d.userData={materialType:"door",doorIndex:i};return d});
 
-
-
     socket.on('door_unlocked', data => {
-
       unlockedDoors[data.doorIndex] = true;
-
       scene.remove(doorArray[data.doorIndex]);
-
       txtDiv.innerHTML = `DOOR ${data.doorIndex + 1} UNLOCKED BY SQUAD! ADVANCE!`;
-
     });
-
-
 
     const mysteryBoxGroup=GRP();mysteryBoxGroup.position.copy(boxRoomLocations[0].pos);scene.add(mysteryBoxGroup);
-
     const boxBaseMesh=MESH(BG(3.6,2.2,2.2),SM({color:0x3a2418,metalness:0.5,roughness:0.4}),0,1.1,0);mysteryBoxGroup.add(boxBaseMesh);
-
     const boxScreenFaceFront=MESH(PG(2.8,2.8),BM({map:boxScreenTexture,toneMapped:false}),0,1.8,1.12);mysteryBoxGroup.add(boxScreenFaceFront);
-
     const boxScreenFaceBack=MESH(PG(2.8,2.8),BM({map:boxScreenTexture,toneMapped:false,side:T.BackSide}),0,1.8,-1.12,0,Math.PI);mysteryBoxGroup.add(boxScreenFaceBack);
-
     const boxTopNeon=MESH(BG(3.8,0.2,2.4),SM({color:0xffd700,emissive:0xffd700,emissiveIntensity:1.5}),0,2.3,0);mysteryBoxGroup.add(boxTopNeon);
-
     boxBaseMesh.userData=boxScreenFaceFront.userData=boxScreenFaceBack.userData={materialType:"mystery_box"};
-
     const boxWeaponHolo=GRP();boxWeaponHolo.position.set(0,3.5,0);mysteryBoxGroup.add(boxWeaponHolo);
-
     const mysteryBoxMapSignGroup=GRP();mysteryBoxMapSignGroup.position.set(0,3,-139.5);scene.add(mysteryBoxMapSignGroup);
 
-
-
     function updateMapHologramSign(){
-
       while(mysteryBoxMapSignGroup.children.length>0)mysteryBoxMapSignGroup.remove(mysteryBoxMapSignGroup.children[0]);
-
       let loc=boxRoomLocations[mysteryBoxCurrentRoom],c=document.createElement('canvas');c.width=512;c.height=256;let ctx=c.getContext('2d');ctx.fillStyle="#2b1810";ctx.fillRect(0,0,512,256);ctx.strokeStyle="#ffd700";ctx.lineWidth=8;ctx.strokeRect(6,6,500,244);ctx.fillStyle="#fa0";ctx.font="bold 24px monospace";ctx.textAlign="center";ctx.fillText("CURSED CHEST RELOCATED TO:",256,45);ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.fillText(loc.name,256,100);ctx.fillStyle="#b8860b";ctx.font="18px monospace";ctx.fillText("Follow the spooky resonance across halls!",256,170);let p=MESH(PG(3.5,1.75),BM({map:new T.CanvasTexture(c),transparent:true}));mysteryBoxMapSignGroup.add(p);mysteryBoxMapSignGroup.position.copy(loc.pos).add(new V3(0,4,0));
-
     }
-
     updateMapHologramSign();
 
-
-
     scene.add(MESH(PG(110,110),SM({color:0x113322}),0,-15,-330,-Math.PI/2));
-
     const waterMat=BM({color:0x1a4d33,opacity:0.5,transparent:true,side:T.DoubleSide}),waterLeftMesh=MESH(PG(55,110),waterMat,-27.5,0.05,-330,-Math.PI/2),waterRightMesh=MESH(PG(55,110),waterMat,27.5,0.05,-330,-Math.PI/2);scene.add(waterLeftMesh,waterRightMesh);
-
     let secretPermanentlyOpen=false,secretActive=false,secretProgress=0;const secretGalleryGroup=GRP();secretGalleryGroup.position.set(0,-17,-330);scene.add(secretGalleryGroup);
-
     secretGalleryGroup.add(MESH(BG(30,1.5,30),SM({color:0x3a2418,roughness:0.6})));
-
     const texLoad=new T.TextureLoader();texLoad.setCrossOrigin('anonymous');const buttonTexture=texLoad.load('https://i.postimg.cc/t4z4kyWh/9a8eb0ab-e478-4750-9a22-694757e56c87.png');
-
-   
-
+    
     const pButton=MESH(BG(1.5,1.5,0.2),BM({map:buttonTexture}),0,2.5,14.8);secretGalleryGroup.add(pButton);
-
     pButton.userData={materialType:"secret_button"};
-
-   
-
+    
     const hiddenButtonMesh=MESH(BG(1.5,1.5,0.2),BM({map:buttonTexture}),0,7.5,-404.8);scene.add(hiddenButtonMesh);
-
     hiddenButtonMesh.userData={materialType:"hidden_button"};
 
-
-
     const mirrorRenderTarget=new T.WebGLRenderTarget(512,512),mirrorCamera=new T.PerspectiveCamera(60,1,0.1,100);mirrorCamera.position.set(0,3.5,-404.5);mirrorCamera.rotation.set(0,Math.PI,0);
-
     const mirrorMesh=MESH(PG(6,4),BM({map:mirrorRenderTarget.texture}),0,3.5,-404.7);scene.add(mirrorMesh);
 
-
-
     const caveGroup=GRP();caveGroup.position.set(0,-79.8,-330);scene.add(caveGroup);
-
     const greenLairLight=new T.PointLight(0xffaa00,2.5,120);greenLairLight.position.set(0,15,0);caveGroup.add(greenLairLight);
-
     const bMobile=GRP();bMobile.position.set(0,0.8,35);caveGroup.add(bMobile);
-
     const carPaintMat=SM({color:0x2b1810,roughness:0.3,metalness:0.8}),tintedWindowMat=SM({color:0x220505,roughness:0.1,metalness:0.8,transparent:true,opacity:0.75,emissive:0xff0000,emissiveIntensity:0.25}),neonRedMat=SM({color:0xff3300,emissive:0xff3300,emissiveIntensity:3}),wheelMat=SM({color:0x111111,roughness:0.8});
-
     bMobile.add(MESH(BG(4.8,0.8,9.5),carPaintMat,0,0.2,0),MESH(BG(4,0.9,4.5),tintedWindowMat,0,0.9,-0.5),MESH(BG(4.4,0.4,3),carPaintMat,0,0.5,3));
-
     let wsL=MESH(BG(0.1,0.6,0.3),carPaintMat,-2,0.8,-4.3),wsR=wsL.clone();wsR.position.x=2;bMobile.add(wsL,wsR,MESH(BG(5.2,0.15,1),carPaintMat,0,1.1,-4.3));
-
     const wg=CG(0.7,0.7,0.6,24);wg.rotateZ(Math.PI/2);
-
     [[-2.5,0,2.6],[2.5,0,2.6],[-2.5,0,-2.6],[2.5,0,-2.6]].forEach(p=>bMobile.add(MESH(wg,wheelMat,...p)));
-
     let uL=MESH(BG(0.15,0.08,9),neonRedMat,-2.3,-0.3,0),uR=uL.clone();uR.position.x=2.3;let uF=MESH(BG(4.6,0.08,0.15),neonRedMat,0,-0.3,4.6),uB=uF.clone();uB.position.z=-4.6;bMobile.add(uL,uR,uF,uB);
-
     let cnfl=new T.PointLight(0xff3300,5,18);cnfl.position.set(0,-0.5,0);bMobile.add(cnfl);
-
     const redOrbMesh=MESH(SG(0.7),BM({color:0xff3300}),0,7,35);caveGroup.add(redOrbMesh);redOrbMesh.userData={materialType:"escape_orb"};
-
     const carSpotlight=new T.SpotLight(0xff3300,8,30,Math.PI/4,0.5,1);carSpotlight.position.set(0,12,35);carSpotlight.target=bMobile;caveGroup.add(carSpotlight);
 
-
-
     const upgradeMachineGroup=GRP();upgradeMachineGroup.position.set(-6,0,35);caveGroup.add(upgradeMachineGroup);
-
     const upgBody=MESH(BG(3.2,3.8,2.2),SM({color:0x3a2418,metalness:0.5,roughness:0.4}),0,1.9,0);upgradeMachineGroup.add(upgBody);
-
     const upgNeonFrame=MESH(BG(3.4,0.15,2.4),SM({color:0xffd700,emissive:0xffd700,emissiveIntensity:2}),0,3.7,0),upgNeonBottom=upgNeonFrame.clone();upgNeonBottom.position.y=0.1;upgradeMachineGroup.add(upgNeonFrame,upgNeonBottom);
-
     const upgScreenHousing=MESH(BG(2.4,1.8,0.2),SM({color:0x140c08,metalness:0.9}),0,2.1,1.12);upgradeMachineGroup.add(upgScreenHousing);
-
     const upgScreenFace=MESH(PG(2.2,1.6),BM({map:upgScreenTexture,toneMapped:false}),0,2.1,1.23);upgradeMachineGroup.add(upgScreenFace);
-
     const upgHoloWeapon=GRP();upgHoloWeapon.position.set(0,4.8,0);upgradeMachineGroup.add(upgHoloWeapon);
-
     const upgReactorRing=MESH(new T.TorusGeometry(0.8,0.08,12,32),SM({color:0xffd700,emissive:0xffaa00,emissiveIntensity:1.5}),0,4.2,0,Math.PI/2);upgradeMachineGroup.add(upgReactorRing);
-
     upgBody.userData=upgScreenHousing.userData=upgScreenFace.userData={materialType:"upgrade_machine"};
 
-
-
     addStructuralMesh(PG(60,60),wallMat,-30,-50,-211);addStructuralMesh(PG(60,60),wallMat,30,-50,-211);
-
     function buildHoopAssembly(zc,rot){const g=GRP();g.position.set(0,0,zc);if(rot)g.rotation.y=Math.PI;scene.add(g);g.add(MESH(BG(7,5,0.2),SM({color:0x3a2418})));let r=MESH(new T.TorusGeometry(1.1,0.08,8,24),BM({color:0x8b0000}),0,12,1.3,Math.PI/2);g.add(r)}
-
     buildHoopAssembly(-203,false);buildHoopAssembly(-77,true);
 
-
-
     function createStickman(col){const g=GRP(),m=BM({color:col}),h=MESH(SG(0.4),m,0,3.5,0),t=MESH(CG(0.08,0.08,1.4),m,0,2.4,0),ll=MESH(CG(0.06,0.06,1.3),m,-0.25,1.15,0),rl=MESH(CG(0.06,0.06,1.3),m,0.25,1.15,0),la=MESH(CG(0.05,0.05,1.1),m,-0.45,2.7,0),ra=MESH(CG(0.05,0.05,1.1),m,0.45,2.7,0);g.add(h,t,ll,rl,la,ra);scene.add(g);return {mesh:g,leftArm:la,rightArm:ra,leftLeg:ll,rightLeg:rl}}
-
     const stickman1=createStickman(0xffd700),stickman2=createStickman(0x5a3d28),ballMesh=MESH(SG(0.6,32,32),SM({color:0xffd700,roughness:0.5}));scene.add(ballMesh);
-
     let gameState={ballPos:new V3(0,6,-140),p1Pos:new V3(-10,0,-125),p2Pos:new V3(10,0,-155),ballHolder:1,actionTimer:0,shotStart:new V3(),shotEnd:new V3()};
 
-
-
     const machineGroup=GRP();machineGroup.position.set(0,0,5);scene.add(machineGroup);
-
     let mainWheelMesh=MESH(CG(1,1,0.5,32),SM({color:0x111111}),0,1,0);mainWheelMesh.rotation.z=Math.PI/2;machineGroup.add(mainWheelMesh);
-
     const chassis=MESH(BG(2.2,2.2,1.8),SM({color:0x4a3324}),0,3.6,0);machineGroup.add(chassis);chassis.userData={materialType:"robot_mercenary"};
-
     function createAwesomeGuns(){const g=GRP(),bg=CG(0.14,0.14,2.8,16);bg.rotateX(Math.PI/2);const l=MESH(bg,SM({color:0x3a2e25,metalness:0.6,roughness:0.4}),-0.8,3.6,1.1),r=l.clone();r.position.x=0.8;const bkg=CG(0.18,0.18,0.5,12);bkg.rotateX(Math.PI/2);const bL=MESH(bkg,SM({color:0xffd700,metalness:0.9,roughness:0.2}),-0.8,3.6,2.3),bR=bL.clone();bR.position.x=0.8;g.add(l,r,bL,bR);return g}
-
     machineGroup.add(createAwesomeGuns());machineGroup.add(MESH(BG(2.3,0.35,1.9),BM({color:0x8b0000}),0,4.5,0));
-
     const arcadeScreenTexture=new T.CanvasTexture(sCanvas);chassis.add(MESH(PG(1.6,1.6),BM({map:arcadeScreenTexture}),0,0.1,0.91));
 
-
-
     let robotAIState={status:'roam',target:new V3(0,0,0),speed:0.08};function getNewUpperLevelTarget(){return new V3((Math.random()-0.5)*30,0,-100+(Math.random()-0.5)*80)}
-
     robotAIState.target=getNewUpperLevelTarget();let elevatorActive=false,elevatorProgress=0,elevatorDirection=1;
 
-
-
     const allBurrowHoles=[],holeInteractiveMeshes=[],dirtMaterial=SM({color:0x3a2418,roughness:0.9}),pitVoidMaterial=BM({color:0x080402});
-
     function createBurrowHole(sz,x,y,z){const hg=GRP();hg.position.set(x,y+0.02,z);const pb=MESH(CG(sz,sz,0.05,24),pitVoidMaterial);pb.userData={materialType:"pit_void"};hg.add(pb);const dl=[];for(let i=0;i<4;i++){let lm=MESH(CG(sz-i*0.2,sz-(i-1)*0.1,0.15,16),dirtMaterial,0,i*0.12,0);lm.userData={materialType:"dirt"};hg.add(lm);dl.push(lm)}scene.add(hg);pb.userData.holeIndex=allBurrowHoles.length;holeInteractiveMeshes.push(pb);allBurrowHoles.push({group:hg,hitMesh:pb,layers:dl,dirtCount:4,maxDirt:4,globalX:x,globalY:y,globalZ:z})}
-
     createBurrowHole(3,-12,0,10);createBurrowHole(3,12,0,-10);createBurrowHole(3.5,-30,0,-110);createBurrowHole(3.5,30,0,-170);createBurrowHole(3.5,-45,0,-300);createBurrowHole(3.5,45,0,-360);createBurrowHole(4,-45,-79.8,-345);createBurrowHole(4,45,-79.8,-315);
 
-
-
     function clearHoleDirtLayer(i){
-
       const h=allBurrowHoles[i];
-
       if(h.dirtCount>0){
-
         h.dirtCount--;
-
         h.layers[h.dirtCount].visible=false;
-
         playProceduralDigSound();
-
       }
-
     }
-
-
 
     function fillHoleWithDirt(i){
-
       const h=allBurrowHoles[i];
-
       if(h.dirtCount<h.maxDirt){
-
         h.layers[h.dirtCount].visible=true;
-
         h.dirtCount++;
-
         addPoints(5);
-
         txtDiv.innerHTML="SEALED THE VAULT! +5 CREDITS.";
-
       }
-
     }
-
-
 
     const activeZombies=[],zombieInteractiveMeshes=[];
-
     function createZombieMesh(){
-
       const zg=GRP(),sm=SM({color:0x5a7360,roughness:0.8}),ct=SM({color:0x4a2323,roughness:0.6}),cb=SM({color:0x222834,roughness:0.7}),bm=SM({color:0x1a1a1a,roughness:0.9}),em=BM({color:0xff3300});
-
       const hg=GRP(),hb=MESH(BG(0.7,0.7,0.7),sm);hb.userData={hitBoxPart:"head"};let le=MESH(BG(0.12,0.12,0.12),em,-0.2,0.1,0.31);le.userData={hitBoxPart:"head"};let re=le.clone();re.position.x=0.2;re.userData={hitBoxPart:"head"};let jw=MESH(BG(0.5,0.15,0.2),sm,0,-0.2,0.2);jw.userData={hitBoxPart:"head"};hg.add(hb,le,re,jw);hg.visible=false;zg.add(hg);
-
       const bg=GRP(),ut=MESH(BG(1.2,1.2,0.7),ct,0,0.5,0);ut.userData={hitBoxPart:"torso"};let lt=MESH(BG(1.15,0.6,0.65),cb,0,-0.4,0);lt.userData={hitBoxPart:"torso"};let ll=MESH(BG(0.35,1,0.4),cb,-0.3,-1.2,0);ll.userData={hitBoxPart:"limbs"};let rl=ll.clone();rl.position.x=0.3;rl.userData={hitBoxPart:"limbs"};let lb=MESH(BG(0.38,0.2,0.5),bm,-0.3,-1.7,0.05);lb.userData={hitBoxPart:"limbs"};let rb=lb.clone();rb.position.x=0.3;rb.userData={hitBoxPart:"limbs"};bg.add(ut,lt,ll,rl,lb,rb);bg.visible=false;zg.add(bg);
-
       const ag=GRP(),ls=MESH(BG(0.25,0.25,0.8),ct,-0.65,0.7,0.4);ls.userData={hitBoxPart:"limbs"};let lf=MESH(BG(0.22,0.22,0.8),sm,-0.65,0.7,1.1);lf.userData={hitBoxPart:"limbs"};let rs=MESH(BG(0.25,0.25,0.8),ct,0.65,0.7,0.4);rs.userData={hitBoxPart:"limbs"};let rf=MESH(BG(0.22,0.22,0.8),sm,0.65,0.7,1.1);rf.userData={hitBoxPart:"limbs"};ag.add(ls,lf,rs,rf);ag.visible=false;zg.add(ag);
-
       return {group:zg,head:hg,body:bg,arms:ag};
-
     }
-
-
 
     function rebuildZombieHitboxes(){
-
       zombieInteractiveMeshes.length=0;
-
       activeZombies.forEach((zb,idx)=>{
-
         if(!zb.deadAndShrinking&&zb.stage>0){
-
           zb.meshParts.group.traverse(c=>{
-
             if(c.isMesh&&c.visible&&!c.userData.isCrater){
-
               c.userData.parentZombieIndex=idx;
-
               c.userData.materialType="flesh";
-
               zombieInteractiveMeshes.push(c);
-
             }
-
           });
-
         }
-
       });
-
     }
-
-
 
     function spawnZombieAtBurrow(){
-
       if(zombiesToSpawnRemaining<=0||isGameOver)return;
-
       let playerInBasement = (playerRig.position.y < -40);
-
       let av=allBurrowHoles.filter(h=>{
-
         if(!playerInBasement && h.globalY < -40) return false;
-
         if(playerInBasement && h.globalY > -40) return false;
-
         if(!unlockedDoors[0])return h.globalZ>-25;
-
         if(!unlockedDoors[1])return h.globalZ>-65;
-
         if(!unlockedDoors[2])return h.globalZ>-215;
-
         if(!unlockedDoors[3])return h.globalZ>-255;
-
         return true;
-
       });
-
       if(!av.length)return;
-
       const th=av[Math.floor(Math.random()*av.length)];
-
       let hIdx = allBurrowHoles.indexOf(th);
-
       if(th.dirtCount>0){
-
         clearHoleDirtLayer(hIdx);
-
         if(isHost) socket.emit('sync_hole_dig', { holeIndex: hIdx, dirtCount: th.dirtCount });
-
         return;
-
       }
-
       const zd=createZombieMesh();
-
       zd.group.position.set(th.globalX,th.globalY,th.globalZ);
-
       scene.add(zd.group);
-
       activeZombies.push({meshParts:zd,speed:0.05+0.11*(currentRound/(currentRound+35))+Math.random()*0.02,stage:3,emergenceStage:0,stageProgress:0,baseY:th.globalY,deadAndShrinking:false,lastAttackTime:0});
-
       zombiesToSpawnRemaining--;
-
       rebuildZombieHitboxes();
-
     }
-
-
 
     socket.on('client_zombie_sync', networkZombies => {
-
       if (isHost) return;
-
       while(activeZombies.length < networkZombies.length) {
-
         const zd = createZombieMesh();
-
         zd.head.visible = zd.body.visible = zd.arms.visible = true;
-
         zd.head.position.y = 2.4;
-
         zd.body.position.y = 1.1;
-
         zd.arms.position.y = 1.1;
-
         scene.add(zd.group);
-
         activeZombies.push({ meshParts: zd, stage: 3, deadAndShrinking: false, emergenceStage: 3 });
-
       }
-
       while(activeZombies.length > networkZombies.length) {
-
         const removed = activeZombies.pop();
-
         scene.remove(removed.meshParts.group);
-
       }
-
       networkZombies.forEach((nz, idx) => {
-
         const localZ = activeZombies[idx];
-
         if (localZ) {
-
           localZ.meshParts.group.position.set(nz.x, nz.y, nz.z);
-
           localZ.meshParts.group.rotation.y = nz.yaw;
-
           setZombieStage(localZ, nz.stage);
-
         }
-
       });
-
       rebuildZombieHitboxes();
-
     });
-
-
 
     socket.on('sync_hole_dig', data => {
-
       const h = allBurrowHoles[data.holeIndex];
-
       if (h) {
-
         h.dirtCount = data.dirtCount;
-
         h.layers.forEach((l, idx) => {
-
           l.visible = idx < h.dirtCount;
-
         });
-
         playProceduralDigSound();
-
       }
-
     });
-
-
 
     socket.on('sync_hole_fill', data => {
-
       const h = allBurrowHoles[data.holeIndex];
-
       if (h) {
-
         h.dirtCount = data.dirtCount;
-
         h.layers.forEach((l, idx) => {
-
           l.visible = idx < h.dirtCount;
-
         });
-
         playProceduralDigSound();
-
       }
-
     });
-
-
 
     socket.on('host_apply_zombie_hit', data => {
-
       if (!isHost) return;
-
       const tz = activeZombies[data.zombieIndex];
-
       if (tz && !tz.deadAndShrinking) {
-
         setZombieStage(tz, tz.stage - data.damage);
-
         if (tz.deadAndShrinking) {
-
           socket.emit('award_points', { socketId: data.shooterId, amount: data.isHeadshot ? 20 : 10 });
-
           rebuildZombieHitboxes();
-
           checkRoundEnd();
-
         } else {
-
           socket.emit('award_points', { socketId: data.shooterId, amount: 10 });
-
         }
-
       }
-
     });
-
-
 
     socket.on('client_mystery_box_sync', data => {
-
       mysteryBoxActive = data.active;
-
       mysteryBoxReadyToCollect = data.readyToCollect;
-
       mysteryBoxTimer = data.timer;
-
       mysteryBoxCyclingReward = data.cyclingReward;
-
       mysteryBoxRewardType = data.rewardType;
-
       mysteryBoxCurrentRoom = data.currentRoom;
-
       mysteryBoxGroup.position.copy(boxRoomLocations[mysteryBoxCurrentRoom].pos);
-
       updateMapHologramSign();
-
       fillHoloGroupWithWeaponModel(boxWeaponHolo, mysteryBoxRewardType, false);
-
     });
-
-
 
     socket.on('client_upgrade_machine_sync', data => {
-
       upgradeMachineActive = data.active;
-
       upgradeMachineReadyToCollect = data.readyToCollect;
-
       upgradeMachineTimer = data.timer;
-
       upgradeMachineWeaponSlot = data.weaponSlot;
-
       fillHoloGroupWithWeaponModel(upgHoloWeapon, upgradeMachineWeaponSlot, true);
-
     });
-
-
 
     socket.on('client_elevator_sync', data => {
-
       elevatorActive = data.active;
-
       elevatorProgress = data.progress;
-
       elevatorDirection = data.direction;
-
       secretPermanentlyOpen = data.permanentlyOpen;
-
       secretActive = data.secretActive;
-
     });
-
-
 
     socket.on('client_robot_sync', data => {
-
       if (isHost) return;
-
       machineGroup.position.set(data.x, data.y, data.z);
-
       machineGroup.rotation.y = data.yaw;
-
     });
 
-
-
     function throwGrenade(){
-
       if(isGameOver)return;if(grenadeCount<=0){txtDiv.innerHTML="OUT OF GRENADES! RESTOCK AT WALL STAND.";return}
-
       grenadeCount--;updateEquipmentUI();const dir=new V3(0,0,-1).applyQuaternion(camera.getWorldQuaternion(new T.Quaternion())).normalize(),sp=playerRig.position.clone().add(new V3(0,2.5,0)),m=MESH(SG(0.2,12,12),SM({color:0x444433,roughness:0.7}),sp.x,sp.y,sp.z);scene.add(m);const v=dir.multiplyScalar(0.7);v.y+=0.25;activeGrenades.push({mesh:m,velocity:v,fuse:2});txtDiv.innerHTML="GRENADE DISPATCHED!";
-
     }
-
     function placeClaymore(){
-
       if(isGameOver)return;if(claymoreCount<=0){txtDiv.innerHTML="OUT OF CLAYMORES! RESTOCK AT WALL STAND.";return}
-
       claymoreCount--;updateEquipmentUI();const sp=playerRig.position.clone();sp.y=(playerRig.position.y<-45)?-79.8:0;const g=GRP();g.position.copy(sp);g.rotation.y=playerYaw;g.add(MESH(BG(0.6,0.4,0.15),SM({color:0x555544}),0,0.2,0));let l=MESH(BG(0.02,0.02,3),BM({color:0xff0000,transparent:true,opacity:0.6}),0,0.2,-1.5);g.add(l);scene.add(g);activeClaymores.push({group:g,laserMesh:l,position:sp.clone(),direction:new V3(0,0,-1).applyQuaternion(g.quaternion).normalize()});txtDiv.innerHTML="CLAYMORE MINE SECURED!";
-
     }
-
     function setZombieStage(zb,s){zb.stage=Math.max(0,s);if(zb.stage===3)zb.meshParts.group.scale.setScalar(1);else if(zb.stage===2)zb.meshParts.group.scale.setScalar(0.73);else if(zb.stage===1)zb.meshParts.group.scale.setScalar(0.46);else zb.deadAndShrinking=true;zb.meshParts.group.updateMatrixWorld(true)}
-
     function triggerExplosion(pos,r,dmg){
-
       playExplosionSound();const l=new T.PointLight(0xff5500,8,r*2);l.position.copy(pos);scene.add(l);setTimeout(()=>scene.remove(l),150);const rg=MESH(new T.RingGeometry(0.1,r,16),BM({color:0xff3300,side:T.DoubleSide}),pos.x,pos.y+0.1,pos.z,Math.PI/2);scene.add(rg);setTimeout(()=>scene.remove(rg),250);let k=false;
-
       activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(pos)<=r){setZombieStage(z,z.stage-dmg);if(z.deadAndShrinking){addPoints(10);k=true}}});if(k){rebuildZombieHitboxes();checkRoundEnd()}
-
     }
-
     function getConstrainedPosition(p){
-
       let x=p.x,z=p.z;if(!unlockedDoors[0]&&z<-23)z=-23;if(!unlockedDoors[1]&&z<-63)z=-63;if(!unlockedDoors[2]&&z<-213)z=-213;if(!unlockedDoors[3]&&z<-254)z=-254;
-
       if(p.y<-40){p.x=Math.max(-115,Math.min(115,x));p.z=Math.max(-445,Math.min(-215,z));return p}
-
       if(z<=25&&z>=-25){x=Math.max(-23.5,Math.min(23.5,x));if(z<-23.5&&(x<-4.5||x>4.5))z=-23.5;z=Math.max(-25,Math.min(23.5,z))}
-
       else if(z<-25&&z>-65){x=Math.max(-4.5,Math.min(4.5,x))}
-
       else if(z<=-65&&z>=-215){x=Math.max(-73.5,Math.min(73.5,x));if(z>-66.5&&(x<-4.5||x>4.5))z=-66.5;if(z<-213.5&&(x<-4.5||x>4.5))z=-213.5;z=Math.max(-215,Math.min(-65,z))}
-
       else if(z<-215&&z>-255){x=Math.max(-4.5,Math.min(4.5,x))}
-
       else if(z<=-255&&z>=-405){x=Math.max(-73.5,Math.min(73.5,x));if(z>-256.5&&(x<-4.5||x>4.5))z=-256.5;if(z<-403.5)z=-403.5;z=Math.max(-405,Math.min(-255,z))}
-
       p.x=x;p.z=z;return p;
-
     }
-
-
 
     function updateZombies(now){
-
       if(isGameOver||!isHost)return;
-
       let chg=false;
 
-
-
       let allPlayers = [{ id: myId, pos: playerRig.position }];
-
       Object.values(remotePlayers).forEach(rp => {
-
         if(rp.mesh) allPlayers.push({ id: rp.data.socketId, pos: rp.mesh.position });
-
       });
 
-
-
       for(let i=activeZombies.length-1;i>=0;i--){
-
         const zb=activeZombies[i],parts=zb.meshParts;
-
         if(zb.deadAndShrinking){scene.remove(parts.group);activeZombies.splice(i,1);chg=true;continue}
-
         if(zb.emergenceStage<3){
-
           zb.stageProgress+=0.035;
-
           if(zb.emergenceStage===0){parts.head.visible=true;parts.head.position.y=zb.stageProgress*2.4;if(zb.stageProgress>=1){zb.emergenceStage=1;zb.stageProgress=0;chg=true}}
-
           else if(zb.emergenceStage===1){parts.body.visible=true;parts.body.position.y=zb.stageProgress*1.1;if(zb.stageProgress>=1){zb.emergenceStage=2;zb.stageProgress=0;chg=true}}
-
           else if(zb.emergenceStage===2){parts.arms.visible=true;parts.arms.position.y=zb.stageProgress*1.1;if(zb.stageProgress>=1){zb.emergenceStage=3;chg=true}}
-
         }else{
-
           let nearestPlayer = allPlayers[0];
-
           let minDist = parts.group.position.distanceTo(nearestPlayer.pos);
-
           allPlayers.forEach(pl => {
-
             let d = parts.group.position.distanceTo(pl.pos);
-
             if(d < minDist){ minDist = d; nearestPlayer = pl; }
-
           });
 
-
-
           let tgt = nearestPlayer.pos.clone();
-
           let zp=parts.group.position;
-
           if(zp.z>-25&&tgt.z<-25)tgt.set(0,zp.y,-25);
-
           else if(zp.z<-25&&zp.z>-65&&tgt.z<-65)tgt.set(0,zp.y,-65);
-
           else if(zp.z<-65&&zp.z>-215&&tgt.z<-215)tgt.set(0,zp.y,-215);
-
           else if(zp.z<-215&&zp.z>-255&&tgt.z<-255)tgt.set(0,zp.y,-255);
 
-
-
           let d=new V3().subVectors(tgt,zp);d.y=0;d.normalize();
-
           let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));
-
           parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
 
-
-
           let flatZombiePos = new V3(parts.group.position.x, nearestPlayer.pos.y, parts.group.position.z);
-
           if(flatZombiePos.distanceTo(nearestPlayer.pos) < 2.5 && Math.abs(parts.group.position.y - nearestPlayer.pos.y) < 5.0 && zb.emergenceStage === 3 && now - zb.lastAttackTime > 1500){
-
             playZombieBiteSound();
-
             if (nearestPlayer.id === myId) {
-
               damagePlayer();
-
             } else {
-
               socket.emit('player_bitten', nearestPlayer.id);
-
             }
-
             zb.lastAttackTime = now;
-
           }
-
         }
-
-
 
         if(robotMercState.active&&zb.emergenceStage===3&&!zb.deadAndShrinking){
-
           let gr=120+robotMercState.level*25,dr=parts.group.position.distanceTo(machineGroup.position);
-
           if(dr<gr){
-
             if(Math.random()<0.35){setZombieStage(zb,zb.stage-1);playPistolShotSound();if(zb.deadAndShrinking){addPoints(10);chg=true}}
-
             if(dr<2.5&&now-zb.lastAttackTime>1000){robotMercState.health-=10;zb.lastAttackTime=now;txtDiv.innerHTML=`VETERAN ROBOT TAKING DAMAGE! HEALTH: ${robotMercState.health}/${robotMercState.maxHealth}`;if(robotMercState.health<=0){robotMercState.active=false;robotMercState.isBeingOverrun=true;speakRobotVoice("Argh! They got me! Get to the ship, marine!");txtDiv.innerHTML="ROBOT OVERRUN! ZOMBIES DRAGGING HIM INTO THE FLOOR!"}}
-
           }
-
         }
-
       }
-
       if(!isGameOver&&machineGroup.parent&&playerRig.position.distanceTo(machineGroup.position)<10&&now-robotMercState.lastProximitySpeechTime>15000){robotMercState.lastProximitySpeechTime=now;speakRobotVoice(getUniqueRandomLine(robotMercState.active))}
-
       if(chg){rebuildZombieHitboxes();checkRoundEnd()}
-
     }
-
-
 
     function createImpactDamageCrater(hit,type){
-
       if(type==="flesh")return;const dc=GRP();dc.position.copy(hit.point).addScaledVector(hit.face.normal,0.03);dc.lookAt(dc.position.clone().add(hit.face.normal));let oc=MESH(CG(0.18,0.18,0.01,10),BM({color:0x111111,side:T.DoubleSide}),0,0,0,Math.PI/2);oc.userData={isCrater:true};dc.add(oc);scene.add(dc);setTimeout(()=>scene.remove(dc),1200);
-
     }
-
     function checkWallCollisions(pos){pos.copy(getConstrainedPosition(pos))}
-
     function fillHoloGroupWithRewardModel(g,rt){while(g.children.length>0)g.remove(g.children[0]);g.add(buildWeaponGeometry((rt>=1&&rt<=5)?rt:1,false))}
-
     function fillHoloGroupWithWeaponModel(g,wid,upg){while(g.children.length>0)g.remove(g.children[0]);g.add(buildWeaponGeometry(wid,upg))}
 
-
-
-function executeWeaponFireRaycast(clientX, clientY){
+    function executeWeaponFireRaycast(clientX, clientY){
       if(isGameOver||!gunMeshGroup.visible)return;
       
       const mouse = new T.Vector2();
@@ -1721,690 +933,349 @@ function executeWeaponFireRaycast(clientX, clientY){
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
     }
 
+    // Teammate 3D Model Construction with Corrected Face Orientation
+    function createTeammateMesh(colorHex, name) {
       const g = GRP();
-
       const visualWrapper = GRP();
-
       g.add(visualWrapper);
 
-
-
       const suitMat = SM({ color: 0x2b332b, roughness: 0.7 });
-
       const accentMat = SM({ color: colorHex, metalness: 0.8, roughness: 0.2 });
-
       const bootMat = SM({ color: 0x141414, roughness: 0.9 });
 
-
-
       visualWrapper.add(MESH(BG(0.9, 1.1, 0.5), suitMat, 0, 1.75, 0));
-
       visualWrapper.add(MESH(BG(0.94, 0.6, 0.54), accentMat, 0, 1.9, 0));
 
-
-
       visualWrapper.add(MESH(BG(0.55, 0.55, 0.55), suitMat, 0, 2.55, 0));
-
       visualWrapper.add(MESH(BG(0.42, 0.18, 0.08), BM({ color: colorHex }), 0, 2.55, -0.28));
 
-
-
       visualWrapper.add(MESH(BG(0.32, 0.9, 0.38), suitMat, -0.24, 0.75, 0));
-
       visualWrapper.add(MESH(BG(0.32, 0.9, 0.38), suitMat, 0.24, 0.75, 0));
-
       visualWrapper.add(MESH(BG(0.35, 0.25, 0.48), bootMat, -0.24, 0.18, -0.05));
-
       visualWrapper.add(MESH(BG(0.35, 0.25, 0.48), bootMat, 0.24, 0.18, -0.05));
 
-
-
       const gunMesh = buildWeaponGeometry(1, false);
-
       gunMesh.position.set(0.35, 1.5, -0.35);
-
       gunMesh.rotation.y = Math.PI;
-
       gunMesh.scale.setScalar(1.2);
-
       visualWrapper.add(gunMesh);
 
-
-
       scene.add(g);
-
       return g;
-
     }
-
-
 
     function updateTeamHUD() {
-
       const el = $('team-list-hud');
-
       el.innerHTML = `<div style="color:#${myColor ? myColor.toString(16).padStart(6,'0') : '00ffcc'};">• Slot ${mySlotNumber} (You)</div>`;
-
       Object.values(remotePlayers).forEach(rp => {
-
         el.innerHTML += `<div style="color:#${rp.data.color.toString(16).padStart(6,'0')};">• Slot ${rp.data.slotNumber}: ${rp.data.name}</div>`;
-
       });
-
     }
 
-
-
     socket.on('game_start', data => {
-
       $('lobby-screen').style.display = 'none';
-
       $('gui').style.display = 'block';
-
       if (isMobile) $('mobile-controls').style.display = 'block';
-
       gameActive = true;
-
       if (!isMobile) document.body.requestPointerLock();
-
       initAudio();
-
-
 
       isHost = (data.hostSocketId === myId || data.hostSocketId === socket.id);
 
-
-
       data.players.forEach(p => {
-
         if (p.socketId !== myId) {
-
           remotePlayers[p.socketId] = {
-
             data: p,
-
             mesh: createTeammateMesh(p.color, p.name)
-
           };
-
         }
-
       });
-
       updateTeamHUD();
-
       if (isHost) startRound(1);
-
     });
-
-
 
     socket.on('remote_player_update', data => {
-
       if (remotePlayers[data.id]) {
-
         const rp = remotePlayers[data.id];
-
         rp.mesh.position.set(data.x, data.y - 3.0, data.z);
-
         rp.mesh.rotation.y = data.yaw;
-
       }
-
     });
-
-
 
     socket.on('player_left', socketId => {
-
       if (remotePlayers[socketId]) {
-
         scene.remove(remotePlayers[socketId].mesh);
-
         delete remotePlayers[socketId];
-
         updateTeamHUD();
-
       }
-
     });
-
-
 
     window.addEventListener('mousemove',e=>{if(document.pointerLockElement!==document.body||isGameOver)return;playerYaw-=e.movementX*0.0025;playerRig.rotation.y=playerYaw;playerPitch=Math.max(-1.4,Math.min(1.4,playerPitch-e.movementY*0.0025));cameraPitchObject.rotation.x=playerPitch});
-
     window.addEventListener('mousedown',e=>{
-
       if(isMobile||document.pointerLockElement!==document.body||isGameOver)return;
-
       if(e.button===0){isLmbHeldDown=true;executeWeaponFireRaycast();lastShotTime=performance.now()}
-
       if(e.button===2){
-
         raycaster.setFromCamera(new T.Vector2(0,0),camera);
-
         let hi=raycaster.intersectObjects(holeInteractiveMeshes);
-
         if(hi.length>0&&hi[0].distance<25){
-
           let hIdx = hi[0].object.userData.holeIndex;
-
           fillHoleWithDirt(hIdx);
-
           socket.emit('fill_hole', { holeIndex: hIdx, dirtCount: allBurrowHoles[hIdx].dirtCount });
-
         }
-
       }
-
     });
-
     window.addEventListener('mouseup',e=>{if(e.button===0)isLmbHeldDown=false});
-
-   
-
+    
     const keys={w:0,a:0,s:0,d:0,shift:0};
 
-
-
     function setupTouchButton(id, keyName, isAction = false, actionFunc = null) {
-
       const el = $(id);
-
       el.addEventListener('touchstart', e => {
-
         e.preventDefault();
-
         if (isAction && actionFunc) {
-
           actionFunc();
-
         } else {
-
           keys[keyName] = 1;
-
         }
-
       });
-
       el.addEventListener('touchend', e => {
-
         e.preventDefault();
-
         if (!isAction) {
-
           keys[keyName] = 0;
-
         }
-
       });
-
     }
-
-
 
     setupTouchButton('dpad-up', 'w');
-
     setupTouchButton('dpad-down', 's');
-
     setupTouchButton('dpad-left-dir', 'a');
-
     setupTouchButton('dpad-right-dir', 'd');
-
     setupTouchButton('btn-nade', null, true, throwGrenade);
-
     setupTouchButton('btn-clay', null, true, placeClaymore);
 
-
-
     window.addEventListener('keydown',e=>{if(isGameOver)return;if(e.code==='KeyW')keys.w=1;if(e.code==='KeyS')keys.s=1;if(e.code==='KeyA')keys.a=1;if(e.code==='KeyD')keys.d=1;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=1;if(e.code==='Digit1')switchWeapon(1);if(e.code==='Digit2')switchWeapon(2);if(e.code==='Digit3')switchWeapon(3);if(e.code==='Digit4')switchWeapon(4);if(e.code==='Digit5')switchWeapon(5);if(e.code==='KeyG')throwGrenade();if(e.code==='KeyC')placeClaymore()});
-
     window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=0;if(e.code==='KeyS')keys.s=0;if(e.code==='KeyA')keys.a=0;if(e.code==='KeyD')keys.d=0;if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=0});
 
-
-
     let lookTouchId = null;
-
     let lastTouchX = null, lastTouchY = null;
-
     const lookPad = $('look-pad');
 
-
-
     lookPad.addEventListener('touchstart', e => {
-
       e.preventDefault();
-
       if (lookTouchId !== null) return;
-
       const t = e.changedTouches[0];
-
       lookTouchId = t.identifier;
-
       lastTouchX = t.clientX;
-
       lastTouchY = t.clientY;
-
     });
-
-
 
     lookPad.addEventListener('touchmove', e => {
-
       e.preventDefault();
-
       if (lastTouchX === null || isGameOver) return;
-
       for (let i = 0; i < e.changedTouches.length; i++) {
-
         const t = e.changedTouches[i];
-
         if (t.identifier === lookTouchId) {
-
           const dx = t.clientX - lastTouchX;
-
           const dy = t.clientY - lastTouchY;
-
           lastTouchX = t.clientX;
-
           lastTouchY = t.clientY;
 
-
-
           playerYaw -= dx * 0.006;
-
           playerRig.rotation.y = playerYaw;
-
           playerPitch = Math.max(-1.4, Math.min(1.4, playerPitch - dy * 0.006));
-
           cameraPitchObject.rotation.x = playerPitch;
-
         }
-
       }
-
     });
-
-
 
     function resetLookPad(e) {
-
       for (let i = 0; i < e.changedTouches.length; i++) {
-
         if (e.changedTouches[i].identifier === lookTouchId) {
-
           lookTouchId = null;
-
           lastTouchX = lastTouchY = null;
-
         }
-
       }
-
     }
-
     lookPad.addEventListener('touchend', resetLookPad);
-
     lookPad.addEventListener('touchcancel', resetLookPad);
 
-
-
     window.addEventListener('touchstart', e => {
-
       if (!gameActive || isGameOver || !isMobile || e.target.tagName.includes('BUTTON') || e.target.closest('#mobile-controls')) return;
-
       const touch = e.touches[0];
-
       executeWeaponFireRaycast(touch.clientX, touch.clientY);
-
     });
 
-
-
     function drawAnimatedHostScreen(t){
-
       sCtx.fillStyle="#2b1810";sCtx.fillRect(0,0,512,512);sCtx.strokeStyle=robotMercState.active?"#ffd700":"#b8860b";sCtx.lineWidth=12;sCtx.strokeRect(0,0,512,512);sCtx.fillStyle=robotMercState.active?"#ffd700":"#b8860b";sCtx.fillRect(140,160,50,50);sCtx.fillRect(322,160,50,50);
-
       let sp=window.speechSynthesis&&window.speechSynthesis.speaking,mo=sp?Math.abs(Math.sin(t*0.03))*40:15;sCtx.fillRect(186,300,140,10+mo);sCtx.fillStyle="#fff";sCtx.font="bold 28px monospace";sCtx.textAlign="center";
-
       if(robotMercState.active){sCtx.fillText(`LVL ${toRoman(robotMercState.level)} GOODY`,256,65);sCtx.fillStyle="#fa0";sCtx.fillText(`${Math.ceil(robotMercState.durationTimer)}s REMAINING`,256,430)}
-
       else{sCtx.fillText(`GOODY OS LVL ${toRoman(robotMercState.level)}`,256,65);sCtx.fillStyle="#f50";sCtx.fillText("HIRE: 500 CR",256,430)}
-
     }
-
     function simulateStickmanMatch(t){
-
       gameState.actionTimer+=0.016;const ra=Math.sin(t*0.01);stickman1.leftLeg.rotation.z=0.15+ra*0.3;stickman1.rightLeg.rotation.z=-0.15-ra*0.3;stickman2.leftLeg.rotation.z=0.15-ra*0.3;stickman2.rightLeg.rotation.z=-0.15+ra*0.3;
-
       if(gameState.ballHolder===1){gameState.p1Pos.z+=(-193-gameState.p1Pos.z)*0.02;gameState.p1Pos.x+=(0-gameState.p1Pos.x)*0.02;gameState.ballPos.copy(gameState.p1Pos).add(new V3(0.8,2.5+Math.abs(Math.sin(t*0.015))*1.5,0.5));if(gameState.actionTimer>3){gameState.ballHolder=0;gameState.actionTimer=0;gameState.shotStart.copy(gameState.ballPos);gameState.shotEnd.set(0,12.5,-201.7)}}
-
       else if(gameState.ballHolder===2){gameState.p2Pos.z+=(-75-gameState.p2Pos.z)*0.02;gameState.p2Pos.x+=(0-gameState.p2Pos.x)*0.02;gameState.ballPos.copy(gameState.p2Pos).add(new V3(-0.8,2.5+Math.abs(Math.cos(t*0.015))*1.5,-0.5));if(gameState.actionTimer>2.5){gameState.ballHolder=0;gameState.actionTimer=0;gameState.shotStart.copy(gameState.ballPos);gameState.shotEnd.set(0,12.5,-78.3)}}
-
       else{let p=Math.min(gameState.actionTimer*1.2,1);gameState.ballPos.lerpVectors(gameState.shotStart,gameState.shotEnd,p);gameState.ballPos.y+=Math.sin(p*Math.PI)*4.5;if(p>=1){gameState.actionTimer=0;gameState.ballHolder=(Math.random()>0.5)?1:2}}
-
       if(gameState.ballHolder!==2)gameState.p2Pos.lerp(new V3(gameState.ballPos.x*0.5,0,gameState.ballPos.z+4),0.03);
-
       if(gameState.ballHolder!==1)gameState.p1Pos.lerp(new V3(gameState.ballPos.x*0.5,0,gameState.ballPos.z-4),0.03);
-
       stickman1.mesh.position.copy(gameState.p1Pos);stickman2.mesh.position.copy(gameState.p2Pos);ballMesh.position.copy(gameState.ballPos);
-
     }
-
-
 
     const renderer=new T.WebGLRenderer({antialias:true});renderer.setSize(window.innerWidth,window.innerHeight);document.body.appendChild(renderer.domElement);
-
     switchWeapon(1);updatePerkScreens();
-
-
 
     let lastNetSendTime = 0;
 
-
-
     function animate(t){
-
       requestAnimationFrame(animate);updateUpgradeMachineScreen();upgScreenTexture.needsUpdate=true;drawAnimatedHostScreen(t);arcadeScreenTexture.needsUpdate=true;updateMysteryBoxScreen();boxScreenTexture.needsUpdate=true;
-
       let now=performance.now();if(!gameActive||isGameOver)return;
-
       redOrbMesh.position.y=7+Math.sin(t*0.003)*0.8;
-
       let efr=hasDoubleTap?autoFireRateMs/2:autoFireRateMs;
-
       if(isLmbHeldDown&&(currentWeapon===2||currentWeapon===4||currentWeapon===5)){if(now-lastShotTime>(currentWeapon===5?efr*0.8:efr)){executeWeaponFireRaycast();lastShotTime=now}}
-
       if(robotMercState.active){robotMercState.durationTimer-=0.016;if(robotMercState.durationTimer<=0){robotMercState.active=false;robotMercState.level++;speakRobotVoice(`Contract completed! Upgraded to level ${robotMercState.level}, marine!`);txtDiv.innerHTML=`GOODY CONTRACT COMPLETED! UPGRADED TO LEVEL ${toRoman(robotMercState.level)}!`}}
-
       else if(robotMercState.isBeingOverrun){robotMercState.overrunProgress+=0.01;machineGroup.position.y-=0.02;if(robotMercState.overrunProgress>=1){scene.remove(machineGroup);robotMercState.isBeingOverrun=false}}
-
       for(let i=activeGrenades.length-1;i>=0;i--){let n=activeGrenades[i];n.fuse-=0.016;n.velocity.y-=0.015;n.mesh.position.add(n.velocity);let fb=(playerRig.position.y<-45)?-79.8:0;if(n.mesh.position.y<=fb+0.2){n.mesh.position.y=fb+0.2;n.velocity.set(0,0,0)}if(n.fuse<=0){triggerExplosion(n.mesh.position,8.5+grenadeUpgradeLevel*2,3+grenadeUpgradeLevel);scene.remove(n.mesh);activeGrenades.splice(i,1)}}
-
       activeClaymores.forEach((c,idx)=>{activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(c.position)<4){triggerExplosion(c.position,7.5+claymoreUpgradeLevel*2,3+claymoreUpgradeLevel);scene.remove(c.group);activeClaymores.splice(idx,1)}})});
-
       upgReactorRing.rotation.x+=0.05;
-
-     
-
+      
       if(!isHost){
-
         if(upgradeMachineActive){upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.12;upgHoloWeapon.position.y=4.2+(upgradeMachineTimer/3)*0.8;}
-
         else if(upgradeMachineReadyToCollect){upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.02;upgHoloWeapon.position.y=4.8+Math.sin(upgradeMachineTimer*4)*0.15;}
-
         if(mysteryBoxActive){mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.08;}
-
         else if(mysteryBoxReadyToCollect){mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.03;boxWeaponHolo.position.y=3.5+Math.sin(mysteryBoxTimer*3)*0.15;}
-
       }
-
-
 
       if(isHost){
-
         if(upgradeMachineActive){
-
           upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.12;upgHoloWeapon.position.y=4.2+(upgradeMachineTimer/3)*0.8;
-
           if(upgradeMachineTimer>=3){upgradeMachineActive=false;upgradeMachineReadyToCollect=true;upgradeMachineTimer=0;upgHoloWeapon.position.set(0,4.8,0)}
-
         } else if(upgradeMachineReadyToCollect){
-
           upgradeMachineTimer+=0.016;upgHoloWeapon.rotation.y+=0.02;upgHoloWeapon.position.y=4.8+Math.sin(upgradeMachineTimer*4)*0.15;
-
           if(playerRig.position.distanceTo(upgradeMachineGroup.position)<8||upgradeMachineTimer>1){
-
             upgradeMachineReadyToCollect=false;
-
             while(upgHoloWeapon.children.length>0)upgHoloWeapon.remove(upgHoloWeapon.children[0]);
-
-           
-
+            
             weaponUpgradeLevels[upgradeMachineWeaponSlot]++;
-
             ammoReserves[upgradeMachineWeaponSlot]=getWeaponStat(upgradeMachineWeaponSlot,'maxAmmo');
-
-           
-
+            
             gunMeshGroup.visible = true;
-
             switchWeapon(upgradeMachineWeaponSlot);
-
-           
-
+            
             playMysteryBoxSound();
-
             txtDiv.innerHTML=`${baseWeaponData[upgradeMachineWeaponSlot].name} AUTO-BLESSED TO LVL ${toRoman(weaponUpgradeLevels[upgradeMachineWeaponSlot])}!`;
-
           }
-
         }
-
         if(mysteryBoxActive){
-
           mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.08;let rpn=["PISTOL","AUTO PISTOL","HEAVY SHOTGUN","AUTOMATIC RIFLE","RAY PISTOL","FRAG GRENADES","CLAYMORE MINE","ROBOT GOODY UPGRADE"],rpi=[1,2,3,4,5,6,7,8];
-
           if(mysteryBoxTimer<2.5){
-
             if(Math.floor(mysteryBoxTimer*15)%2===0){let ri=Math.floor(Math.random()*rpn.length);mysteryBoxCyclingReward=rpn[ri];mysteryBoxRewardType=rpi[ri];fillHoloGroupWithRewardModel(boxWeaponHolo,mysteryBoxRewardType)}
-
           } else {
-
             mysteryBoxActive=false;mysteryBoxReadyToCollect=true;mysteryBoxTimer=0;mysteryBoxUsesCount++;let fr=Math.random(),fi=fr<0.1?4:(fr<0.35?Math.floor(Math.random()*4):(fr<0.7?5:(fr<0.9?6:7)));
-
             mysteryBoxCyclingReward=rpn[fi];mysteryBoxRewardType=rpi[fi];fillHoloGroupWithWeaponModel(boxWeaponHolo,mysteryBoxRewardType);
-
             let sbn=mysteryBoxCyclingReward;if(mysteryBoxRewardType>=1&&mysteryBoxRewardType<=5)sbn+=` [LVL ${toRoman(weaponUpgradeLevels[mysteryBoxRewardType]+1)}]`;
-
             txtDiv.innerHTML=`CURSED CHEST UNLOCKED: ${sbn}! CLICK TO CLAIM.`;
-
             if(mysteryBoxUsesCount>=4+Math.floor(Math.random()*3)){mysteryBoxUsesCount=0;mysteryBoxCurrentRoom=(mysteryBoxCurrentRoom+1)%boxRoomLocations.length;mysteryBoxGroup.position.copy(boxRoomLocations[mysteryBoxCurrentRoom].pos);updateMapHologramSign();txtDiv.innerHTML=`CHEST SHIFTED TO ${boxRoomLocations[mysteryBoxCurrentRoom].name}! CHECK MAP.`}
-
           }
-
         } else if(mysteryBoxReadyToCollect){
-
           mysteryBoxTimer+=0.016;boxWeaponHolo.rotation.y+=0.03;boxWeaponHolo.position.y=3.5+Math.sin(mysteryBoxTimer*3)*0.15;
-
           if(mysteryBoxTimer>=8){mysteryBoxFadeAlpha=Math.max(0,mysteryBoxFadeAlpha-0.016);if(mysteryBoxTimer>=10){mysteryBoxReadyToCollect=false;mysteryBoxTimer=0;mysteryBoxFadeAlpha=1;while(boxWeaponHolo.children.length>0)boxWeaponHolo.remove(boxWeaponHolo.children[0]);txtDiv.innerHTML="RELIC FADED BACK INTO THE SHADOWS..."}}
-
         }
-
-       
-
+        
         if(now - lastNetSendTime > 33){
-
           socket.emit('host_mystery_box_sync', {
-
             active: mysteryBoxActive,
-
             readyToCollect: mysteryBoxReadyToCollect,
-
             timer: mysteryBoxTimer,
-
             cyclingReward: mysteryBoxCyclingReward,
-
             rewardType: mysteryBoxRewardType,
-
             currentRoom: mysteryBoxCurrentRoom
-
           });
-
           socket.emit('host_upgrade_machine_sync', {
-
             active: upgradeMachineActive,
-
             readyToCollect: upgradeMachineReadyToCollect,
-
             timer: upgradeMachineTimer,
-
             weaponSlot: upgradeMachineWeaponSlot
-
           });
-
           socket.emit('host_elevator_sync', {
-
             active: elevatorActive,
-
             progress: elevatorProgress,
-
             direction: elevatorDirection,
-
             permanentlyOpen: secretPermanentlyOpen,
-
             secretActive: secretActive
-
           });
-
           socket.emit('host_robot_sync', {
-
             x: machineGroup.position.x,
-
             y: machineGroup.position.y,
-
             z: machineGroup.position.z,
-
             yaw: machineGroup.rotation.y
-
           });
-
         }
-
       }
-
-
 
       if(isHost&&roundActive&&zombiesToSpawnRemaining>0&&t-lastSpawnTime>spawnInterval){spawnZombieAtBurrow();lastSpawnTime=t}
-
       updateZombies(now);
-
       if(!robotMercState.isBeingOverrun){
-
         if(robotMercState.active){
-
           let tp=playerRig.position.clone().add(new V3(0,0,-15).applyQuaternion(playerRig.quaternion));tp.y=(playerRig.position.y<-40)?-79.8:0;
-
           let rd=new V3().subVectors(tp,machineGroup.position),nz=null,minD=120+robotMercState.level*25;
-
           activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.emergenceStage===3){let d=machineGroup.position.distanceTo(z.meshParts.group.position);if(d<minD){minD=d;nz=z}}});
-
           if(nz){
-
             let ld=new V3().subVectors(nz.meshParts.group.position,machineGroup.position);ld.y=0;ld.normalize();
-
             machineGroup.rotation.y=Math.atan2(ld.x,ld.z);
-
           }
-
           else if(rd.length()>0.8){rd.normalize();machineGroup.position.addScaledVector(rd,0.45);machineGroup.rotation.y=Math.atan2(rd.x,rd.z);mainWheelMesh.rotation.x+=0.3}
-
           else machineGroup.rotation.y=playerYaw;
-
         }else{
-
           let diff=new V3().subVectors(robotAIState.target,machineGroup.position);
-
           if(diff.length()<1.5)robotAIState.target=getNewUpperLevelTarget();
-
           else{diff.normalize();machineGroup.position.addScaledVector(diff,robotAIState.speed);machineGroup.rotation.y=Math.atan2(diff.x,diff.z);machineGroup.rotation.x=0;machineGroup.rotation.z=0;}
-
         }
-
       }
-
       if(elevatorActive){
-
         elevatorProgress=(elevatorDirection===-1)?Math.min(elevatorProgress+0.005,1):Math.max(elevatorProgress-0.005,0);
-
         secretGalleryGroup.position.y=0.2-elevatorProgress*80;
-
         if(playerRig.position.x>=-15&&playerRig.position.x<=15&&playerRig.position.z>=-345&&playerRig.position.z<=-315)playerRig.position.y=secretGalleryGroup.position.y+3;
-
         if(elevatorProgress>=1||elevatorProgress<=0)elevatorActive=false;
-
       }
-
       chassis.position.y=3.6+Math.sin(t*0.01)*0.04;
-
       let mv=new V3(0,0,0);if(keys.w)mv.z-=1;if(keys.s)mv.z+=1;if(keys.a)mv.x-=1;if(keys.d)mv.x+=1;mv.normalize().applyQuaternion(playerRig.quaternion);mv.y=0;
-
       let ws=hasStaminUp?0.5:0.35;if(playerRig.position.z<-275&&playerRig.position.z>-385&&playerRig.position.x>-55&&playerRig.position.x<55&&!secretPermanentlyOpen&&playerRig.position.y<=3.5&&playerRig.position.y>-40)ws=0.12;
-
       mirrorMesh.visible=false;renderer.setRenderTarget(mirrorRenderTarget);renderer.render(scene,mirrorCamera);renderer.setRenderTarget(null);mirrorMesh.visible=true;
-
       if(playerRig.position.y>-75&&playerRig.position.z<-315&&playerRig.position.z>-345&&playerRig.position.x>-15&&playerRig.position.x<15){if(!elevatorActive){if(!secretPermanentlyOpen){if(playerRig.position.y>3.5)playerRig.position.y=3}else playerRig.position.y=secretGalleryGroup.position.y+3}}
-
       let np=playerRig.position.clone().addScaledVector(mv,ws);checkWallCollisions(np);playerRig.position.copy(np);
-
       if(elevatorActive&&playerRig.position.z>=-345&&playerRig.position.z<=-315&&playerRig.position.x>=-15&&playerRig.position.x<=15){playerRig.position.x=Math.max(-13.5,Math.min(13.5,playerRig.position.x));playerRig.position.z=Math.max(-343.5,Math.min(-316.5,playerRig.position.z))}
-
       if(!elevatorActive){secretProgress=secretActive?Math.min(secretProgress+0.01,1):Math.max(secretProgress-0.01,0);waterLeftMesh.position.x=-27.5-secretProgress*55;waterRightMesh.position.x=27.5+secretProgress*55;secretGalleryGroup.position.y=secretPermanentlyOpen?(-17+secretProgress*17.2):-17}
-
       if(playerRig.position.y<-40)scene.background=caveBG;
-
       else if(!elevatorActive&&playerRig.position.z<=-275&&playerRig.position.z>= -385&&playerRig.position.x>=-55&&playerRig.position.x<=55&&keys.shift&&!secretPermanentlyOpen){playerRig.position.y+=(-12-playerRig.position.y)*0.1;scene.background=underwaterBG}
-
       else if(playerRig.position.y>-5){playerRig.position.y+=(3-playerRig.position.y)*0.1;scene.background=defaultBG}
-
       simulateStickmanMatch(t);
 
-
-
       if(now - lastNetSendTime > 33){
-
         lastNetSendTime = now;
-
         socket.emit('player_update', {
-
           x: playerRig.position.x,
-
           y: playerRig.position.y,
-
           z: playerRig.position.z,
-
           yaw: playerYaw,
-
           pitch: playerPitch
-
         });
 
-
-
         if (isHost) {
-
           const syncPacket = activeZombies.map(z => ({
-
             x: z.meshParts.group.position.x,
-
             y: z.meshParts.group.position.y,
-
             z: z.meshParts.group.position.z,
-
             yaw: z.meshParts.group.rotation.y,
-
             stage: z.stage
-
           }));
-
           socket.emit('host_zombie_sync', syncPacket);
-
         }
-
       }
 
-
-
       renderer.render(scene,camera);
-
     }
-
     window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight)});
-
     animate(0);
-
   </script>
-
 </body>
-
 </html>

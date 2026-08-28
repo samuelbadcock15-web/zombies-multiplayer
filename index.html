@@ -695,19 +695,69 @@
       machineGroup.rotation.y = data.yaw;
     });
 
+    // NETWORKED GRENADES & EXPLOSIONS
+    socket.on('client_spawn_grenade', data => {
+      let m = MESH(SG(0.2,12,12), SM({color:0x444433,roughness:0.7}), data.x, data.y, data.z);
+      scene.add(m);
+      activeGrenades.push({ mesh: m, velocity: new V3(data.vx, data.vy, data.vz), fuse: 2 });
+    });
+
+    socket.on('client_trigger_explosion', data => {
+      let pos = new V3(data.x, data.y, data.z);
+      triggerExplosion(pos, data.r, data.dmg);
+    });
+
+    // NETWORKED CLAYMORES
+    socket.on('client_spawn_claymore', data => {
+      let sp = new V3(data.x, data.y, data.z);
+      let g = GRP();
+      g.position.copy(sp);
+      g.rotation.y = data.yaw;
+      g.add(MESH(BG(0.6,0.4,0.15), SM({color:0x555544}), 0, 0.2, 0));
+      let l = MESH(BG(0.02,0.02,3), BM({color:0xff0000,transparent:true,opacity:0.6}), 0, 0.2, -1.5);
+      g.add(l);
+      scene.add(g);
+      activeClaymores.push({ group: g, laserMesh: l, position: sp.clone(), direction: new V3(0,0,-1).applyQuaternion(g.quaternion).normalize() });
+    });
+
     function throwGrenade(){
-      if(isGameOver)return;if(grenadeCount<=0){txtDiv.innerHTML="OUT OF GRENADES! RESTOCK AT WALL STAND.";return}
-      grenadeCount--;updateEquipmentUI();const dir=new V3(0,0,-1).applyQuaternion(camera.getWorldQuaternion(new T.Quaternion())).normalize(),sp=playerRig.position.clone().add(new V3(0,2.5,0)),m=MESH(SG(0.2,12,12),SM({color:0x444433,roughness:0.7}),sp.x,sp.y,sp.z);scene.add(m);const v=dir.multiplyScalar(0.7);v.y+=0.25;activeGrenades.push({mesh:m,velocity:v,fuse:2});txtDiv.innerHTML="GRENADE DISPATCHED!";
+      if(isGameOver)return;
+      if(grenadeCount<=0){txtDiv.innerHTML="OUT OF GRENADES! RESTOCK AT WALL STAND.";return}
+      grenadeCount--;updateEquipmentUI();
+      const dir=new V3(0,0,-1).applyQuaternion(camera.getWorldQuaternion(new T.Quaternion())).normalize(),sp=playerRig.position.clone().add(new V3(0,2.5,0)),m=MESH(SG(0.2,12,12),SM({color:0x444433,roughness:0.7}),sp.x,sp.y,sp.z);
+      scene.add(m);
+      const v=dir.multiplyScalar(0.7);v.y+=0.25;
+      activeGrenades.push({mesh:m,velocity:v,fuse:2});
+      socket.emit('throw_grenade', { x: sp.x, y: sp.y, z: sp.z, vx: v.x, vy: v.y, vz: v.z });
+      txtDiv.innerHTML="GRENADE DISPATCHED!";
     }
+
     function placeClaymore(){
-      if(isGameOver)return;if(claymoreCount<=0){txtDiv.innerHTML="OUT OF CLAYMORES! RESTOCK AT WALL STAND.";return}
-      claymoreCount--;updateEquipmentUI();const sp=playerRig.position.clone();sp.y=(playerRig.position.y<-45)?-79.8:0;const g=GRP();g.position.copy(sp);g.rotation.y=playerYaw;g.add(MESH(BG(0.6,0.4,0.15),SM({color:0x555544}),0,0.2,0));let l=MESH(BG(0.02,0.02,3),BM({color:0xff0000,transparent:true,opacity:0.6}),0,0.2,-1.5);g.add(l);scene.add(g);activeClaymores.push({group:g,laserMesh:l,position:sp.clone(),direction:new V3(0,0,-1).applyQuaternion(g.quaternion).normalize()});txtDiv.innerHTML="CLAYMORE MINE SECURED!";
+      if(isGameOver)return;
+      if(claymoreCount<=0){txtDiv.innerHTML="OUT OF CLAYMORES! RESTOCK AT WALL STAND.";return}
+      claymoreCount--;updateEquipmentUI();
+      const sp=playerRig.position.clone();sp.y=(playerRig.position.y<-45)?-79.8:0;
+      const g=GRP();g.position.copy(sp);g.rotation.y=playerYaw;
+      g.add(MESH(BG(0.6,0.4,0.15),SM({color:0x555544}),0,0.2,0));
+      let l=MESH(BG(0.02,0.02,3),BM({color:0xff0000,transparent:true,opacity:0.6}),0,0.2,-1.5);
+      g.add(l);
+      scene.add(g);
+      activeClaymores.push({group:g,laserMesh:l,position:sp.clone(),direction:new V3(0,0,-1).applyQuaternion(g.quaternion).normalize()});
+      socket.emit('place_claymore', { x: sp.x, y: sp.y, z: sp.z, yaw: playerYaw });
+      txtDiv.innerHTML="CLAYMORE MINE SECURED!";
     }
+
     function setZombieStage(zb,s){zb.stage=Math.max(0,s);if(zb.stage===3)zb.meshParts.group.scale.setScalar(1);else if(zb.stage===2)zb.meshParts.group.scale.setScalar(0.73);else if(zb.stage===1)zb.meshParts.group.scale.setScalar(0.46);else zb.deadAndShrinking=true;zb.meshParts.group.updateMatrixWorld(true)}
+    
     function triggerExplosion(pos,r,dmg){
-      playExplosionSound();const l=new T.PointLight(0xff5500,8,r*2);l.position.copy(pos);scene.add(l);setTimeout(()=>scene.remove(l),150);const rg=MESH(new T.RingGeometry(0.1,r,16),BM({color:0xff3300,side:T.DoubleSide}),pos.x,pos.y+0.1,pos.z,Math.PI/2);scene.add(rg);setTimeout(()=>scene.remove(rg),250);let k=false;
-      activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(pos)<=r){setZombieStage(z,z.stage-dmg);if(z.deadAndShrinking){addPoints(10);k=true}}});if(k){rebuildZombieHitboxes();checkRoundEnd()}
+      playExplosionSound();
+      const l=new T.PointLight(0xff5500,8,r*2);l.position.copy(pos);scene.add(l);setTimeout(()=>scene.remove(l),150);
+      const rg=MESH(new T.RingGeometry(0.1,r,16),BM({color:0xff3300,side:T.DoubleSide}),pos.x,pos.y+0.1,pos.z,Math.PI/2);scene.add(rg);setTimeout(()=>scene.remove(rg),250);
+      let k=false;
+      activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(pos)<=r){setZombieStage(z,z.stage-dmg);if(z.deadAndShrinking){addPoints(10);k=true}}});
+      if(k){rebuildZombieHitboxes();checkRoundEnd()}
     }
+
     function getConstrainedPosition(p){
       let x=p.x,z=p.z;if(!unlockedDoors[0]&&z<-23)z=-23;if(!unlockedDoors[1]&&z<-63)z=-63;if(!unlockedDoors[2]&&z<-213)z=-213;if(!unlockedDoors[3]&&z<-254)z=-254;
       if(p.y<-40){p.x=Math.max(-115,Math.min(115,x));p.z=Math.max(-445,Math.min(-215,z));return p}
@@ -1185,7 +1235,10 @@
           n.velocity.set(0, 0, 0);
         }
         if(n.fuse <= 0){
-          triggerExplosion(n.mesh.position, 8.5 + grenadeUpgradeLevel * 2, 3 + grenadeUpgradeLevel);
+          if(isHost) {
+            triggerExplosion(n.mesh.position, 8.5 + grenadeUpgradeLevel * 2, 3 + grenadeUpgradeLevel);
+            socket.emit('trigger_explosion', { x: n.mesh.position.x, y: n.mesh.position.y, z: n.mesh.position.z, r: 8.5 + grenadeUpgradeLevel * 2, dmg: 3 + grenadeUpgradeLevel });
+          }
           scene.remove(n.mesh);
           activeGrenades.splice(i, 1);
         }
@@ -1194,7 +1247,10 @@
       activeClaymores.forEach((c, idx) => {
         activeZombies.forEach(z => {
           if(!z.deadAndShrinking && z.meshParts.group.position.distanceTo(c.position) < 4){
-            triggerExplosion(c.position, 7.5 + claymoreUpgradeLevel * 2, 3 + claymoreUpgradeLevel);
+            if(isHost) {
+              triggerExplosion(c.position, 7.5 + claymoreUpgradeLevel * 2, 3 + claymoreUpgradeLevel);
+              socket.emit('trigger_explosion', { x: c.position.x, y: c.position.y, z: c.position.z, r: 7.5 + claymoreUpgradeLevel * 2, dmg: 3 + claymoreUpgradeLevel });
+            }
             scene.remove(c.group);
             activeClaymores.splice(idx, 1);
           }

@@ -677,10 +677,16 @@
       secretActive = data.secretActive;
     });
 
+    // Synchronize robot position, yaw, and active state across all client screens
     socket.on('client_robot_sync', data => {
       if (isHost) return;
       machineGroup.position.set(data.x, data.y, data.z);
       machineGroup.rotation.y = data.yaw;
+      if (data.active && !robotMercState.active) {
+        robotMercState.active = true;
+        robotMercState.health = data.health || 100;
+        updateTacticalHUD();
+      }
     });
 
     socket.on('trigger_mystery_box_start', () => {
@@ -1416,11 +1422,15 @@
             permanentlyOpen: secretPermanentlyOpen,
             secretActive: secretActive
           });
+          
+          // Broadcast the robot's state and facing angle every frame
           socket.emit('host_robot_sync', {
             x: machineGroup.position.x,
             y: machineGroup.position.y,
             z: machineGroup.position.z,
-            yaw: machineGroup.rotation.y
+            yaw: machineGroup.rotation.y,
+            active: robotMercState.active,
+            health: robotMercState.health
           });
 
           const syncPacket = activeZombies.map(z => ({

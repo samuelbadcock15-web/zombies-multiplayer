@@ -99,6 +99,7 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Host Authoritative Sync Handlers
   socket.on('host_zombie_sync', (data) => {
     socket.broadcast.emit('client_zombie_sync', data);
   });
@@ -121,6 +122,15 @@ io.on('connection', (socket) => {
 
   socket.on('host_round_sync', (round) => {
     socket.broadcast.emit('client_round_sync', round);
+  });
+
+  // Universal Action Requests from Non-Hosts
+  socket.on('request_mystery_box', () => {
+    io.emit('trigger_mystery_box_start');
+  });
+
+  socket.on('request_upgrade', (data) => {
+    io.emit('trigger_upgrade_start', data);
   });
 
   socket.on('player_update', (data) => {

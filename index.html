@@ -281,7 +281,7 @@
 
     let playerPoints=500,currentWeapon=1,playerBites=0,maxBites=3,isGameOver=false,hasJuggerNog=false,hasQuickRevive=false,quickReviveShield=2,hasDoubleTap=false,hasStaminUp=false,currentRound=1,zombiesToSpawnRemaining=0,roundActive=false,lastSpawnTime=0,spawnInterval=2500;
     let baseWeaponData={1:{name:"PISTOL",damage:1,maxAmmo:200,range:60,headDamage:3},2:{name:"AUTO PISTOL",damage:1,maxAmmo:200,range:60,headDamage:3},3:{name:"HEAVY SHOTGUN / RIFLE",damage:2,maxAmmo:150,range:80,headDamage:5},4:{name:"AUTOMATIC RIFLE",damage:2,maxAmmo:150,range:75,headDamage:4},5:{name:"RAY PISTOL",damage:10,maxAmmo:100,range:140,headDamage:25},6:{name:"FRAG GRENADE",damage:0,maxAmmo:0,range:0,headDamage:0},7:{name:"CLAYMORE MINE",damage:0,maxAmmo:0,range:0,headDamage:0}};
-    let ammoReserves={1:200,2:0,3:0,4:0,5:0},weaponUpgradeLevels={1:0,2:0,3:0,4:0,5:0},hasAutomaticPistol=false,hasRifle=false,hasAutoRifle=false,hasRayPistol=false,isLmbHeldDown=false,lastShotTime=0,autoFireRateMs=120,grenadeCount=2,grenadeUpgradeLevel=0,claymoreCount=2,claymoreUpgradeLevel=0;
+    let ammoReserves={1:200,2:0,3:0,4:0,5:0},weaponUpgradeLevels={1:0,2:0,3:0,4:0,5:0},hasAutomaticPistol=false,hasRifle=false,hasAutoRifle=false,hasRayPistol=false,lastShotTime=0,autoFireRateMs=120,grenadeCount=2,grenadeUpgradeLevel=0,claymoreCount=2,claymoreUpgradeLevel=0;
     const activeGrenades=[],activeClaymores=[];
     let robotMercState={active:false,health:100,maxHealth:100,durationTimer:0,level:1,isBeingOverrun:false,overrunProgress:0,lastProximitySpeechTime:0};
     const unhiredLines=["Penumbra industries veteran at your service, marine! Five hundred credits and I'll clear this path!","You want heavy metal firepower? Pay the toll, soldier and let's party!","I've survived worse than this haunted estate. Hire me for 500 credits and watch these phantoms scatter!","Looking for a shield? Drop 500 credits and I'll lead the vanguard charge!"];
@@ -812,7 +812,7 @@
 
       let oh=raycaster.intersectObjects([redOrbMesh]);
       if(oh.length>0&&playerRig.position.y<-40&&oh[0].distance<30){
-        playerRig.position.set(0,3,15);playerYaw=playerPitch=0;playerRig.rotation.set(0,0,0);cameraPitchObject.rotation.set(0,0,0);scene.background=defaultBG;isLmbHeldDown=false;elevatorActive=false;elevatorProgress=0;elevatorDirection=1;secretGalleryGroup.position.y=0.2;
+        playerRig.position.set(0,3,15);playerYaw=playerPitch=0;playerRig.rotation.set(0,0,0);cameraPitchObject.rotation.set(0,0,0);scene.background=defaultBG;elevatorActive=false;elevatorProgress=0;elevatorDirection=1;secretGalleryGroup.position.y=0.2;
         let bz=activeZombies.filter(z=>!z.deadAndShrinking).length;zombiesToSpawnRemaining+=bz;activeZombies.forEach(z=>scene.remove(z.meshParts.group));activeZombies.length=0;rebuildZombieHitboxes();
         allBurrowHoles.forEach(h=>{if(h.globalY<-40){h.dirtCount=h.maxDirt;h.layers.forEach(l=>l.visible=true)}});
         txtDiv.innerHTML=`ORB SHOT! WARPED TO MANSION. ${bz} PHANTOMS MIGRATED BACK!`;playMysteryBoxSound();return;
@@ -1012,7 +1012,7 @@
 
     window.addEventListener('mousemove',e=>{if(document.pointerLockElement!==document.body||isGameOver)return;playerYaw-=e.movementX*0.0025;playerRig.rotation.y=playerYaw;playerPitch=Math.max(-1.4,Math.min(1.4,playerPitch-e.movementY*0.0025));cameraPitchObject.rotation.x=playerPitch});
     
-    // PC Single-Click interaction (fires immediately on click without requiring holding)
+    // PC Single-Click Interaction (Instant Action)
     window.addEventListener('mousedown',e=>{
       if(isMobile||document.pointerLockElement!==document.body||isGameOver)return;
       if(e.button===0){
@@ -1028,7 +1028,6 @@
         }
       }
     });
-    window.addEventListener('mouseup',e=>{if(e.button===0)isLmbHeldDown=false});
     
     const keys={w:0,a:0,s:0,d:0,shift:0};
 
@@ -1103,7 +1102,7 @@
     lookPad.addEventListener('touchend', resetLookPad);
     lookPad.addEventListener('touchcancel', resetLookPad);
 
-    // Mobile single-tap interaction (fires immediately on screen touch)
+    // Mobile Single-Tap Interaction (Instant Action)
     window.addEventListener('touchstart', e => {
       if (!gameActive || isGameOver || !isMobile || e.target.tagName.includes('BUTTON') || e.target.closest('#mobile-controls')) return;
       const touch = e.touches[0];

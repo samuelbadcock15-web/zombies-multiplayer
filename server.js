@@ -4,7 +4,9 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: { origin: "*" }
+});
 
 app.use(express.static(__dirname));
 
@@ -29,7 +31,10 @@ io.on('connection', (socket) => {
       if (sIdx !== -1) {
         l.slots[sIdx] = null;
         l.playerCount--;
-        if (l.playerCount === 0) l.started = false;
+        if (l.playerCount === 0) {
+          l.started = false;
+          l.hostSocketId = null;
+        }
       }
     });
 
@@ -92,14 +97,17 @@ io.on('connection', (socket) => {
       if (sIdx !== -1) {
         l.slots[sIdx] = null;
         l.playerCount--;
-        if (l.playerCount === 0) l.started = false;
+        if (l.playerCount === 0) {
+          l.started = false;
+          l.hostSocketId = null;
+        }
         socket.leave(`lobby_${l.id}`);
         io.emit('lobby_list', lobbies);
       }
     });
   });
 
-  // Host Authoritative Sync Handlers
+  // Master Sync Broadcasts
   socket.on('host_zombie_sync', (data) => {
     socket.broadcast.emit('client_zombie_sync', data);
   });
@@ -124,7 +132,15 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('client_round_sync', round);
   });
 
-  // Universal Equipment & Action Relays
+  // Action Relays
+  socket.on('sync_hole_dig', (data) => {
+    socket.broadcast.emit('sync_hole_dig', data);
+  });
+
+  socket.on('fill_hole', (data) => {
+    socket.broadcast.emit('sync_hole_fill', data);
+  });
+
   socket.on('throw_grenade_sync', (data) => {
     socket.broadcast.emit('client_throw_grenade', data);
   });
@@ -133,7 +149,6 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('client_place_claymore', data);
   });
 
-  // Universal Action Requests from Non-Hosts
   socket.on('request_mystery_box', () => {
     io.emit('trigger_mystery_box_start');
   });
@@ -166,10 +181,6 @@ io.on('connection', (socket) => {
     io.emit('door_unlocked', { doorIndex });
   });
 
-  socket.on('fill_hole', (data) => {
-    socket.broadcast.emit('sync_hole_fill', data);
-  });
-
   socket.on('award_points', ({ socketId, amount }) => {
     io.to(socketId).emit('grant_points', amount);
   });
@@ -184,7 +195,10 @@ io.on('connection', (socket) => {
       if (sIdx !== -1) {
         l.slots[sIdx] = null;
         l.playerCount--;
-        if (l.playerCount === 0) l.started = false;
+        if (l.playerCount === 0) {
+          l.started = false;
+          l.hostSocketId = null;
+        }
         io.emit('lobby_list', lobbies);
         io.to(`lobby_${l.id}`).emit('player_left', socket.id);
       }
@@ -194,5 +208,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Haunted Mansion Vault Outbreak Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

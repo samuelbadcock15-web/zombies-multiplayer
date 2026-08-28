@@ -1574,281 +1574,152 @@
 
 
 
-    function executeWeaponFireRaycast(clientX, clientY){
-
+function executeWeaponFireRaycast(clientX, clientY){
       if(isGameOver||!gunMeshGroup.visible)return;
-
-     
-
+      
       const mouse = new T.Vector2();
-
       if (isMobile && clientX !== undefined && clientY !== undefined) {
-
         mouse.x = (clientX / window.innerWidth) * 2 - 1;
-
         mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-
       } else {
-
         mouse.set(0, 0);
-
       }
-
-
 
       raycaster.setFromCamera(mouse, camera);
 
-
-
       let hi=raycaster.intersectObjects(holeInteractiveMeshes);
-
       if(hi.length>0 && hi[0].distance<25){
-
         let hIdx = hi[0].object.userData.holeIndex;
-
         let h = allBurrowHoles[hIdx];
-
         if (h && h.dirtCount < h.maxDirt) {
-
           fillHoleWithDirt(hIdx);
-
           socket.emit('fill_hole', { holeIndex: hIdx, dirtCount: h.dirtCount });
-
           return;
-
         }
-
       }
-
-
 
       let oh=raycaster.intersectObjects([redOrbMesh]);
-
       if(oh.length>0&&playerRig.position.y<-40&&oh[0].distance<30){
-
         playerRig.position.set(0,3,15);playerYaw=playerPitch=0;playerRig.rotation.set(0,0,0);cameraPitchObject.rotation.set(0,0,0);scene.background=defaultBG;isLmbHeldDown=false;elevatorActive=false;elevatorProgress=0;elevatorDirection=1;secretGalleryGroup.position.y=0.2;
-
         let bz=activeZombies.filter(z=>!z.deadAndShrinking).length;zombiesToSpawnRemaining+=bz;activeZombies.forEach(z=>scene.remove(z.meshParts.group));activeZombies.length=0;rebuildZombieHitboxes();
-
         allBurrowHoles.forEach(h=>{if(h.globalY<-40){h.dirtCount=h.maxDirt;h.layers.forEach(l=>l.visible=true)}});
-
         txtDiv.innerHTML=`ORB SHOT! WARPED TO MANSION. ${bz} PHANTOMS MIGRATED BACK!`;playMysteryBoxSound();return;
-
       }
-
       let rh=raycaster.intersectObjects(machineGroup.children,true);
-
       if(rh.length>0&&playerRig.position.distanceTo(machineGroup.position)<12){
-
         if(!robotMercState.active){if(playerPoints>=500){playerPoints-=500;$('score-val').innerText=playerPoints;robotMercState.active=true;robotMercState.health=100;robotMercState.durationTimer=45+robotMercState.level*15;updateTacticalHUD();let l=getUniqueRandomLine(true);speakRobotVoice(l);txtDiv.innerHTML=`"${l}"`}else{speakRobotVoice("You want my heavy guns? Bring me five hundred credits, marine!");txtDiv.innerHTML=`"Hiring my service requires 500 credits, marine."`}}
-
         else{speakRobotVoice("Holding the line! Keep pushing marine!");txtDiv.innerHTML=`"Holding the line! Keep pushing marine!"`}
-
         return;
-
       }
-
       let ph=raycaster.intersectObjects(perkMachineObjects,true);
-
       if(ph.length>0&&ph[0].distance<12){
-
         let t=ph[0].object.userData.materialType;
-
         if(t==="jugger_nog"){if(!hasJuggerNog){if(playerPoints>=2500){playerPoints-=2500;$('score-val').innerText=playerPoints;hasJuggerNog=true;maxBites=4;updateTacticalHUD();updatePerkScreens();txtDiv.innerHTML="JUGGER-NOG ACQUIRED! MAX HEALTH INCREASED.";playMysteryBoxSound()}else txtDiv.innerHTML="JUGGER-NOG COSTS 2500 CREDITS."}else txtDiv.innerHTML="ALREADY PURCHASED JUGGER-NOG!";return}
-
         if(t==="quick_revive"){if(!hasQuickRevive){if(playerPoints>=1500){playerPoints-=1500;$('score-val').innerText=playerPoints;hasQuickRevive=true;quickReviveShield=2;updateTacticalHUD();updatePerkScreens();txtDiv.innerHTML="QUICK REVIVE SHIELD ACTIVE!";playMysteryBoxSound()}else txtDiv.innerHTML="QUICK REVIVE COSTS 1500 CREDITS."}else txtDiv.innerHTML="QUICK REVIVE SHIELD ALREADY ACTIVE!";return}
-
         if(t==="double_tap"){if(!hasDoubleTap){if(playerPoints>=2000){playerPoints-=2000;$('score-val').innerText=playerPoints;hasDoubleTap=true;updateTacticalHUD();updatePerkScreens();txtDiv.innerHTML="DOUBLE TAP II ACQUIRED! DAMAGE & FIRE RATE DOUBLED.";playMysteryBoxSound()}else txtDiv.innerHTML="DOUBLE TAP II COSTS 2000 CREDITS."}else txtDiv.innerHTML="ALREADY PURCHASED DOUBLE TAP II!";return}
-
         if(t==="stamin_up"){if(!hasStaminUp){if(playerPoints>=2000){playerPoints-=2000;$('score-val').innerText=playerPoints;hasStaminUp=true;updatePerkScreens();txtDiv.innerHTML="STAMIN-UP ACQUIRED! RUNNING SPEED INCREASED.";playMysteryBoxSound()}else txtDiv.innerHTML="STAMIN-UP COSTS 2000 CREDITS."}else txtDiv.innerHTML="ALREADY PURCHASED STAMIN-UP!";return}
-
       }
-
       let dh=raycaster.intersectObjects(doorArray.filter((d,i)=>!unlockedDoors[i]));
-
       if(dh.length>0&&dh[0].distance<12){
-
         let td=dh[0].object,di=td.userData.doorIndex;
-
         if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
-
       }
-
-     
-
+      
       let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
-
       let upgHit = raycaster.intersectObjects(upgradeMachineGroup.children,true);
-
       if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
-
         if(!upgradeMachineActive&&!upgradeMachineReadyToCollect){
-
           let cost=500+weaponUpgradeLevels[currentWeapon]*250;
-
           if(playerPoints>=cost){
-
             playerPoints-=cost;$('score-val').innerText=playerPoints;upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;
-
             fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
-
           }else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`;
-
         }
-
         return;
-
       }
-
-
 
       if(mysteryBoxReadyToCollect){
-
         let bwPos=new V3();mysteryBoxGroup.getWorldPosition(bwPos);
-
         if((raycaster.intersectObjects(boxWeaponHolo.children,true).length>0||raycaster.intersectObjects(mysteryBoxGroup.children).length>0)&&playerRig.position.distanceTo(bwPos)<15){
-
           mysteryBoxReadyToCollect=false;while(boxWeaponHolo.children.length>0)boxWeaponHolo.remove(boxWeaponHolo.children[0]);
-
           if(mysteryBoxRewardType>=1&&mysteryBoxRewardType<=5){let w=mysteryBoxRewardType;if(w===2)hasAutomaticPistol=true;if(w===3)hasRifle=true;if(w===4)hasAutoRifle=true;if(w===5)hasRayPistol=true;if(weaponUpgradeLevels[w]<=weaponUpgradeLevels[currentWeapon])weaponUpgradeLevels[w]=weaponUpgradeLevels[currentWeapon]+1;ammoReserves[w]=getWeaponStat(w,'maxAmmo');switchWeapon(w);txtDiv.innerHTML=`RELIC CHEST: ${baseWeaponData[w].name} [LVL ${toRoman(weaponUpgradeLevels[w])}] SECURED!`}
-
           else if(mysteryBoxRewardType===6){grenadeCount=2;grenadeUpgradeLevel++;updateEquipmentUI();txtDiv.innerHTML=`RELIC CHEST: GRENADES LVL ${toRoman(grenadeUpgradeLevel+1)} SECURED!`}
-
           else if(mysteryBoxRewardType===7){claymoreCount=2;claymoreUpgradeLevel++;updateEquipmentUI();txtDiv.innerHTML=`RELIC CHEST: CLAYMORES LVL ${toRoman(claymoreUpgradeLevel+1)} SECURED!`}
-
           else if(mysteryBoxRewardType===8){robotMercState.level++;robotMercState.active=true;robotMercState.health=robotMercState.maxHealth;robotMercState.durationTimer+=30;speakRobotVoice(`Smart core upgrade to level ${robotMercState.level}! Let's party!`);txtDiv.innerHTML=`RELIC CHEST: VETERAN ROBOT UPGRADED TO LEVEL ${robotMercState.level}!`}
-
           playMysteryBoxSound();return;
-
         }
-
       }
-
       let bwCheck=new V3();mysteryBoxGroup.getWorldPosition(bwCheck);
-
       if(raycaster.intersectObjects(mysteryBoxGroup.children).length>0&&playerRig.position.distanceTo(bwCheck)<15){
-
         if(!mysteryBoxActive&&!mysteryBoxReadyToCollect){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;mysteryBoxActive=true;mysteryBoxTimer=0;txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS..."}else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS."}return;
-
       }
-
-     
-
+      
       let hbHit = raycaster.intersectObjects([hiddenButtonMesh]);
-
       if(hbHit.length>0 && playerRig.position.distanceTo(hiddenButtonMesh.position)<15){
-
-        if(!secretPermanentlyOpen){if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;secretPermanentlyOpen=true;secretActive=true;txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN."}else txtDiv.innerHTML="CRYPT LOCK REQUIRES 350 CREDITS.";}
-
-        return;
-
-      }
-
-      if(secretPermanentlyOpen){
-
-        let bwP=new V3();pButton.getWorldPosition(bwP);
-
-        let pBtnHit = raycaster.intersectObjects([pButton]);
-
-        if(pBtnHit.length>0 && playerRig.position.distanceTo(bwP)<15){
-
-          if(elevatorActive)return;if(playerPoints>=350){playerPoints-=350;$('score-val').innerText=playerPoints;elevatorActive=true;elevatorDirection=(elevatorProgress>=0.5)?1:-1;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);txtDiv.innerHTML="DESCENDING CRYPT LIFT! COST: 350 CREDITS."}else txtDiv.innerHTML="LIFT TOLL: 350 CREDITS.";
-
-          return;
-
+        if(!secretPermanentlyOpen){
+          if(playerPoints>=350){
+            playerPoints-=350;$('score-val').innerText=playerPoints;secretPermanentlyOpen=true;secretActive=true;
+            hiddenButtonMesh.position.z -= 0.1; setTimeout(() => hiddenButtonMesh.position.z += 0.1, 150);
+            txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN.";
+          }else txtDiv.innerHTML="CRYPT LOCK REQUIRES 350 CREDITS.";
         }
-
+        return;
       }
-
-
+      if(secretPermanentlyOpen){
+        let bwP=new V3();pButton.getWorldPosition(bwP);
+        let pBtnHit = raycaster.intersectObjects([pButton]);
+        if(pBtnHit.length>0 && playerRig.position.distanceTo(bwP)<15){
+          if(elevatorActive)return;
+          if(playerPoints>=350){
+            playerPoints-=350;$('score-val').innerText=playerPoints;elevatorActive=true;elevatorDirection=(elevatorProgress>=0.5)?1:-1;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);
+            pButton.position.z -= 0.1; setTimeout(() => pButton.position.z += 0.1, 150);
+            txtDiv.innerHTML="DESCENDING CRYPT LIFT! COST: 350 CREDITS.";
+          }else txtDiv.innerHTML="LIFT TOLL: 350 CREDITS.";
+          return;
+        }
+      }
 
       let wbh=raycaster.intersectObjects(wallBuyInteractiveObjects,true);
-
       if(wbh.length>0&&wbh[0].distance<8){
-
         let ct=wbh[0].object.userData.materialType;
-
         if(ct==="wall_buy"){if(playerPoints>=250){playerPoints-=250;$('score-val').innerText=playerPoints;hasAutomaticPistol=true;ammoReserves[2]=getWeaponStat(2,'maxAmmo');switchWeapon(2);txtDiv.innerHTML="AUTO PISTOL SECURED!"}else txtDiv.innerHTML="AUTO PISTOL COSTS 250 CREDITS.";return}
-
         if(ct==="rifle_buy"){if(playerPoints>=250){playerPoints-=250;$('score-val').innerText=playerPoints;hasRifle=true;ammoReserves[3]=getWeaponStat(3,'maxAmmo');switchWeapon(3);txtDiv.innerHTML="HEAVY SHOTGUN SECURED!"}else txtDiv.innerHTML="SHOTGUN COSTS 250 CREDITS.";return}
-
         if(ct==="auto_rifle_buy"){if(playerPoints>=500){playerPoints-=500;$('score-val').innerText=playerPoints;hasAutoRifle=true;ammoReserves[4]=getWeaponStat(4,'maxAmmo');switchWeapon(4);txtDiv.innerHTML="ASSAULT RIFLE SECURED!"}else txtDiv.innerHTML="ASSAULT RIFLE COSTS 500 CREDITS.";return}
-
         if(ct==="grenade_buy"){if(playerPoints>=100){playerPoints-=100;$('score-val').innerText=playerPoints;grenadeCount=2;updateEquipmentUI();txtDiv.innerHTML="GRENADES RESTOCKED!"}else txtDiv.innerHTML="GRENADES REQUIRE 100 CREDITS.";return}
-
         if(ct==="claymore_buy"){if(playerPoints>=150){playerPoints-=150;$('score-val').innerText=playerPoints;claymoreCount=2;updateEquipmentUI();txtDiv.innerHTML="CLAYMORES REPLENISHED!"}else txtDiv.innerHTML="CLAYMORES REQUIRE 150 CREDITS.";return}
-
       }
-
       if(ammoReserves[currentWeapon]<=0){txtDiv.innerHTML="OUT OF AMMO! RESTOCK AT MANSION WALL BUYS.";return}
-
       ammoReserves[currentWeapon]--;updateTacticalHUD();playPistolShotSound();muzzleFlash.intensity=5;pistolGroup.position.z+=0.1;setTimeout(()=>{muzzleFlash.intensity=0;pistolGroup.position.z-=0.1},45);
-
       let er=getWeaponStat(currentWeapon,'range'),zh=raycaster.intersectObjects(zombieInteractiveMeshes,true);
-
       if(zh.length>0){
-
         if(zh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}
-
         let isH=(zh[0].object.userData.hitBoxPart==="head"),tz=activeZombies[zh[0].object.userData.parentZombieIndex];
-
         let zDmg = isH?getWeaponStat(currentWeapon,'headDamage'):getWeaponStat(currentWeapon,'damage');
-
-       
-
+        
         if (isHost) {
-
           if(tz&&!tz.deadAndShrinking){
-
             setZombieStage(tz,tz.stage-zDmg);
-
             if(tz.deadAndShrinking){
-
               addPoints(isH?20:10);
-
               txtDiv.innerHTML=isH?"CRITICAL HEADSHOT KILL! +20 CREDITS":"TARGET BANISHED! +10 CREDITS";
-
               rebuildZombieHitboxes();checkRoundEnd();
-
             } else {
-
               addPoints(10);
-
               txtDiv.innerHTML=isH?"HEADSHOT HIT! -3 STAGES! +20 CREDITS":"HIT REGISTERED! STAGE REDUCED. +10 CREDITS";
-
             }
-
           }
-
         } else {
-
           socket.emit('zombie_hit', {
-
             zombieIndex: zh[0].object.userData.parentZombieIndex,
-
             damage: zDmg,
-
             isHeadshot: isH
-
           });
-
         }
-
         return;
-
       }
-
       let eh=raycaster.intersectObjects(generalEnvironmentMeshes.filter(m=>m.visible!==false));
-
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
-
     }
-
-
-
-    // Teammate 3D Model Construction with Corrected Face Orientation
-
-    function createTeammateMesh(colorHex, name) {
 
       const g = GRP();
 

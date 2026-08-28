@@ -124,6 +124,15 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('client_round_sync', round);
   });
 
+  // Universal Equipment & Action Relays
+  socket.on('throw_grenade_sync', (data) => {
+    socket.broadcast.emit('client_throw_grenade', data);
+  });
+
+  socket.on('place_claymore_sync', (data) => {
+    socket.broadcast.emit('client_place_claymore', data);
+  });
+
   // Universal Action Requests from Non-Hosts
   socket.on('request_mystery_box', () => {
     io.emit('trigger_mystery_box_start');
@@ -133,8 +142,20 @@ io.on('connection', (socket) => {
     io.emit('trigger_upgrade_start', data);
   });
 
+  socket.on('request_hire_robot', () => {
+    io.emit('trigger_hire_robot');
+  });
+
+  socket.on('request_elevator_trigger', (data) => {
+    io.emit('trigger_elevator_start', data);
+  });
+
   socket.on('player_update', (data) => {
     socket.broadcast.emit('remote_player_update', { id: socket.id, ...data });
+  });
+
+  socket.on('player_weapon_change', (data) => {
+    socket.broadcast.emit('remote_weapon_change', { id: socket.id, weaponId: data.weaponId });
   });
 
   socket.on('zombie_hit', (data) => {

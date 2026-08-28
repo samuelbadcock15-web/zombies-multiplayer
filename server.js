@@ -150,7 +150,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('robot_speech_sync', (line) => {
-    socket.broadcast.emit('sync_robot_speech', line);
+    io.emit('sync_robot_speech', line);
   });
 
   socket.on('request_mystery_box', () => {

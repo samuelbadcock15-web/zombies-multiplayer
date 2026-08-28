@@ -124,6 +124,7 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('client_elevator_sync', data);
   });
 
+  // Perfectly broadcasts robot position, rotation, and hiring state to all screens
   socket.on('host_robot_sync', (data) => {
     socket.broadcast.emit('client_robot_sync', data);
   });

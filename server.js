@@ -24,7 +24,6 @@ io.on('connection', (socket) => {
     const lobby = lobbies.find(l => l.id === lobbyId);
     if (!lobby || lobby.started) return;
 
-    // Leave any existing lobby first
     lobbies.forEach(l => {
       const sIdx = l.slots.findIndex(s => s && s.socketId === socket.id);
       if (sIdx !== -1) {
@@ -45,7 +44,6 @@ io.on('connection', (socket) => {
     };
     lobby.playerCount++;
 
-    // Slot 1 is always the Host
     if (openSlotIdx === 0) {
       lobby.hostSocketId = socket.id;
     }
@@ -67,7 +65,6 @@ io.on('connection', (socket) => {
       if (slot) {
         slot.ready = !slot.ready;
         
-        // Check if all slots are filled and ready
         const allFilled = lobby.slots.every(s => s !== null);
         const allReady = lobby.slots.every(s => s !== null && s.ready);
 
@@ -102,7 +99,6 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Host Authoritative Sync Handlers
   socket.on('host_zombie_sync', (data) => {
     socket.broadcast.emit('client_zombie_sync', data);
   });
@@ -125,10 +121,6 @@ io.on('connection', (socket) => {
 
   socket.on('host_round_sync', (round) => {
     socket.broadcast.emit('client_round_sync', round);
-  });
-
-  socket.on('sync_host_viewport', (data) => {
-    socket.broadcast.emit('sync_host_viewport', data);
   });
 
   socket.on('player_update', (data) => {

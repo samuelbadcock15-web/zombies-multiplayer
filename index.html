@@ -1012,7 +1012,7 @@
 
     window.addEventListener('mousemove',e=>{if(document.pointerLockElement!==document.body||isGameOver)return;playerYaw-=e.movementX*0.0025;playerRig.rotation.y=playerYaw;playerPitch=Math.max(-1.4,Math.min(1.4,playerPitch-e.movementY*0.0025));cameraPitchObject.rotation.x=playerPitch});
     
-    // PC Single-Click Interaction (Instant Action)
+    // PC Single-Click Interaction
     window.addEventListener('mousedown',e=>{
       if(isMobile||document.pointerLockElement!==document.body||isGameOver)return;
       if(e.button===0){
@@ -1102,11 +1102,16 @@
     lookPad.addEventListener('touchend', resetLookPad);
     lookPad.addEventListener('touchcancel', resetLookPad);
 
-    // Mobile Single-Tap Interaction (Instant Action)
-    window.addEventListener('touchstart', e => {
-      if (!gameActive || isGameOver || !isMobile || e.target.tagName.includes('BUTTON') || e.target.closest('#mobile-controls')) return;
-      const touch = e.touches[0];
-      executeWeaponFireRaycast(touch.clientX, touch.clientY);
+    // FIXED MOBILE SINGLE-TAP: Fires instantly on `touchend` instead of waiting for a hold gesture
+    window.addEventListener('touchend', e => {
+      if (!gameActive || isGameOver || !isMobile) return;
+      // Ignore if touching the UI controls/buttons
+      if (e.target.tagName.includes('BUTTON') || e.target.closest('#mobile-controls') || e.target.closest('#score-board')) return;
+      
+      if (e.changedTouches.length > 0) {
+        const touch = e.changedTouches[0];
+        executeWeaponFireRaycast(touch.clientX, touch.clientY);
+      }
     });
 
     function drawAnimatedHostScreen(t){

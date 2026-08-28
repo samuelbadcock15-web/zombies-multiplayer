@@ -677,7 +677,6 @@
       secretActive = data.secretActive;
     });
 
-    // Synchronize robot position, yaw, and active state across all client screens
     socket.on('client_robot_sync', data => {
       if (isHost) return;
       machineGroup.position.set(data.x, data.y, data.z);
@@ -685,8 +684,15 @@
       if (data.active && !robotMercState.active) {
         robotMercState.active = true;
         robotMercState.health = data.health || 100;
+        robotMercState.level = data.level || 1;
         updateTacticalHUD();
       }
+    });
+
+    socket.on('sync_robot_speech', line => {
+      if (isHost) return;
+      speakRobotVoice(line);
+      txtDiv.innerHTML = `"${line}"`;
     });
 
     socket.on('trigger_mystery_box_start', () => {
@@ -716,6 +722,7 @@
         let l = getUniqueRandomLine(true);
         speakRobotVoice(l);
         txtDiv.innerHTML = `"${l}"`;
+        socket.emit('robot_speech_sync', l);
       }
     });
 
@@ -895,6 +902,7 @@
             playerPoints-=500;$('score-val').innerText=playerPoints;
             if(isHost){
               robotMercState.active=true;robotMercState.health=100;robotMercState.durationTimer=45+robotMercState.level*15;updateTacticalHUD();let l=getUniqueRandomLine(true);speakRobotVoice(l);txtDiv.innerHTML=`"${l}"`;
+              socket.emit('robot_speech_sync', l);
             } else {
               socket.emit('request_hire_robot');
               txtDiv.innerHTML=`"REQUESTING MERCENARY SUPPORT..."`;
@@ -1423,14 +1431,14 @@
             secretActive: secretActive
           });
           
-          // Broadcast the robot's state and facing angle every frame
           socket.emit('host_robot_sync', {
             x: machineGroup.position.x,
             y: machineGroup.position.y,
             z: machineGroup.position.z,
             yaw: machineGroup.rotation.y,
             active: robotMercState.active,
-            health: robotMercState.health
+            health: robotMercState.health,
+            level: robotMercState.level
           });
 
           const syncPacket = activeZombies.map(z => ({

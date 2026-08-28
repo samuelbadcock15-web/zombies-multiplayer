@@ -169,13 +169,9 @@ io.on('connection', (socket) => {
     io.emit('trigger_hidden_button');
   });
 
-  // Weapon / Reward Claim Relays for Non-Hosts
+  // Non-host interactive claim requests routed to host/server
   socket.on('request_claim_mystery_box', () => {
-    io.emit('trigger_claim_mystery_box');
-  });
-
-  socket.on('request_claim_upgrade', () => {
-    io.emit('trigger_claim_upgrade');
+    io.emit('force_claim_mystery_box');
   });
 
   socket.on('player_update', (data) => {

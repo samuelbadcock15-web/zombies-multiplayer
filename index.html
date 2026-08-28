@@ -374,6 +374,8 @@
       currentWeapon=id;let upg=weaponUpgradeLevels[currentWeapon]>0;while(gunMeshGroup.children.length>0)gunMeshGroup.remove(gunMeshGroup.children[0]);
       gunMeshGroup.add(buildWeaponGeometry(currentWeapon,upg));attachTacticalDisplay(gunMeshGroup,1.3);updateTacticalHUD();
       txtDiv.innerHTML=`WEAPON: ${baseWeaponData[currentWeapon].name}${upg?` [LEVEL ${toRoman(weaponUpgradeLevels[currentWeapon])}]`:""}`;
+      
+      socket.emit('player_weapon_change', { weaponId: currentWeapon });
     }
 
     document.body.addEventListener('click',()=>{
@@ -687,14 +689,61 @@
       }
     });
 
+    socket.on('trigger_hire_robot', () => {
+      if (isHost && !robotMercState.active) {
+        robotMercState.active = true;
+        robotMercState.health = 100;
+        robotMercState.durationTimer = 45 + robotMercState.level * 15;
+        updateTacticalHUD();
+        let l = getUniqueRandomLine(true);
+        speakRobotVoice(l);
+        txtDiv.innerHTML = `"${l}"`;
+      }
+    });
+
+    socket.on('trigger_elevator_start', data => {
+      if (isHost && !elevatorActive) {
+        elevatorActive = true;
+        elevatorDirection = data.direction;
+        robotAIState.status = 'goToElevator';
+        robotAIState.target.set(0, 0, -330);
+        txtDiv.innerHTML = "DESCENDING CRYPT LIFT!";
+      }
+    });
+
+    socket.on('client_throw_grenade', data => {
+      const m = MESH(SG(0.2,12,12),SM({color:0x444433,roughness:0.7}), data.x, data.y, data.z);
+      scene.add(m);
+      activeGrenades.push({ mesh: m, velocity: new V3(data.vx, data.vy, data.vz), fuse: 2 });
+    });
+
+    socket.on('client_place_claymore', data => {
+      const g = GRP();
+      g.position.set(data.x, data.y, data.z);
+      g.rotation.y = data.yaw;
+      g.add(MESH(BG(0.6,0.4,0.15),SM({color:0x555544}),0,0.2,0));
+      let l = MESH(BG(0.02,0.02,3),BM({color:0xff0000,transparent:true,opacity:0.6}),0,0.2,-1.5);
+      g.add(l);
+      scene.add(g);
+      activeClaymores.push({ group: g, laserMesh: l, position: new V3(data.x, data.y, data.z), direction: new V3(0,0,-1).applyQuaternion(g.quaternion).normalize() });
+    });
+
     function throwGrenade(){
       if(isGameOver)return;if(grenadeCount<=0){txtDiv.innerHTML="OUT OF GRENADES! RESTOCK AT WALL STAND.";return}
-      grenadeCount--;updateEquipmentUI();const dir=new V3(0,0,-1).applyQuaternion(camera.getWorldQuaternion(new T.Quaternion())).normalize(),sp=playerRig.position.clone().add(new V3(0,2.5,0)),m=MESH(SG(0.2,12,12),SM({color:0x444433,roughness:0.7}),sp.x,sp.y,sp.z);scene.add(m);const v=dir.multiplyScalar(0.7);v.y+=0.25;activeGrenades.push({mesh:m,velocity:v,fuse:2});txtDiv.innerHTML="GRENADE DISPATCHED!";
+      grenadeCount--;updateEquipmentUI();
+      const dir=new V3(0,0,-1).applyQuaternion(camera.getWorldQuaternion(new T.Quaternion())).normalize(),sp=playerRig.position.clone().add(new V3(0,2.5,0)),m=MESH(SG(0.2,12,12),SM({color:0x444433,roughness:0.7}),sp.x,sp.y,sp.z);scene.add(m);const v=dir.multiplyScalar(0.7);v.y+=0.25;activeGrenades.push({mesh:m,velocity:v,fuse:2});
+      socket.emit('throw_grenade_sync', { x: sp.x, y: sp.y, z: sp.z, vx: v.x, vy: v.y, vz: v.z });
+      txtDiv.innerHTML="GRENADE DISPATCHED!";
     }
+
     function placeClaymore(){
       if(isGameOver)return;if(claymoreCount<=0){txtDiv.innerHTML="OUT OF CLAYMORES! RESTOCK AT WALL STAND.";return}
-      claymoreCount--;updateEquipmentUI();const sp=playerRig.position.clone();sp.y=(playerRig.position.y<-45)?-79.8:0;const g=GRP();g.position.copy(sp);g.rotation.y=playerYaw;g.add(MESH(BG(0.6,0.4,0.15),SM({color:0x555544}),0,0.2,0));let l=MESH(BG(0.02,0.02,3),BM({color:0xff0000,transparent:true,opacity:0.6}),0,0.2,-1.5);g.add(l);scene.add(g);activeClaymores.push({group:g,laserMesh:l,position:sp.clone(),direction:new V3(0,0,-1).applyQuaternion(g.quaternion).normalize()});txtDiv.innerHTML="CLAYMORE MINE SECURED!";
+      claymoreCount--;updateEquipmentUI();const sp=playerRig.position.clone();sp.y=(playerRig.position.y<-45)?-79.8:0;const g=GRP();g.position.copy(sp);g.rotation.y=playerYaw;g.add(MESH(BG(0.6,0.4,0.15),SM({color:0x555544}),0,0.2,0));let l=MESH(BG(0.02,0.02,3),BM({color:0xff0000,transparent:true,opacity:0.6}),0,0.2,-1.5);g.add(l);scene.add(g);
+      activeClaymores.push({group:g,laserMesh:l,position:sp.clone(),direction:new V3(0,0,-1).applyQuaternion(g.quaternion).normalize()});
+      socket.emit('place_claymore_sync', { x: sp.x, y: sp.y, z: sp.z, yaw: playerYaw });
+      txtDiv.innerHTML="CLAYMORE MINE SECURED!";
     }
+
     function setZombieStage(zb,s){zb.stage=Math.max(0,s);if(zb.stage===3)zb.meshParts.group.scale.setScalar(1);else if(zb.stage===2)zb.meshParts.group.scale.setScalar(0.73);else if(zb.stage===1)zb.meshParts.group.scale.setScalar(0.46);else zb.deadAndShrinking=true;zb.meshParts.group.updateMatrixWorld(true)}
     function triggerExplosion(pos,r,dmg){
       playExplosionSound();const l=new T.PointLight(0xff5500,8,r*2);l.position.copy(pos);scene.add(l);setTimeout(()=>scene.remove(l),150);const rg=MESH(new T.RingGeometry(0.1,r,16),BM({color:0xff3300,side:T.DoubleSide}),pos.x,pos.y+0.1,pos.z,Math.PI/2);scene.add(rg);setTimeout(()=>scene.remove(rg),250);let k=false;
@@ -809,6 +858,29 @@
         allBurrowHoles.forEach(h=>{if(h.globalY<-40){h.dirtCount=h.maxDirt;h.layers.forEach(l=>l.visible=true)}});
         txtDiv.innerHTML=`ORB SHOT! WARPED TO MANSION. ${bz} PHANTOMS MIGRATED BACK!`;playMysteryBoxSound();return;
       }
+
+      let rh=raycaster.intersectObjects(machineGroup.children,true);
+      if(rh.length>0&&playerRig.position.distanceTo(machineGroup.position)<12){
+        if(!robotMercState.active){
+          if(playerPoints>=500){
+            playerPoints-=500;$('score-val').innerText=playerPoints;
+            if(isHost){
+              robotMercState.active=true;robotMercState.health=100;robotMercState.durationTimer=45+robotMercState.level*15;updateTacticalHUD();let l=getUniqueRandomLine(true);speakRobotVoice(l);txtDiv.innerHTML=`"${l}"`;
+            } else {
+              socket.emit('request_hire_robot');
+              txtDiv.innerHTML=`"REQUESTING MERCENARY SUPPORT..."`;
+            }
+          }else{
+            speakRobotVoice("You want my heavy guns? Bring me five hundred credits, marine!");
+            txtDiv.innerHTML=`"Hiring my service requires 500 credits, marine."`;
+          }
+        }else{
+          speakRobotVoice("Holding the line! Keep pushing marine!");
+          txtDiv.innerHTML=`"Holding the line! Keep pushing marine!"`;
+        }
+        return;
+      }
+
       let ph=raycaster.intersectObjects(perkMachineObjects,true);
       if(ph.length>0&&ph[0].distance<12){
         let t=ph[0].object.userData.materialType;
@@ -887,7 +959,13 @@
         if(pBtnHit.length>0 && playerRig.position.distanceTo(bwP)<15){
           if(elevatorActive)return;
           if(playerPoints>=350){
-            playerPoints-=350;$('score-val').innerText=playerPoints;elevatorActive=true;elevatorDirection=(elevatorProgress>=0.5)?1:-1;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);
+            playerPoints-=350;$('score-val').innerText=playerPoints;
+            let dir = (elevatorProgress>=0.5)?1:-1;
+            if(isHost){
+              elevatorActive=true;elevatorDirection=dir;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);
+            } else {
+              socket.emit('request_elevator_trigger', { direction: dir });
+            }
             pButton.position.z -= 0.1; setTimeout(() => pButton.position.z += 0.1, 150);
             txtDiv.innerHTML="DESCENDING CRYPT LIFT! COST: 350 CREDITS.";
           }else txtDiv.innerHTML="LIFT TOLL: 350 CREDITS.";
@@ -955,14 +1033,31 @@
       visualWrapper.add(MESH(BG(0.35, 0.25, 0.48), bootMat, -0.24, 0.18, -0.05));
       visualWrapper.add(MESH(BG(0.35, 0.25, 0.48), bootMat, 0.24, 0.18, -0.05));
 
-      const gunMesh = buildWeaponGeometry(1, false);
-      gunMesh.position.set(0.35, 1.5, -0.35);
-      gunMesh.rotation.y = Math.PI;
-      gunMesh.scale.setScalar(1.2);
-      visualWrapper.add(gunMesh);
+      const gunHolder = GRP();
+      gunHolder.name = "gunHolder";
+      const initialGun = buildWeaponGeometry(1, false);
+      initialGun.position.set(0.35, 1.5, -0.35);
+      initialGun.rotation.y = Math.PI;
+      initialGun.scale.setScalar(1.2);
+      gunHolder.add(initialGun);
+      visualWrapper.add(gunHolder);
 
       scene.add(g);
       return g;
+    }
+
+    function updateTeammateWeapon(teammateMesh, weaponId) {
+      const visualWrapper = teammateMesh.children[0];
+      if (!visualWrapper) return;
+      let gunHolder = visualWrapper.getObjectByName("gunHolder");
+      if (gunHolder) {
+        while(gunHolder.children.length > 0) gunHolder.remove(gunHolder.children[0]);
+        const newGun = buildWeaponGeometry(weaponId, weaponUpgradeLevels[weaponId] > 0);
+        newGun.position.set(0.35, 1.5, -0.35);
+        newGun.rotation.y = Math.PI;
+        newGun.scale.setScalar(1.2);
+        gunHolder.add(newGun);
+      }
     }
 
     function updateTeamHUD() {
@@ -1001,6 +1096,12 @@
         const rp = remotePlayers[data.id];
         rp.mesh.position.set(data.x, data.y - 3.0, data.z);
         rp.mesh.rotation.y = data.yaw;
+      }
+    });
+
+    socket.on('remote_weapon_change', data => {
+      if (remotePlayers[data.id]) {
+        updateTeammateWeapon(remotePlayers[data.id].mesh, data.weaponId);
       }
     });
 
@@ -1292,6 +1393,15 @@
             z: machineGroup.position.z,
             yaw: machineGroup.rotation.y
           });
+
+          const syncPacket = activeZombies.map(z => ({
+            x: z.meshParts.group.position.x,
+            y: z.meshParts.group.position.y,
+            z: z.meshParts.group.position.z,
+            yaw: z.meshParts.group.rotation.y,
+            stage: z.stage
+          }));
+          socket.emit('host_zombie_sync', syncPacket);
         }
       }
 
@@ -1342,7 +1452,6 @@
 
       chassis.position.y = 3.6 + Math.sin(t * 0.01) * 0.04;
 
-      // Independent movement for ALL players
       let moveSpeed = hasStaminUp ? 18.0 : 12.0;
       if(playerRig.position.z < -275 && playerRig.position.z > -385 && playerRig.position.x > -55 && playerRig.position.x < 55 && !secretPermanentlyOpen && playerRig.position.y <= 3.5 && playerRig.position.y > -40){
         moveSpeed = 4.0;
@@ -1408,17 +1517,6 @@
           yaw: playerYaw,
           pitch: playerPitch
         });
-
-        if (isHost) {
-          const syncPacket = activeZombies.map(z => ({
-            x: z.meshParts.group.position.x,
-            y: z.meshParts.group.position.y,
-            z: z.meshParts.group.position.z,
-            yaw: z.meshParts.group.rotation.y,
-            stage: z.stage
-          }));
-          socket.emit('host_zombie_sync', syncPacket);
-        }
       }
 
       renderer.render(scene, camera);

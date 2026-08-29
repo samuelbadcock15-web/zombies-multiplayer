@@ -18,9 +18,19 @@ const lobbies = [
 
 const playerColors = [0x00ffcc, 0xffaa00, 0xff0055, 0x9900ff];
 
+// Server-managed Upgrade Machine State
+let upgradeState = {
+  active: false,
+  ready: false,
+  timer: 0,
+  weaponSlot: 1
+};
+
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
   socket.emit('lobby_list', lobbies);
+  // Send current upgrade machine state immediately on connect
+  socket.emit('sync_upgrade_state', upgradeState);
 
   socket.on('join_slot', ({ lobbyId, name }) => {
     const lobby = lobbies.find(l => l.id === lobbyId);
@@ -107,6 +117,38 @@ io.on('connection', (socket) => {
     });
   });
 
+  // --- UPGRADE RITUAL SERVER HANDLERS ---
+  socket.on('start_upgrade_ritual', (data) => {
+    if (!upgradeState.active && !upgradeState.ready) {
+      upgradeState.active = true;
+      upgradeState.ready = false;
+      upgradeState.timer = 0;
+      upgradeState.weaponSlot = data.weaponSlot;
+
+      let ritualInterval = setInterval(() => {
+        upgradeState.timer += 1;
+        if (upgradeState.timer >= 5) {
+          clearInterval(ritualInterval);
+          upgradeState.active = false;
+          upgradeState.ready = true;
+          upgradeState.timer = 0;
+        }
+        io.emit('sync_upgrade_state', upgradeState);
+      }, 1000);
+
+      io.emit('sync_upgrade_state', upgradeState);
+    }
+  });
+
+  socket.on('collect_upgrade_reward', () => {
+    if (upgradeState.ready) {
+      upgradeState.ready = false;
+      upgradeState.active = false;
+      socket.emit('grant_upgrade_success', upgradeState.weaponSlot);
+      io.emit('sync_upgrade_state', upgradeState);
+    }
+  });
+
   // Master Sync Broadcasts
   socket.on('host_zombie_sync', (data) => {
     socket.broadcast.emit('client_zombie_sync', data);
@@ -114,10 +156,6 @@ io.on('connection', (socket) => {
 
   socket.on('host_mystery_box_sync', (data) => {
     socket.broadcast.emit('client_mystery_box_sync', data);
-  });
-
-  socket.on('host_upgrade_machine_sync', (data) => {
-    socket.broadcast.emit('client_upgrade_machine_sync', data);
   });
 
   socket.on('host_elevator_sync', (data) => {
@@ -157,14 +195,6 @@ io.on('connection', (socket) => {
   socket.on('player_collect_mystery_box', () => {
     socket.emit('grant_mystery_box_reward');
     io.emit('force_clear_mystery_box_holo');
-  });
-
-  socket.on('player_spin_upgrade', (data) => {
-    io.emit('trigger_upgrade_start', { weaponSlot: data.weaponSlot });
-  });
-
-  socket.on('player_collect_upgrade', () => {
-    io.emit('force_clear_upgrade_holo');
   });
 
   socket.on('request_hire_robot', () => {

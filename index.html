@@ -8,17 +8,17 @@
     * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
     body { margin: 0; background: #0c0806; color: #fff; font-family: monospace; overflow: hidden; width: 100vw; height: 100vh; touch-action: none; }
     canvas { display: block; width: 100%; height: 100%; }
-    
+
     #gui { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: none; }
-    
+
     #stats { position: absolute; top: 6px; left: 8px; font-size: 10px; font-weight: 700; background: rgba(30,20,15,.9); color: #d4af37; padding: 3px 6px; border: 1px solid #6b4c35; max-width: 50vw; line-height: 1.2; }
     #score-board { position: absolute; top: 6px; right: 8px; font-size: 13px; font-weight: 700; background: #140d0a; color: #fa0; padding: 4px 10px; border: 2px solid #8b5a2b; pointer-events: auto; }
     #team-hud { position: absolute; top: 44px; right: 8px; background: rgba(20,13,10,0.85); border: 1px solid #8b5a2b; padding: 4px 6px; font-size: 10px; line-height: 1.3; }
-    
+
     #round-display { position: absolute; bottom: 8px; left: 135px; font-size: 26px; font-weight: 700; color: #c22; text-shadow: 2px 2px #000; pointer-events: none; }
     #msg-box { position: absolute; top: 85px; width: 100%; text-align: center; left: 0; pointer-events: none; }
     #text { display: inline-block; background: rgba(35,24,18,.95); color: #f0e0d0; border: 2px solid #8b5a2b; padding: 4px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,.5); max-width: 90vw; }
-    
+
     #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; transform: translate(-50%,-50%); pointer-events: none; }
     #crosshair::after,#crosshair::before { content:''; position: absolute; background: #fa0; }
     #crosshair::before { top: 4px; left: -10px; width: 30px; height: 2px; }
@@ -31,7 +31,7 @@
 
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
-    
+
     #dpad { position: absolute; bottom: 15px; left: 15px; width: 125px; height: 125px; }
     .dpad-btn { position: absolute; width: 40px; height: 40px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 6px; color: #d4af37; font-size: 16px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(0,0,0,0.5); }
     #dpad-up { top: 0; left: 42.5px; }
@@ -58,11 +58,11 @@
     #lobby-screen { position: absolute; inset: 0; background: radial-gradient(circle, #24140d 0%, #0c0806 90%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; font-family: monospace; display: none; }
     .lobby-header { font-size: 24px; color: #d4af37; font-weight: 900; margin-bottom: 12px; letter-spacing: 2px; text-shadow: 0 0 10px rgba(212,175,55,0.4); text-align: center; }
     .input-box { background: #140c08; border: 1px solid #6b4c35; color: #fff; padding: 10px; font-size: 16px; font-family: monospace; text-transform: uppercase; text-align: center; margin-bottom: 16px; width: 240px; }
-    
+
     #lobbies-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; max-width: 900px; width: 94%; max-height: 62vh; overflow-y: auto; padding: 4px; }
     .lobby-box { background: rgba(20,13,10,0.95); border: 2px solid #8b5a2b; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
     .lobby-box-title { font-size: 15px; color: #fa0; font-weight: bold; border-bottom: 1px solid #4a3324; padding-bottom: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; }
-    
+
     .slot-row { background: #120a07; border: 1px solid #3a2418; padding: 5px 8px; margin-bottom: 5px; font-size: 11px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; }
     .slot-open { color: #665544; border-style: dashed; }
     .status-ready { color: #00ff66; font-weight: 900; }
@@ -285,11 +285,9 @@
     let mysteryBoxActive=false,mysteryBoxReadyToCollect=false,mysteryBoxTimer=0,mysteryBoxUsesCount=0,mysteryBoxCurrentRoom=0,mysteryBoxCyclingReward="PISTOL",mysteryBoxRewardType=1,mysteryBoxFadeAlpha=1,mysteryBoxMapHologramGroup=GRP();
     const boxRoomLocations=[{name:"GRAND HAUNTED HALL",pos:new V3(0,0,-140)},{name:"BALLROOM ARENA",pos:new V3(0,0,-140)},{name:"FLOODED CRYPT",pos:new V3(0,0,-310)},{name:"UNDERGROUND CATACOMBS",pos:new V3(0,-79.8,-330)}];
 
-    // --- UPGRADE MACHINE SYSTEM (FOOLPROOF FIX) ---
+    // --- UPGRADE MACHINE SYSTEM (AUTO-COLLECT) ---
     let upgradeActive = false;
-    let upgradeReady = false;
     let upgradeTimer = 0;
-    let upgradeTargetSlot = 1;
 
     const upgScreenCanvas = $('upgradeMachineScreenCanvas');
     const upgScreenCtx = upgScreenCanvas.getContext('2d');
@@ -303,8 +301,8 @@
       let c = upgScreenCtx;
       c.fillStyle = '#1c100b';
       c.fillRect(0, 0, 512, 512);
-      
-      c.strokeStyle = upgradeReady ? '#00ff66' : (upgradeActive ? '#ff5500' : '#8b5a2b');
+
+      c.strokeStyle = upgradeActive ? '#ff5500' : '#8b5a2b';
       c.lineWidth = 14;
       c.strokeRect(10, 10, 492, 492);
 
@@ -315,7 +313,7 @@
 
       c.fillStyle = '#fff';
       c.font = '900 32px monospace';
-      let statusText = upgradeActive ? "CHANNELING BLESSING..." : (upgradeReady ? "READY TO COLLECT!" : "ALTAR STANDBY");
+      let statusText = upgradeActive ? `CHANNELING... (${5 - upgradeTimer}s)` : "ALTAR STANDBY";
       c.fillText(statusText, 256, 110);
 
       c.fillStyle = '#120805';
@@ -338,27 +336,17 @@
       c.fillStyle = '#ffaa00';
       c.fillText(`UPGRADE COST: ${cost} CREDITS`, 256, 248);
 
-      let spinActive = !upgradeActive && !upgradeReady;
-      c.fillStyle = spinActive ? '#2e7d32' : '#2b1a12';
-      c.fillRect(40, 305, 190, 70);
-      c.strokeStyle = spinActive ? '#00ff66' : '#553322';
-      c.strokeRect(40, 305, 190, 70);
-      c.fillStyle = spinActive ? '#fff' : '#665544';
-      c.font = 'bold 24px monospace';
-      c.fillText('SPIN RITUAL', 135, 348);
-
-      let shine = upgradeReady ? Math.abs(Math.sin(performance.now() * 0.012)) * 155 : 0;
-      c.fillStyle = upgradeReady ? `rgb(${80 + shine}, ${180 + shine}, 40)` : '#2b1a12';
-      c.fillRect(282, 305, 190, 70);
-      c.strokeStyle = upgradeReady ? '#ffd700' : '#553322';
-      c.strokeRect(282, 305, 190, 70);
-      c.fillStyle = upgradeReady ? '#140c08' : '#665544';
-      c.font = 'bold 24px monospace';
-      c.fillText('COLLECT', 377, 348);
+      c.fillStyle = upgradeActive ? '#2b1a12' : '#2e7d32';
+      c.fillRect(80, 310, 352, 70);
+      c.strokeStyle = upgradeActive ? '#553322' : '#00ff66';
+      c.strokeRect(80, 310, 352, 70);
+      c.fillStyle = upgradeActive ? '#665544' : '#fff';
+      c.font = 'bold 26px monospace';
+      c.fillText(upgradeActive ? 'RITUAL IN PROGRESS...' : 'INSERT & UPGRADE', 256, 355);
 
       c.fillStyle = '#b8860b';
       c.font = '16px monospace';
-      c.fillText("CLICK ON SCREEN BUTTONS TO INTERACT", 256, 430);
+      c.fillText("CLICK SCREEN TO INITIATE RITUAL", 256, 430);
 
       upgScreenTexture.needsUpdate = true;
     }
@@ -367,7 +355,7 @@
       let c=boxScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=mysteryBoxReadyToCollect?'#fa0':'#b8860b';c.lineWidth=14;c.strokeRect(10,10,492,492);
       c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("CURSED RELIC CHEST",256,48);
       c.fillStyle='#fff';c.font='900 36px monospace';c.fillText(mysteryBoxActive?"SUMMONING...":(mysteryBoxReadyToCollect?"READY TO COLLECT!":"CHEST STANDBY"),256,105);
-      
+
       c.fillStyle='#140c08';c.fillRect(40,130,432,150);c.strokeStyle='#8b5a2b';c.lineWidth=4;c.strokeRect(40,130,432,150);
       c.fillStyle=mysteryBoxReadyToCollect?'#00ff66':'#ff0';c.font='bold 28px monospace';c.fillText(mysteryBoxCyclingReward,256,180);
       c.fillStyle='#ffd700';c.font='bold 20px monospace';c.fillText("COST: 350 CREDITS",256,220);
@@ -409,20 +397,20 @@
     function updateTacticalHUD(){
       let cur=ammoReserves[currentWeapon],max=getWeaponStat(currentWeapon,'maxAmmo'),pct=Math.max(0,Math.min(1,cur/max)),lvl=weaponUpgradeLevels[currentWeapon],c=tacticalCtx;
       c.fillStyle='#21140e';c.fillRect(0,0,512,512);c.strokeStyle=currentWeapon===5?'#0ff':(lvl>0?'#fa0':'#b8860b');c.lineWidth=12;c.strokeRect(10,10,492,492);
-      
+
       c.fillStyle='#ffd700';c.font='bold 28px monospace';c.textAlign='center';c.fillText("TACTICAL AMMO",256,52);
       c.fillStyle='#fff';c.font='900 110px monospace';c.fillText(cur<10?`00${cur}`:(cur<100?`0${cur}`:`${cur}`),190,175);
       c.font='bold 36px monospace';c.fillStyle='#b8860b';c.textAlign='left';c.fillText(`/${max}`,360,165);
-      
+
       c.fillStyle=lvl>0?'#fa0':'#ffd700';c.font='bold 26px monospace';c.textAlign='center';c.fillText(lvl>0?`LVL ${toRoman(lvl)}`:'STANDARD ISSUE',256,220);
-      
+
       c.fillStyle='#3a2418';c.fillRect(60,245,392,30);
       c.fillStyle=pct<=0.15?'#f22':(pct<=0.35?'#f80':'#fa0');c.fillRect(64,249,Math.max(0,384*pct),22);
 
       if(hasQuickRevive){c.fillStyle='#00a8ff';c.font='bold 18px monospace';c.textAlign='left';c.fillText("QUICK REVIVE SHIELD",60,305);c.fillStyle='#3a2418';c.fillRect(60,315,392,18);c.fillStyle='#00a8ff';c.fillRect(64,318,Math.max(0,384*(quickReviveShield/2)),12)}
-      
+
       [{name:"JUG",active:hasJuggerNog,color:"#f22"},{name:"REV",active:hasQuickRevive,color:"#00a8ff"},{name:"DT2",active:hasDoubleTap,color:"#fa0"},{name:"STA",active:hasStaminUp,color:"#ff0"}].forEach((p,idx)=>{let bx=60+idx*98,by=355;c.fillStyle=p.active?p.color:'#3a2418';c.fillRect(bx,by,90,26);c.strokeStyle=p.active?'#fff':'#6b4c35';c.lineWidth=2;c.strokeRect(bx,by,90,26);c.fillStyle=p.active?'#000':'#b8860b';c.font='bold 14px monospace';c.textAlign='center';c.fillText(p.name,bx+45,by+18)});
-      
+
       c.fillStyle=playerBites>=maxBites?'#f05':'#ffd700';c.font='bold 16px monospace';c.textAlign='center';c.fillText(`HEALTH: ${maxBites-playerBites}/${maxBites} BITES`,256,430);
       gunTacticalTexture.needsUpdate=true;
     }
@@ -479,11 +467,11 @@
       if(id===3&&!hasRifle){txtDiv.innerHTML="BUY SHOTGUN FROM MANSION WALL!";return}
       if(id===4&&!hasAutoRifle){txtDiv.innerHTML="BUY ASSAULT RIFLE FROM MANSION WALL!";return}
       if(id===5&&!hasRayPistol){txtDiv.innerHTML="RAY PISTOL MUST BE FOUND IN RELIC CHEST!";return}
-      if(upgradeActive&&upgradeTargetSlot===id){txtDiv.innerHTML="THAT WEAPON IS BEING BLESSED!";return}
+      if(upgradeActive&&currentWeapon===id){txtDiv.innerHTML="THAT WEAPON IS CURRENTLY BEING BLESSED!";return}
       currentWeapon=id;let upg=weaponUpgradeLevels[currentWeapon]>0;while(gunMeshGroup.children.length>0)gunMeshGroup.remove(gunMeshGroup.children[0]);
       gunMeshGroup.add(buildWeaponGeometry(currentWeapon,upg));attachTacticalDisplay(gunMeshGroup,1.3);updateTacticalHUD();
       txtDiv.innerHTML=`WEAPON: ${baseWeaponData[currentWeapon].name}${upg?` [LEVEL ${toRoman(weaponUpgradeLevels[currentWeapon])}]`:""}`;
-      
+
       socket.emit('player_weapon_change', { weaponId: currentWeapon });
     }
 
@@ -571,10 +559,10 @@
     let secretPermanentlyOpen=false,secretActive=false,secretProgress=0;const secretGalleryGroup=GRP();secretGalleryGroup.position.set(0,-17,-330);scene.add(secretGalleryGroup);
     secretGalleryGroup.add(MESH(BG(30,1.5,30),SM({color:0x3a2418,roughness:0.6})));
     const texLoad=new T.TextureLoader();texLoad.setCrossOrigin('anonymous');const buttonTexture=texLoad.load('https://i.postimg.cc/t4z4kyWh/9a8eb0ab-e478-4750-9a22-694757e56c87.png');
-    
+
     const pButton=MESH(BG(1.5,1.5,0.2),BM({map:buttonTexture}),0,2.5,14.8);secretGalleryGroup.add(pButton);
     pButton.userData={materialType:"secret_button"};
-    
+
     const hiddenButtonMesh=MESH(BG(1.5,1.5,0.2),BM({map:buttonTexture}),0,7.5,-404.8);scene.add(hiddenButtonMesh);
     hiddenButtonMesh.userData={materialType:"hidden_button"};
 
@@ -594,14 +582,13 @@
     const redOrbMesh=MESH(SG(0.7),BM({color:0xff3300}),0,7,35);caveGroup.add(redOrbMesh);redOrbMesh.userData={materialType:"escape_orb"};
     const carSpotlight=new T.SpotLight(0xff3300,8,30,Math.PI/4,0.5,1);carSpotlight.position.set(0,12,35);carSpotlight.target=bMobile;caveGroup.add(carSpotlight);
 
-    // --- UPGRADE MACHINE 3D SETUP ---
+    // --- UPGRADE MACHINE 3D SETUP (SIMPLIFIED) ---
     const upgradeMachineGroup=GRP();upgradeMachineGroup.position.set(-6,0,35);caveGroup.add(upgradeMachineGroup);
     const upgBody=MESH(BG(3.2,3.8,2.2),SM({color:0x3a2418,metalness:0.5,roughness:0.4}),0,1.9,0);upgradeMachineGroup.add(upgBody);
     const upgNeonFrame=MESH(BG(3.4,0.15,2.4),SM({color:0xffd700,emissive:0xffd700,emissiveIntensity:2}),0,3.7,0),upgNeonBottom=upgNeonFrame.clone();upgNeonBottom.position.y=0.1;upgradeMachineGroup.add(upgNeonFrame,upgNeonBottom);
     const upgScreenHousing=MESH(BG(2.4,1.8,0.2),SM({color:0x140c08,metalness:0.9}),0,2.1,1.12);upgradeMachineGroup.add(upgScreenHousing);
     const upgScreenFace=MESH(PG(2.2,1.6),BM({map:upgScreenTexture,toneMapped:false}),0,2.1,1.23);upgradeMachineGroup.add(upgScreenFace);
-    const upgHoloWeapon=GRP();upgHoloWeapon.position.set(0,4.8,0);upgradeMachineGroup.add(upgHoloWeapon);
-    const upgReactorRing=MESH(new T.TorusGeometry(0.8,0.08,12,32),SM({color:0xffd700,emissive:0xffaa00,emissiveIntensity:1.5}),0,4.2,0,Math.PI/2);upgradeMachineGroup.add(upgReactorRing);
+    const upgReactorRing=MESH(new T.TorusGeometry(0.8,0.08,12,32),SM({color:0xffd700,emissive:0xffaa00,emissiveIntensity:1.5}),0,3.2,0,Math.PI/2);upgradeMachineGroup.add(upgReactorRing);
     upgBody.userData=upgScreenHousing.userData=upgScreenFace.userData={materialType:"upgrade_machine"};
 
     addStructuralMesh(PG(60,60),wallMat,-30,-50,-211);addStructuralMesh(PG(60,60),wallMat,30,-50,-211);
@@ -694,7 +681,7 @@
       const zd=createZombieMesh();
       zd.group.position.set(th.globalX,th.globalY,th.globalZ);
       scene.add(zd.group);
-      
+
       const zId = ++zombieIdCounter;
 
       activeZombies.push({
@@ -788,40 +775,20 @@
       fillHoloGroupWithWeaponModel(boxWeaponHolo, mysteryBoxRewardType, false);
     });
 
-    // --- UPGRADE MACHINE SYNC LISTENER ---
+    // --- UPGRADE MACHINE SYNC LISTENER (AUTO-COLLECT) ---
     socket.on('sync_upgrade_state', data => {
       upgradeActive = data.active;
-      upgradeReady = data.ready;
       upgradeTimer = data.timer;
-      upgradeTargetSlot = data.weaponSlot;
-
-      if (upgradeActive || upgradeReady) {
-        fillHoloGroupWithWeaponModel(upgHoloWeapon, upgradeTargetSlot, true);
-        upgHoloWeapon.traverse(c => {
-          if (c.isMesh && c.material) {
-            c.material.emissive = new T.Color(upgradeReady ? 0xffaa00 : 0xff3300);
-            c.material.emissiveIntensity = upgradeReady ? 0.9 : 0.4;
-          }
-        });
-        if (upgradeActive && upgradeTargetSlot === currentWeapon) {
-          gunMeshGroup.visible = false;
-        }
-      } else {
-        while(upgHoloWeapon.children.length > 0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
-        gunMeshGroup.visible = true;
-      }
     });
 
     socket.on('grant_upgrade_success', slot => {
-      upgradeReady = false;
       upgradeActive = false;
+      upgradeTimer = 0;
       weaponUpgradeLevels[slot]++;
       ammoReserves[slot] = getWeaponStat(slot, 'maxAmmo');
-      gunMeshGroup.visible = true;
       switchWeapon(slot);
       playMysteryBoxSound();
       txtDiv.innerHTML = `${baseWeaponData[slot].name} BLESSED TO LEVEL ${toRoman(weaponUpgradeLevels[slot])}!`;
-      while(upgHoloWeapon.children.length > 0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
     });
 
     socket.on('client_elevator_sync', data => {
@@ -969,7 +936,7 @@
 
           let d=new V3().subVectors(tgt,zp);d.y=0;d.normalize();
           let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));
-          
+
           parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
           parts.group.updateMatrixWorld(true);
 
@@ -1026,7 +993,7 @@
 
     function executeWeaponFireRaycast(clientX, clientY){
       if(isGameOver||!gunMeshGroup.visible)return;
-      
+
       const mouse = new T.Vector2();
       if (isMobile && clientX !== undefined && clientY !== undefined) {
         mouse.x = (clientX / window.innerWidth) * 2 - 1;
@@ -1091,8 +1058,8 @@
         let td=dh[0].object,di=td.userData.doorIndex;
         if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
       }
-      
-      // UPGRADE MACHINE TOUCH INTERACTION HANDLER (ROBUST UV/BOX FALLBACK)
+
+      // UPGRADE MACHINE TOUCH INTERACTION HANDLER (AUTO-COLLECT)
       let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
       let upgHit = raycaster.intersectObjects([upgScreenFace],true);
       if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
@@ -1100,7 +1067,6 @@
         if (uv && uv.x !== undefined && uv.y !== undefined) {
           handleUpgradeMachineClick(uv.x, uv.y);
         } else {
-          // Fallback coordinate calculation using local intersection point
           let localPoint = upgScreenFace.worldToLocal(upgHit[0].point.clone());
           let u = (localPoint.x + 1.1) / 2.2;
           let v = (localPoint.y + 0.8) / 1.6;
@@ -1141,7 +1107,7 @@
         }
         return;
       }
-      
+
       let hbHit = raycaster.intersectObjects([hiddenButtonMesh]);
       if(hbHit.length>0 && playerRig.position.distanceTo(hiddenButtonMesh.position)<15){
         if(!secretPermanentlyOpen){
@@ -1185,7 +1151,7 @@
         if(zh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}
         let isH=(zh[0].object.userData.hitBoxPart==="head"),zId=zh[0].object.userData.zombieId;
         let zDmg = isH?getWeaponStat(currentWeapon,'headDamage'):getWeaponStat(currentWeapon,'damage');
-        
+
         socket.emit('zombie_hit', {
           zombieId: zId,
           damage: zDmg,
@@ -1197,30 +1163,19 @@
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
     }
 
-    // Upgrade machine screen click handler
+    // Upgrade machine screen click handler (Auto-collect ritual)
     function handleUpgradeMachineClick(uvX, uvY) {
       let px = uvX * 512, py = (1 - uvY) * 512;
-      if (py >= 305 && py <= 375) {
-        if (px >= 40 && px <= 230) {
-          // SPIN CLICKED
-          if (!upgradeActive && !upgradeReady) {
-            let cost = 500 + weaponUpgradeLevels[currentWeapon] * 250;
-            if (playerPoints >= cost) {
-              playerPoints -= cost;
-              $('score-val').innerText = playerPoints;
-              upgradeTargetSlot = currentWeapon;
-              
-              socket.emit('start_upgrade_ritual', { weaponSlot: currentWeapon });
-              txtDiv.innerHTML = "OCCULT RITUAL ENGAGED. MAINTAIN POSITION.";
-            } else {
-              txtDiv.innerHTML = `RITUAL REQUIRES ${cost} CREDITS.`;
-            }
-          }
-        } else if (px >= 282 && px <= 472) {
-          // COLLECT CLICKED
-          if (upgradeReady) {
-            socket.emit('collect_upgrade_reward');
-            txtDiv.innerHTML = "COLLECTING BLESSED WEAPON...";
+      if (py >= 310 && py <= 380 && px >= 80 && px <= 432) {
+        if (!upgradeActive) {
+          let cost = 500 + weaponUpgradeLevels[currentWeapon] * 250;
+          if (playerPoints >= cost) {
+            playerPoints -= cost;
+            $('score-val').innerText = playerPoints;
+            socket.emit('start_upgrade_ritual', { weaponSlot: currentWeapon });
+            txtDiv.innerHTML = "OCCULT RITUAL ENGAGED. BLESSING WEAPON...";
+          } else {
+            txtDiv.innerHTML = `RITUAL REQUIRES ${cost} CREDITS.`;
           }
         }
       }
@@ -1335,7 +1290,7 @@
     });
 
     window.addEventListener('mousemove',e=>{if(document.pointerLockElement!==document.body||isGameOver)return;playerYaw-=e.movementX*0.0025;playerRig.rotation.y=playerYaw;playerPitch=Math.max(-1.4,Math.min(1.4,playerPitch-e.movementY*0.0025));cameraPitchObject.rotation.x=playerPitch});
-    
+
     window.addEventListener('mousedown',e=>{
       if(isMobile||document.pointerLockElement!==document.body||isGameOver)return;
       if(e.button===0){ executeWeaponFireRaycast(); }
@@ -1349,7 +1304,7 @@
         }
       }
     });
-    
+
     const keys={w:0,a:0,s:0,d:0,shift:0};
 
     function setupTouchButton(id, keyName, isAction = false, actionFunc = null) {
@@ -1460,7 +1415,7 @@
 
       if(!gameActive || isGameOver) return;
       redOrbMesh.position.y = 7 + Math.sin(t * 0.003) * 0.8;
-      
+
       if(robotMercState.active){
         robotMercState.durationTimer -= 0.016;
         if(robotMercState.durationTimer <= 0){
@@ -1506,11 +1461,6 @@
       });
 
       upgReactorRing.rotation.x += 0.05;
-      
-      if(upgradeActive || upgradeReady){
-        upgHoloWeapon.rotation.y += 0.08;
-        upgHoloWeapon.position.y = 4.8 + Math.sin(t * 0.008) * 0.15;
-      }
 
       if(mysteryBoxActive){
         mysteryBoxTimer += 0.016;
@@ -1560,7 +1510,7 @@
           spawnZombieAtBurrow();
           lastSpawnTime = t;
         }
-        
+
         if(now - lastNetSendTime > 33){
           socket.emit('host_mystery_box_sync', {
             active: mysteryBoxActive,
@@ -1643,7 +1593,7 @@
         }
 
         secretGalleryGroup.position.y = 0.2 - elevatorProgress * 80;
-        
+
         let inPlatformBounds = (playerRig.position.x >= -15 && playerRig.position.x <= 15 && playerRig.position.z >= -345 && playerRig.position.z <= -315);
         if(inPlatformBounds) {
           playerRig.position.y = secretGalleryGroup.position.y + 3;

@@ -29,7 +29,6 @@ let upgradeState = {
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
   socket.emit('lobby_list', lobbies);
-  // Send current upgrade machine state immediately on connect
   socket.emit('sync_upgrade_state', upgradeState);
 
   socket.on('join_slot', ({ lobbyId, name }) => {
@@ -117,7 +116,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // --- UPGRADE RITUAL SERVER HANDLERS ---
+  // --- UPGRADE MACHINE SERVER HANDLERS ---
   socket.on('start_upgrade_ritual', (data) => {
     if (!upgradeState.active && !upgradeState.ready) {
       upgradeState.active = true;
@@ -142,9 +141,13 @@ io.on('connection', (socket) => {
 
   socket.on('collect_upgrade_reward', () => {
     if (upgradeState.ready) {
+      let rewardedSlot = upgradeState.weaponSlot;
       upgradeState.ready = false;
       upgradeState.active = false;
-      socket.emit('grant_upgrade_success', upgradeState.weaponSlot);
+      
+      // Grant reward securely to the requesting player
+      socket.emit('grant_upgrade_success', rewardedSlot);
+      // Broadcast reset state to everyone
       io.emit('sync_upgrade_state', upgradeState);
     }
   });

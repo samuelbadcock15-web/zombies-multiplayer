@@ -18,18 +18,21 @@ const lobbies = [
 
 const playerColors = [0x00ffcc, 0xffaa00, 0xff0055, 0x9900ff];
 
-// Server-managed Upgrade Machine State
-let upgradeState = {
-  active: false,
-  ready: false,
-  timer: 0,
-  weaponSlot: 1
-};
+// Player-specific Upgrade Machine States tracked by socket.id
+const upgradeStates = {};
 
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
+  
+  // Initialize player upgrade state
+  upgradeStates[socket.id] = {
+    active: false,
+    timer: 0,
+    weaponSlot: 1
+  };
+
   socket.emit('lobby_list', lobbies);
-  socket.emit('sync_upgrade_state', upgradeState);
+  socket.emit('sync_upgrade_state', upgradeStates[socket.id]);
 
   socket.on('join_slot', ({ lobbyId, name }) => {
     const lobby = lobbies.find(l => l.id === lobbyId);
@@ -78,7 +81,7 @@ io.on('connection', (socket) => {
       const slot = lobby.slots.find(s => s && s.socketId === socket.id);
       if (slot) {
         slot.ready = !slot.ready;
-        
+
         const allFilled = lobby.slots.every(s => s !== null);
         const allReady = lobby.slots.every(s => s !== null && s.ready);
 
@@ -116,39 +119,31 @@ io.on('connection', (socket) => {
     });
   });
 
-  // --- UPGRADE MACHINE SERVER HANDLERS ---
+  // --- INDEPENDENT PLAYER UPGRADE RITUAL ---
   socket.on('start_upgrade_ritual', (data) => {
-    if (!upgradeState.active && !upgradeState.ready) {
-      upgradeState.active = true;
-      upgradeState.ready = false;
-      upgradeState.timer = 0;
-      upgradeState.weaponSlot = data.weaponSlot;
+    let state = upgradeStates[socket.id];
+    if (state && !state.active) {
+      state.active = true;
+      state.timer = 0;
+      state.weaponSlot = data.weaponSlot;
 
       let ritualInterval = setInterval(() => {
-        upgradeState.timer += 1;
-        if (upgradeState.timer >= 5) {
+        if (!upgradeStates[socket.id]) {
           clearInterval(ritualInterval);
-          upgradeState.active = false;
-          upgradeState.ready = true;
-          upgradeState.timer = 0;
+          return;
         }
-        io.emit('sync_upgrade_state', upgradeState);
+        state.timer += 1;
+        if (state.timer >= 5) {
+          clearInterval(ritualInterval);
+          state.active = false;
+          state.timer = 0;
+          // Auto-grant upgrade securely upon completion
+          socket.emit('grant_upgrade_success', state.weaponSlot);
+        }
+        socket.emit('sync_upgrade_state', state);
       }, 1000);
 
-      io.emit('sync_upgrade_state', upgradeState);
-    }
-  });
-
-  socket.on('collect_upgrade_reward', () => {
-    if (upgradeState.ready) {
-      let rewardedSlot = upgradeState.weaponSlot;
-      upgradeState.ready = false;
-      upgradeState.active = false;
-      
-      // Grant reward securely to the requesting player
-      socket.emit('grant_upgrade_success', rewardedSlot);
-      // Broadcast reset state to everyone
-      io.emit('sync_upgrade_state', upgradeState);
+      socket.emit('sync_upgrade_state', state);
     }
   });
 
@@ -240,6 +235,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    delete upgradeStates[socket.id];
     lobbies.forEach(l => {
       const sIdx = l.slots.findIndex(s => s && s.socketId === socket.id);
       if (sIdx !== -1) {

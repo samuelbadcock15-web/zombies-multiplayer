@@ -291,10 +291,97 @@
     function addPoints(a){if(isGameOver)return;playerPoints+=a;$('score-val').innerText=playerPoints}
 
     function updateUpgradeMachineScreen(){
-      let c=upgScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=upgradeMachineReadyToCollect?'#fa0':(upgradeMachineActive?'#f50':'#b8860b');c.lineWidth=14;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("OCCULT RITUAL UPGRADE ALTAR",256,48);c.fillStyle='#fff';c.font='900 42px monospace';c.fillText(upgradeMachineActive?"BLESSING...":(upgradeMachineReadyToCollect?"AUTO-COLLECTING!":"READY"),256,120);c.fillStyle='#140c08';c.fillRect(40,150,432,200);c.strokeStyle='#ffd700';c.lineWidth=4;c.strokeRect(40,150,432,200);c.fillStyle='#fa0';c.font='bold 30px monospace';c.fillText(baseWeaponData[currentWeapon].name,256,220);c.fillStyle='#ff0';c.font='bold 24px monospace';c.fillText(`CURRENT LVL: ${toRoman(weaponUpgradeLevels[currentWeapon])}`,256,265);c.fillStyle='#ffd700';c.fillText(`COST: ${500+weaponUpgradeLevels[currentWeapon]*250} CREDITS`,256,310);c.fillStyle='#f36';c.font='bold 22px monospace';c.fillText("WALK CLOSE TO AUTO-RETRIEVE!",256,415);upgScreenTexture.needsUpdate=true;
+      let c=upgScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=upgradeMachineReadyToCollect?'#fa0':(upgradeMachineActive?'#f50':'#b8860b');c.lineWidth=14;c.strokeRect(10,10,492,492);
+      c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("OCCULT RITUAL UPGRADE ALTAR",256,48);
+      c.fillStyle='#fff';c.font='900 36px monospace';c.fillText(upgradeMachineActive?"SPINNING...":(upgradeMachineReadyToCollect?"READY TO COLLECT!":"ALTAR STANDBY"),256,105);
+      
+      c.fillStyle='#140c08';c.fillRect(40,130,432,150);c.strokeStyle='#ffd700';c.lineWidth=4;c.strokeRect(40,130,432,150);
+      c.fillStyle='#fa0';c.font='bold 26px monospace';c.fillText(baseWeaponData[currentWeapon].name,256,170);
+      c.fillStyle='#ff0';c.font='bold 20px monospace';c.fillText(`CURRENT LVL: ${toRoman(weaponUpgradeLevels[currentWeapon])}`,256,205);
+      c.fillStyle='#ffd700';c.fillText(`COST: ${500+weaponUpgradeLevels[currentWeapon]*250} CREDITS`,256,238);
+
+      // Render 3 interactive buttons on screen display
+      let spinActive = !upgradeMachineActive && !upgradeMachineReadyToCollect;
+      let collActive = upgradeMachineReadyToCollect;
+      let resActive  = upgradeMachineActive || upgradeMachineReadyToCollect; // 3rd reset state if needed, or visual state
+
+      // SPIN button box
+      c.fillStyle = spinActive ? '#2e7d32' : '#3a2418';
+      c.fillRect(40, 305, 130, 60);
+      c.strokeStyle = spinActive ? '#00ff66' : '#6b4c35';
+      c.strokeRect(40, 305, 130, 60);
+      c.fillStyle = spinActive ? '#fff' : '#665544';
+      c.font = 'bold 22px monospace';
+      c.fillText('SPIN', 105, 342);
+
+      // COLLECT button box (shines when active)
+      let shine = collActive ? Math.abs(Math.sin(performance.now()*0.01))*150 : 0;
+      c.fillStyle = collActive ? `rgb(${100+shine},${200+shine},50)` : '#3a2418';
+      c.fillRect(191, 305, 130, 60);
+      c.strokeStyle = collActive ? '#ffd700' : '#6b4c35';
+      c.strokeRect(191, 305, 130, 60);
+      c.fillStyle = collActive ? '#140c08' : '#665544';
+      c.font = 'bold 22px monospace';
+      c.fillText('COLLECT', 256, 342);
+
+      // RESET / WAITING status button box
+      c.fillStyle = '#3a2418';
+      c.fillRect(342, 305, 130, 60);
+      c.strokeStyle = '#6b4c35';
+      c.strokeRect(342, 305, 130, 60);
+      c.fillStyle = resActive ? '#ffaa00' : '#665544';
+      c.font = 'bold 18px monospace';
+      c.fillText(resActive ? 'BUSY' : 'STANDBY', 407, 342);
+
+      c.fillStyle='#f36';c.font='bold 18px monospace';c.fillText("CLICK ON SCREEN BUTTONS TO OPERATE",256,430);
+      upgScreenTexture.needsUpdate=true;
     }
+
     function updateMysteryBoxScreen(){
-      let c=boxScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=mysteryBoxReadyToCollect?'#fa0':'#b8860b';c.lineWidth=14;c.strokeRect(10,10,492,492);c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("CURSED RELIC CHEST",256,48);c.fillStyle='#fff';c.font='900 48px monospace';c.fillText(mysteryBoxActive?"SUMMONING...":(mysteryBoxReadyToCollect?"CLAIM RELIC":"READY TO OPEN"),256,120);c.fillStyle='#140c08';c.fillRect(40,150,432,200);c.strokeStyle='#8b5a2b';c.lineWidth=4;c.strokeRect(40,150,432,200);c.fillStyle=mysteryBoxReadyToCollect?'#00ff66':'#ff0';c.font='bold 30px monospace';c.fillText(mysteryBoxCyclingReward,256,260);c.fillStyle='#ffd700';c.font='bold 22px monospace';c.fillText("COST: 350 CREDITS",256,395);c.fillStyle='#f36';c.fillText(`LOC: ${boxRoomLocations[mysteryBoxCurrentRoom].name}`,256,435);boxScreenTexture.needsUpdate=true;
+      let c=boxScreenCtx;c.fillStyle='#2b1810';c.fillRect(0,0,512,512);c.strokeStyle=mysteryBoxReadyToCollect?'#fa0':'#b8860b';c.lineWidth=14;c.strokeRect(10,10,492,492);
+      c.fillStyle='#ffd700';c.font='bold 24px monospace';c.textAlign='center';c.fillText("CURSED RELIC CHEST",256,48);
+      c.fillStyle='#fff';c.font='900 36px monospace';c.fillText(mysteryBoxActive?"SUMMONING...":(mysteryBoxReadyToCollect?"READY TO COLLECT!":"CHEST STANDBY"),256,105);
+      
+      c.fillStyle='#140c08';c.fillRect(40,130,432,150);c.strokeStyle='#8b5a2b';c.lineWidth=4;c.strokeRect(40,130,432,150);
+      c.fillStyle=mysteryBoxReadyToCollect?'#00ff66':'#ff0';c.font='bold 28px monospace';c.fillText(mysteryBoxCyclingReward,256,180);
+      c.fillStyle='#ffd700';c.font='bold 20px monospace';c.fillText("COST: 350 CREDITS",256,220);
+      c.fillStyle='#f36';c.font='bold 18px monospace';c.fillText(`LOC: ${boxRoomLocations[mysteryBoxCurrentRoom].name}`,256,252);
+
+      // Render 3 interactive buttons on screen display
+      let spinActive = !mysteryBoxActive && !mysteryBoxReadyToCollect;
+      let collActive = mysteryBoxReadyToCollect;
+      let resActive  = mysteryBoxActive || mysteryBoxReadyToCollect;
+
+      // SPIN button box
+      c.fillStyle = spinActive ? '#2e7d32' : '#3a2418';
+      c.fillRect(40, 305, 130, 60);
+      c.strokeStyle = spinActive ? '#00ff66' : '#6b4c35';
+      c.strokeRect(40, 305, 130, 60);
+      c.fillStyle = spinActive ? '#fff' : '#665544';
+      c.font = 'bold 22px monospace';
+      c.fillText('SPIN', 105, 342);
+
+      // COLLECT button box (shines when active)
+      let shine = collActive ? Math.abs(Math.sin(performance.now()*0.01))*150 : 0;
+      c.fillStyle = collActive ? `rgb(${100+shine},${200+shine},50)` : '#3a2418';
+      c.fillRect(191, 305, 130, 60);
+      c.strokeStyle = collActive ? '#ffd700' : '#6b4c35';
+      c.strokeRect(191, 305, 130, 60);
+      c.fillStyle = collActive ? '#140c08' : '#665544';
+      c.font = 'bold 22px monospace';
+      c.fillText('COLLECT', 256, 342);
+
+      // RESET / STATUS button box
+      c.fillStyle = '#3a2418';
+      c.fillRect(342, 305, 130, 60);
+      c.strokeStyle = '#6b4c35';
+      c.strokeRect(342, 305, 130, 60);
+      c.fillStyle = resActive ? '#ffaa00' : '#665544';
+      c.font = 'bold 18px monospace';
+      c.fillText(resActive ? 'BUSY' : 'STANDBY', 407, 342);
+
+      c.fillStyle='#f36';c.font='bold 18px monospace';c.fillText("CLICK ON SCREEN BUTTONS TO OPERATE",256,430);
+      boxScreenTexture.needsUpdate=true;
     }
 
     function updateTacticalHUD(){
@@ -732,7 +819,6 @@
       }
     });
 
-    // Handle individual reward claim response from server (only runs for the clicking client)
     socket.on('grant_mystery_box_reward', () => {
       claimMysteryBoxReward();
     });
@@ -943,50 +1029,74 @@
         if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
       }
       
+      // UPGRADE MACHINE TOUCH SCREEN INTERACTION CHECK
       let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
-      let upgHit = raycaster.intersectObjects(upgradeMachineGroup.children,true);
+      let upgHit = raycaster.intersectObjects([upgScreenFace],true);
       if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
-        if(!upgradeMachineActive&&!upgradeMachineReadyToCollect){
-          let cost=500+weaponUpgradeLevels[currentWeapon]*250;
-          if(playerPoints>=cost){
-            playerPoints-=cost;$('score-val').innerText=playerPoints;
-            if(isHost){
-              upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;
-              fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;
-            } else {
-              socket.emit('request_upgrade', { weaponSlot: currentWeapon });
+        let uv = upgHit[0].uv;
+        let px = uv.x * 512, py = (1 - uv.y) * 512;
+        // Check button bounding boxes on upgrade machine screen texture (X: 40-170 is SPIN, X: 191-321 is COLLECT, Y: 305-365)
+        if(py >= 305 && py <= 365){
+          if(px >= 40 && px <= 170){ // SPIN BUTTON CLICKED
+            if(!upgradeMachineActive && !upgradeMachineReadyToCollect){
+              let cost=500+weaponUpgradeLevels[currentWeapon]*250;
+              if(playerPoints>=cost){
+                playerPoints-=cost;$('score-val').innerText=playerPoints;
+                if(isHost){
+                  upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;
+                  fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;
+                } else {
+                  socket.emit('request_upgrade', { weaponSlot: currentWeapon });
+                }
+                txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
+              }else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`;
             }
-            txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
-          }else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`;
+          } else if(px >= 191 && px <= 321){ // COLLECT BUTTON CLICKED
+            if(upgradeMachineReadyToCollect){
+              upgradeMachineReadyToCollect=false;
+              while(upgHoloWeapon.children.length>0)upgHoloWeapon.remove(upgHoloWeapon.children[0]);
+              weaponUpgradeLevels[upgradeMachineWeaponSlot]++;
+              ammoReserves[upgradeMachineWeaponSlot]=getWeaponStat(upgradeMachineWeaponSlot,'maxAmmo');
+              gunMeshGroup.visible=true;
+              switchWeapon(upgradeMachineWeaponSlot);
+              playMysteryBoxSound();
+              txtDiv.innerHTML=`${baseWeaponData[upgradeMachineWeaponSlot].name} BLESSED TO LVL ${toRoman(weaponUpgradeLevels[upgradeMachineWeaponSlot])}!`;
+            }
+          }
         }
         return;
       }
 
-      if(mysteryBoxReadyToCollect){
-        let bwPos=new V3();mysteryBoxGroup.getWorldPosition(bwPos);
-        if((raycaster.intersectObjects(boxWeaponHolo.children,true).length>0||raycaster.intersectObjects(mysteryBoxGroup.children).length>0)&&playerRig.position.distanceTo(bwPos)<15){
-          if(isHost){
-            claimMysteryBoxReward();
-          } else {
-            socket.emit('request_claim_mystery_box');
-            txtDiv.innerHTML="CLAIMING RELIC...";
-          }
-          return;
-        }
-      }
-      let bwCheck=new V3();mysteryBoxGroup.getWorldPosition(bwCheck);
-      if(raycaster.intersectObjects(mysteryBoxGroup.children).length>0&&playerRig.position.distanceTo(bwCheck)<15){
-        if(!mysteryBoxActive&&!mysteryBoxReadyToCollect){
-          if(playerPoints>=350){
-            playerPoints-=350;$('score-val').innerText=playerPoints;
-            if(isHost){
-              mysteryBoxActive=true;mysteryBoxTimer=0;
-              txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS...";
-            } else {
-              socket.emit('request_mystery_box');
-              txtDiv.innerHTML="REQUESTING RELIC SUMMON...";
+      // MYSTERY BOX TOUCH SCREEN INTERACTION CHECK
+      let bwPos=new V3();mysteryBoxGroup.getWorldPosition(bwPos);
+      let boxHit = raycaster.intersectObjects([boxScreenFaceFront, boxScreenFaceBack],true);
+      if(boxHit.length>0 && playerRig.position.distanceTo(bwPos)<15){
+        let uv = boxHit[0].uv;
+        let px = uv.x * 512, py = (1 - uv.y) * 512;
+        if(py >= 305 && py <= 365){
+          if(px >= 40 && px <= 170){ // SPIN BUTTON CLICKED
+            if(!mysteryBoxActive && !mysteryBoxReadyToCollect){
+              if(playerPoints>=350){
+                playerPoints-=350;$('score-val').innerText=playerPoints;
+                if(isHost){
+                  mysteryBoxActive=true;mysteryBoxTimer=0;
+                  txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS...";
+                } else {
+                  socket.emit('request_mystery_box');
+                  txtDiv.innerHTML="REQUESTING RELIC SUMMON...";
+                }
+              }else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS.";
             }
-          }else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS.";
+          } else if(px >= 191 && px <= 321){ // COLLECT BUTTON CLICKED
+            if(mysteryBoxReadyToCollect){
+              if(isHost){
+                claimMysteryBoxReward();
+              } else {
+                socket.emit('request_claim_mystery_box');
+                txtDiv.innerHTML="CLAIMING RELIC...";
+              }
+            }
+          }
         }
         return;
       }
@@ -1355,15 +1465,13 @@
         upgradeMachineTimer += 0.016;
         upgHoloWeapon.rotation.y += 0.02;
         upgHoloWeapon.position.y = 4.8 + Math.sin(upgradeMachineTimer * 4) * 0.15;
-        if(isHost && (playerRig.position.distanceTo(upgradeMachineGroup.position) < 8 || upgradeMachineTimer > 1)){
+        // Timeout / tie out after 10 seconds if not collected
+        if(isHost && upgradeMachineTimer >= 10){
           upgradeMachineReadyToCollect = false;
+          upgradeMachineTimer = 0;
           while(upgHoloWeapon.children.length > 0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
-          weaponUpgradeLevels[upgradeMachineWeaponSlot]++;
-          ammoReserves[upgradeMachineWeaponSlot] = getWeaponStat(upgradeMachineWeaponSlot, 'maxAmmo');
           gunMeshGroup.visible = true;
-          switchWeapon(upgradeMachineWeaponSlot);
-          playMysteryBoxSound();
-          txtDiv.innerHTML = `${baseWeaponData[upgradeMachineWeaponSlot].name} AUTO-BLESSED TO LVL ${toRoman(weaponUpgradeLevels[upgradeMachineWeaponSlot])}!`;
+          txtDiv.innerHTML = "RITUAL ALTAR TIMED OUT. RESETTING TO SPIN...";
         }
       }
 
@@ -1389,28 +1497,25 @@
           fillHoloGroupWithWeaponModel(boxWeaponHolo, mysteryBoxRewardType);
           let sbn = mysteryBoxCyclingReward;
           if(mysteryBoxRewardType >= 1 && mysteryBoxRewardType <= 5) sbn += ` [LVL ${toRoman(weaponUpgradeLevels[mysteryBoxRewardType] + 1)}]`;
-          txtDiv.innerHTML = `CURSED CHEST UNLOCKED: ${sbn}! CLICK TO CLAIM.`;
+          txtDiv.innerHTML = `CURSED CHEST UNLOCKED: ${sbn}! CLICK COLLECT ON SCREEN.`;
           if(mysteryBoxUsesCount >= 4 + Math.floor(Math.random() * 3)){
             mysteryBoxUsesCount = 0;
             mysteryBoxCurrentRoom = (mysteryBoxCurrentRoom + 1) % boxRoomLocations.length;
             mysteryBoxGroup.position.copy(boxRoomLocations[mysteryBoxCurrentRoom].pos);
             updateMapHologramSign();
-            txtDiv.innerHTML = `CHEST SHIFTED TO ${boxRoomLocations[mysteryBoxCurrentRoom].name}! CHECK MAP.`;
           }
         }
       } else if(mysteryBoxReadyToCollect){
         mysteryBoxTimer += 0.016;
         boxWeaponHolo.rotation.y += 0.03;
         boxWeaponHolo.position.y = 3.5 + Math.sin(mysteryBoxTimer * 3) * 0.15;
-        if(isHost && mysteryBoxTimer >= 8){
-          mysteryBoxFadeAlpha = Math.max(0, mysteryBoxFadeAlpha - 0.016);
-          if(mysteryBoxTimer >= 10){
-            mysteryBoxReadyToCollect = false;
-            mysteryBoxTimer = 0;
-            mysteryBoxFadeAlpha = 1;
-            while(boxWeaponHolo.children.length > 0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
-            txtDiv.innerHTML = "RELIC FADED BACK INTO THE SHADOWS...";
-          }
+        // Tie out / timeout after 10 seconds if not collected
+        if(isHost && mysteryBoxTimer >= 10){
+          mysteryBoxReadyToCollect = false;
+          mysteryBoxTimer = 0;
+          mysteryBoxFadeAlpha = 1;
+          while(boxWeaponHolo.children.length > 0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
+          txtDiv.innerHTML = "RELIC TIMED OUT. CHEST RESETTING TO SPIN...";
         }
       }
 

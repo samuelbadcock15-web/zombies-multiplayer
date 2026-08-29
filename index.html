@@ -1074,6 +1074,9 @@
             if(upgradeMachineReadyToCollect){
               socket.emit('player_collect_upgrade');
 
+              upgradeMachineReadyToCollect=false;
+              while(upgHoloWeapon.children.length>0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
+
               weaponUpgradeLevels[upgradeMachineWeaponSlot]++;
               ammoReserves[upgradeMachineWeaponSlot]=getWeaponStat(upgradeMachineWeaponSlot,'maxAmmo');
               gunMeshGroup.visible=true;

@@ -32,7 +32,6 @@
     #mobile-controls { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
     .touch-interactive { pointer-events: auto; }
     
-    /* Adjusted D-Pad Layout */
     #dpad { position: absolute; bottom: 15px; left: 15px; width: 125px; height: 125px; }
     .dpad-btn { position: absolute; width: 40px; height: 40px; background: rgba(43,24,16,0.85); border: 2px solid #d4af37; border-radius: 6px; color: #d4af37; font-size: 16px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(0,0,0,0.5); }
     #dpad-up { top: 0; left: 42.5px; }
@@ -44,7 +43,6 @@
     #btn-nade { left: 42.5px; border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
     #btn-clay { left: 63.5px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
 
-    /* Aligned Look Pad with Top of Right D-Pad Arrow & Reduced Height */
     #look-pad { position: absolute; bottom: 15px; right: 15px; left: 150px; height: 125px; background: rgba(212,175,55,0.06); border: 2px dashed rgba(212,175,55,0.3); border-radius: 10px; touch-action: none; }
 
     #weapon-bar { position: absolute; top: 40px; left: 8px; display: flex; gap: 3px; pointer-events: auto; }
@@ -859,7 +857,7 @@
     function setZombieStage(zb,s){zb.stage=Math.max(0,s);if(zb.stage===3)zb.meshParts.group.scale.setScalar(1);else if(zb.stage===2)zb.meshParts.group.scale.setScalar(0.73);else if(zb.stage===1)zb.meshParts.group.scale.setScalar(0.46);else zb.deadAndShrinking=true;zb.meshParts.group.updateMatrixWorld(true)}
     function triggerExplosion(pos,r,dmg){
       playExplosionSound();const l=new T.PointLight(0xff5500,8,r*2);l.position.copy(pos);scene.add(l);setTimeout(()=>scene.remove(l),150);const rg=MESH(new T.RingGeometry(0.1,r,16),BM({color:0xff3300,side:T.DoubleSide}),pos.x,pos.y+0.1,pos.z,Math.PI/2);scene.add(rg);setTimeout(()=>scene.remove(rg),250);let k=false;
-      activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(pos)<=r){setZombieStage(z,z.stage-dmg);if(z.deadAndShrinking){addPoints(10);k=true}}});if(k){rebuildZombieHitboxes();checkRoundEnd()}
+      activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(pos)<=r){setZombieStage(z,z.stage-dmg);if(z.deadAndShrinking){addPoints(20);k=true}}});if(k){rebuildZombieHitboxes();checkRoundEnd()}
     }
     function getConstrainedPosition(p){
       let x=p.x,z=p.z;if(!unlockedDoors[0]&&z<-23)z=-23;if(!unlockedDoors[1]&&z<-63)z=-63;if(!unlockedDoors[2]&&z<-213)z=-213;if(!unlockedDoors[3]&&z<-254)z=-254;
@@ -1165,7 +1163,7 @@
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
     }
 
-    // Handle hit response for points and localized text feedback
+    // Handle hit response for scoring (10 for body, 20 for headshot kill reward)
     socket.on('hit_registered', data => {
       let pts = data.isHeadshot ? 20 : 10;
       addPoints(pts);

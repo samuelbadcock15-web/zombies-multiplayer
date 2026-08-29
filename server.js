@@ -170,9 +170,7 @@ io.on('connection', (socket) => {
     io.emit('trigger_hidden_button');
   });
 
-  // Targeted individual reward claim handler
   socket.on('request_claim_mystery_box', () => {
-    // Send reward confirmation ONLY to the player who requested it
     socket.emit('grant_mystery_box_reward');
   });
 

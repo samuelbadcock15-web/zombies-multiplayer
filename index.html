@@ -714,17 +714,11 @@
     });
 
     socket.on('host_apply_zombie_hit', data => {
-      if (!isHost) return;
       const tz = activeZombies[data.zombieIndex];
       if (tz && !tz.deadAndShrinking) {
         setZombieStage(tz, tz.stage - data.damage);
-        if (tz.deadAndShrinking) {
-          socket.emit('award_points', { socketId: data.shooterId, amount: data.isHeadshot ? 20 : 10 });
-          rebuildZombieHitboxes();
-          checkRoundEnd();
-        } else {
-          socket.emit('award_points', { socketId: data.shooterId, amount: 10 });
-        }
+        rebuildZombieHitboxes();
+        checkRoundEnd();
       }
     });
 
@@ -1032,14 +1026,13 @@
         if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
       }
       
-      // UPGRADE MACHINE TOUCH SCREEN INTERACTION CHECK
       let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
       let upgHit = raycaster.intersectObjects([upgScreenFace],true);
       if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
         let uv = upgHit[0].uv;
         let px = uv.x * 512, py = (1 - uv.y) * 512;
         if(py >= 305 && py <= 365){
-          if(px >= 40 && px <= 170){ // SPIN
+          if(px >= 40 && px <= 170){
             if(!upgradeMachineActive && !upgradeMachineReadyToCollect){
               let cost=500+weaponUpgradeLevels[currentWeapon]*250;
               if(playerPoints>=cost){
@@ -1053,7 +1046,7 @@
                 txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
               }else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`;
             }
-          } else if(px >= 191 && px <= 321){ // COLLECT
+          } else if(px >= 191 && px <= 321){
             if(upgradeMachineReadyToCollect){
               upgradeMachineReadyToCollect=false;
               while(upgHoloWeapon.children.length>0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
@@ -1071,14 +1064,13 @@
         return;
       }
 
-      // MYSTERY BOX TOUCH SCREEN INTERACTION CHECK
       let bwPos=new V3();mysteryBoxGroup.getWorldPosition(bwPos);
       let boxHit = raycaster.intersectObjects([boxScreenFaceFront, boxScreenFaceBack],true);
       if(boxHit.length>0 && playerRig.position.distanceTo(bwPos)<15){
         let uv = boxHit[0].uv;
         let px = uv.x * 512, py = (1 - uv.y) * 512;
         if(py >= 305 && py <= 365){
-          if(px >= 40 && px <= 170){ // SPIN
+          if(px >= 40 && px <= 170){
             if(!mysteryBoxActive && !mysteryBoxReadyToCollect){
               if(playerPoints>=350){
                 playerPoints-=350;$('score-val').innerText=playerPoints;
@@ -1091,7 +1083,7 @@
                 }
               }else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS.";
             }
-          } else if(px >= 191 && px <= 321){ // COLLECT
+          } else if(px >= 191 && px <= 321){
             if(mysteryBoxReadyToCollect){
               mysteryBoxReadyToCollect=false;
               while(boxWeaponHolo.children.length>0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
@@ -1154,28 +1146,15 @@
       let er=getWeaponStat(currentWeapon,'range'),zh=raycaster.intersectObjects(zombieInteractiveMeshes,true);
       if(zh.length>0){
         if(zh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}
-        let isH=(zh[0].object.userData.hitBoxPart==="head"),tz=activeZombies[zh[0].object.userData.parentZombieIndex];
+        let isH=(zh[0].object.userData.hitBoxPart==="head");
+        let zombieIdx = zh[0].object.userData.parentZombieIndex;
         let zDmg = isH?getWeaponStat(currentWeapon,'headDamage'):getWeaponStat(currentWeapon,'damage');
         
-        if (isHost) {
-          if(tz&&!tz.deadAndShrinking){
-            setZombieStage(tz,tz.stage-zDmg);
-            if(tz.deadAndShrinking){
-              addPoints(isH?20:10);
-              txtDiv.innerHTML=isH?"CRITICAL HEADSHOT KILL! +20 CREDITS":"TARGET BANISHED! +10 CREDITS";
-              rebuildZombieHitboxes();checkRoundEnd();
-            } else {
-              addPoints(10);
-              txtDiv.innerHTML=isH?"HEADSHOT HIT! -3 STAGES! +20 CREDITS":"HIT REGISTERED! STAGE REDUCED. +10 CREDITS";
-            }
-          }
-        } else {
-          socket.emit('zombie_hit', {
-            zombieIndex: zh[0].object.userData.parentZombieIndex,
-            damage: zDmg,
-            isHeadshot: isH
-          });
-        }
+        socket.emit('zombie_hit', {
+          zombieIndex: zombieIdx,
+          damage: zDmg,
+          isHeadshot: isH
+        });
         return;
       }
       let eh=raycaster.intersectObjects(generalEnvironmentMeshes.filter(m=>m.visible!==false));

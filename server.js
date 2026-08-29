@@ -154,7 +154,6 @@ io.on('connection', (socket) => {
     io.emit('trigger_mystery_box_start');
   });
 
-  // Global cross-screen collection for Mystery Box
   socket.on('player_collect_mystery_box', () => {
     socket.emit('grant_mystery_box_reward');
     io.emit('force_clear_mystery_box_holo');
@@ -164,7 +163,6 @@ io.on('connection', (socket) => {
     io.emit('trigger_upgrade_start', data);
   });
 
-  // Global cross-screen collection for Upgrade Altar
   socket.on('player_collect_upgrade', () => {
     io.emit('force_clear_upgrade_holo');
   });
@@ -189,8 +187,15 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('remote_weapon_change', { id: socket.id, weaponId: data.weaponId });
   });
 
+  socket.on('zombie_id_hit', (data) => {
+    io.emit('host_apply_zombie_hit', data);
+  });
+
   socket.on('zombie_hit', (data) => {
-    io.emit('host_apply_zombie_hit', { shooterId: socket.id, ...data });
+    const hostLobby = lobbies.find(l => l.slots.some(s => s && s.socketId === socket.id));
+    if (hostLobby && hostLobby.hostSocketId) {
+      io.to(hostLobby.hostSocketId).emit('host_apply_zombie_hit', data);
+    }
   });
 
   socket.on('unlock_door', (doorIndex) => {

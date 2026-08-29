@@ -1048,7 +1048,7 @@
                   upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;
                   fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;
                 } else {
-                  socket.emit('request_upgrade', { weaponSlot: currentWeapon });
+                  socket.emit('player_spin_upgrade', { weaponSlot: currentWeapon });
                 }
                 txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
               }else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`;
@@ -1057,7 +1057,7 @@
             if(upgradeMachineReadyToCollect){
               upgradeMachineReadyToCollect=false;
               while(upgHoloWeapon.children.length>0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
-              socket.emit('request_clear_upgrade_holo');
+              socket.emit('player_collect_upgrade');
 
               weaponUpgradeLevels[upgradeMachineWeaponSlot]++;
               ammoReserves[upgradeMachineWeaponSlot]=getWeaponStat(upgradeMachineWeaponSlot,'maxAmmo');
@@ -1086,7 +1086,7 @@
                   mysteryBoxActive=true;mysteryBoxTimer=0;
                   txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS...";
                 } else {
-                  socket.emit('request_mystery_box');
+                  socket.emit('player_spin_mystery_box');
                   txtDiv.innerHTML="REQUESTING RELIC SUMMON...";
                 }
               }else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS.";

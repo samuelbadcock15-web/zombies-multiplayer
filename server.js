@@ -159,12 +159,8 @@ io.on('connection', (socket) => {
     io.emit('force_clear_mystery_box_holo');
   });
 
-  socket.on('player_spin_upgrade', (data) => {
-    io.emit('trigger_upgrade_start', data);
-  });
-
-  socket.on('player_collect_upgrade', () => {
-    io.emit('force_clear_upgrade_holo');
+  socket.on('player_trigger_upgrade', () => {
+    io.emit('trigger_upgrade_start');
   });
 
   socket.on('request_hire_robot', () => {

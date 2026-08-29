@@ -187,7 +187,6 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('remote_weapon_change', { id: socket.id, weaponId: data.weaponId });
   });
 
-  // Correct Per-Hit Scoring: 10 points for body hit, 20 points for headshot hit
   socket.on('zombie_hit', (data) => {
     io.emit('apply_zombie_hit', data);
     let pts = data.isHeadshot ? 20 : 10;

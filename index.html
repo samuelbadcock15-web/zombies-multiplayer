@@ -732,8 +732,8 @@
       }
     });
 
-    // Handle non-host collection broadcast trigger from server
-    socket.on('force_claim_mystery_box', () => {
+    // Handle individual reward claim response from server (only runs for the clicking client)
+    socket.on('grant_mystery_box_reward', () => {
       claimMysteryBoxReward();
     });
 

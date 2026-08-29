@@ -138,7 +138,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('fill_hole', (data) => {
-    socket.broadcast.emit('client_zombie_sync', data);
     socket.broadcast.emit('sync_hole_fill', data);
   });
 
@@ -187,8 +186,9 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('remote_weapon_change', { id: socket.id, weaponId: data.weaponId });
   });
 
-  socket.on('zombie_hit', (data) => {
-    io.emit('host_apply_zombie_hit', { shooterId: socket.id, ...data });
+  // ID-based robust zombie hit handling
+  socket.on('zombie_hit_by_id', (data) => {
+    io.emit('host_apply_zombie_hit_by_id', { shooterId: socket.id, ...data });
   });
 
   socket.on('unlock_door', (doorIndex) => {

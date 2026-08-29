@@ -590,7 +590,7 @@
     const arcadeScreenTexture=new T.CanvasTexture(sCanvas);chassis.add(MESH(PG(1.6,1.6),BM({map:arcadeScreenTexture}),0,0.1,0.91));
 
     let robotAIState={status:'roam',target:new V3(0,0,0),speed:0.08};function getNewUpperLevelTarget(){return new V3((Math.random()-0.5)*30,0,-100+(Math.random()-0.5)*80)}
-    robotAIState.target=getNewUpperLevelTarget();let elevatorActive=false,elevatorProgress=0,elevatorDirection=1;
+    robotAIState.target=getNewUpperLevelTarget();let elevatorActive=false,elevatorProgress=0,elevatorTargetProgress=0;
 
     const allBurrowHoles=[],holeInteractiveMeshes=[],dirtMaterial=SM({color:0x3a2418,roughness:0.9}),pitVoidMaterial=BM({color:0x080402});
     function createBurrowHole(sz,x,y,z){const hg=GRP();hg.position.set(x,y+0.02,z);const pb=MESH(CG(sz,sz,0.05,24),pitVoidMaterial);pb.userData={materialType:"pit_void"};hg.add(pb);const dl=[];for(let i=0;i<4;i++){let lm=MESH(CG(sz-i*0.2,sz-(i-1)*0.1,0.15,16),dirtMaterial,0,i*0.12,0);lm.userData={materialType:"dirt"};hg.add(lm);dl.push(lm)}scene.add(hg);pb.userData.holeIndex=allBurrowHoles.length;holeInteractiveMeshes.push(pb);allBurrowHoles.push({group:hg,hitMesh:pb,layers:dl,dirtCount:4,maxDirt:4,globalX:x,globalY:y,globalZ:z})}
@@ -769,7 +769,7 @@
     socket.on('client_elevator_sync', data => {
       elevatorActive = data.active;
       elevatorProgress = data.progress;
-      elevatorDirection = data.direction;
+      elevatorTargetProgress = data.targetProgress;
       secretPermanentlyOpen = data.permanentlyOpen;
       secretActive = data.secretActive;
     });
@@ -813,7 +813,7 @@
     socket.on('trigger_elevator_start', data => {
       if (isHost && !elevatorActive) {
         elevatorActive = true;
-        elevatorDirection = data.direction;
+        elevatorTargetProgress = data.targetProgress;
         robotAIState.status = 'goToElevator';
         robotAIState.target.set(0, 0, -330);
         txtDiv.innerHTML = "DESCENDING CRYPT LIFT!";
@@ -1008,7 +1008,7 @@
 
       let oh=raycaster.intersectObjects([redOrbMesh]);
       if(oh.length>0&&playerRig.position.y<-40&&oh[0].distance<30){
-        playerRig.position.set(0,3,15);playerYaw=playerPitch=0;playerRig.rotation.set(0,0,0);cameraPitchObject.rotation.set(0,0,0);scene.background=defaultBG;elevatorActive=false;elevatorProgress=0;elevatorDirection=1;secretGalleryGroup.position.y=0.2;
+        playerRig.position.set(0,3,15);playerYaw=playerPitch=0;playerRig.rotation.set(0,0,0);cameraPitchObject.rotation.set(0,0,0);scene.background=defaultBG;elevatorActive=false;elevatorProgress=0;elevatorTargetProgress=0;secretGalleryGroup.position.y=0.2;
         let bz=activeZombies.filter(z=>!z.deadAndShrinking).length;zombiesToSpawnRemaining+=bz;activeZombies.forEach(z=>scene.remove(z.meshParts.group));activeZombies.length=0;rebuildZombieHitboxes();
         allBurrowHoles.forEach(h=>{if(h.globalY<-40){h.dirtCount=h.maxDirt;h.layers.forEach(l=>l.visible=true)}});
         txtDiv.innerHTML=`ORB SHOT! WARPED TO MANSION. ${bz} PHANTOMS MIGRATED BACK!`;playMysteryBoxSound();return;
@@ -1050,7 +1050,7 @@
         if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
       }
       
-      // UPGRADE MACHINE TOUCH SCREEN INTERACTION CHECK
+      // UPGRADE MACHINE TOUCH SCREEN / DISPLAY INTERACTION
       let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
       let upgHit = raycaster.intersectObjects([upgScreenFace],true);
       if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
@@ -1145,11 +1145,14 @@
           if(elevatorActive)return;
           if(playerPoints>=350){
             playerPoints-=350;$('score-val').innerText=playerPoints;
-            let dir = (elevatorProgress>=0.5)?1:-1;
+            let targetProg = (elevatorProgress >= 0.5) ? 0 : 1;
             if(isHost){
-              elevatorActive=true;elevatorDirection=dir;robotAIState.status='goToElevator';robotAIState.target.set(0,0,-330);
+              elevatorActive = true;
+              elevatorTargetProgress = targetProg;
+              robotAIState.status = 'goToElevator';
+              robotAIState.target.set(0, 0, -330);
             } else {
-              socket.emit('request_elevator_trigger', { direction: dir });
+              socket.emit('request_elevator_trigger', { targetProgress: targetProg });
             }
             pButton.position.z -= 0.1; setTimeout(() => pButton.position.z += 0.1, 150);
             txtDiv.innerHTML="DESCENDING CRYPT LIFT! COST: 350 CREDITS.";
@@ -1186,7 +1189,6 @@
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
     }
 
-    // Award proper points per hit: 10 for body, 20 for headshot
     socket.on('hit_registered', data => {
       let pts = data.isHeadshot ? 20 : 10;
       addPoints(pts);
@@ -1558,7 +1560,7 @@
           socket.emit('host_elevator_sync', {
             active: elevatorActive,
             progress: elevatorProgress,
-            direction: elevatorDirection,
+            targetProgress: elevatorTargetProgress,
             permanentlyOpen: secretPermanentlyOpen,
             secretActive: secretActive
           });
@@ -1620,10 +1622,26 @@
       }
 
       if(elevatorActive){
-        elevatorProgress = (elevatorDirection === -1) ? Math.min(elevatorProgress + 0.005, 1) : Math.max(elevatorProgress - 0.005, 0);
+        let step = 0.005;
+        if(elevatorProgress < elevatorTargetProgress) {
+          elevatorProgress = Math.min(elevatorTargetProgress, elevatorProgress + step);
+        } else if(elevatorProgress > elevatorTargetProgress) {
+          elevatorProgress = Math.max(elevatorTargetProgress, elevatorProgress - step);
+        }
+
         secretGalleryGroup.position.y = 0.2 - elevatorProgress * 80;
-        if(playerRig.position.x >= -15 && playerRig.position.x <= 15 && playerRig.position.z >= -345 && playerRig.position.z <= -315) playerRig.position.y = secretGalleryGroup.position.y + 3;
-        if(elevatorProgress >= 1 || elevatorProgress <= 0) elevatorActive = false;
+        
+        let inPlatformBounds = (playerRig.position.x >= -15 && playerRig.position.x <= 15 && playerRig.position.z >= -345 && playerRig.position.z <= -315);
+        if(inPlatformBounds) {
+          playerRig.position.y = secretGalleryGroup.position.y + 3;
+        }
+
+        if(Math.abs(elevatorProgress - elevatorTargetProgress) < 0.001) {
+          elevatorActive = false;
+          if(inPlatformBounds) {
+            playerRig.position.y = secretGalleryGroup.position.y + 3;
+          }
+        }
       }
 
       chassis.position.y = 3.6 + Math.sin(t * 0.01) * 0.04;
@@ -1647,7 +1665,8 @@
       renderer.setRenderTarget(null);
       mirrorMesh.visible = true;
 
-      if(playerRig.position.y > -75 && playerRig.position.z < -315 && playerRig.position.z > -345 && playerRig.position.x > -15 && playerRig.position.x < 15){
+      let inPlatformBounds = (playerRig.position.x >= -15 && playerRig.position.x <= 15 && playerRig.position.z >= -345 && playerRig.position.z <= -315);
+      if(playerRig.position.y > -75 && inPlatformBounds){
         if(!elevatorActive){
           if(!secretPermanentlyOpen){
             if(playerRig.position.y > 3.5) playerRig.position.y = 3;
@@ -1661,7 +1680,7 @@
       checkWallCollisions(np);
       playerRig.position.copy(np);
 
-      if(elevatorActive && playerRig.position.z >= -345 && playerRig.position.z <= -315 && playerRig.position.x >= -15 && playerRig.position.x <= 15){
+      if(elevatorActive && inPlatformBounds){
         playerRig.position.x = Math.max(-13.5, Math.min(13.5, playerRig.position.x));
         playerRig.position.z = Math.max(-343.5, Math.min(-316.5, playerRig.position.z));
       }

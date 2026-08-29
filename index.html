@@ -1095,14 +1095,8 @@
             if(mysteryBoxReadyToCollect){
               mysteryBoxReadyToCollect=false;
               while(boxWeaponHolo.children.length>0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
-              socket.emit('request_clear_mystery_box_holo');
-
-              if(isHost){
-                claimMysteryBoxReward();
-              } else {
-                socket.emit('request_claim_mystery_box');
-                txtDiv.innerHTML="CLAIMING RELIC...";
-              }
+              socket.emit('player_collect_mystery_box');
+              claimMysteryBoxReward();
             }
           }
         }

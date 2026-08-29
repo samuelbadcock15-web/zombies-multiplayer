@@ -789,13 +789,13 @@
     });
 
     socket.on('trigger_upgrade_start', data => {
-      if (isHost && !upgradeMachineActive && !upgradeMachineReadyToCollect) {
-        upgradeMachineActive = true;
-        upgradeMachineTimer = 0;
-        upgradeMachineWeaponSlot = data.weaponSlot;
-        fillHoloGroupWithWeaponModel(upgHoloWeapon, upgradeMachineWeaponSlot, true);
-        txtDiv.innerHTML = "RITUAL BLESSING STARTED. STAND BY.";
-      }
+      upgradeMachineActive = true;
+      upgradeMachineReadyToCollect = false;
+      upgradeMachineTimer = 0;
+      upgradeMachineWeaponSlot = data.weaponSlot;
+      fillHoloGroupWithWeaponModel(upgHoloWeapon, upgradeMachineWeaponSlot, true);
+      gunMeshGroup.visible = false;
+      txtDiv.innerHTML = "RITUAL BLESSING STARTED. STAND BY.";
     });
 
     socket.on('trigger_hire_robot', () => {
@@ -840,6 +840,8 @@
 
     socket.on('force_clear_upgrade_holo', () => {
       upgradeMachineReadyToCollect = false;
+      upgradeMachineActive = false;
+      upgradeMachineTimer = 0;
       while(upgHoloWeapon.children.length > 0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
       gunMeshGroup.visible = true;
     });
@@ -1062,19 +1064,14 @@
               let cost=500+weaponUpgradeLevels[currentWeapon]*250;
               if(playerPoints>=cost){
                 playerPoints-=cost;$('score-val').innerText=playerPoints;
-                if(isHost){
-                  upgradeMachineActive=true;upgradeMachineTimer=0;upgradeMachineWeaponSlot=currentWeapon;
-                  fillHoloGroupWithWeaponModel(upgHoloWeapon,upgradeMachineWeaponSlot,true);gunMeshGroup.visible=false;
-                } else {
-                  socket.emit('player_spin_upgrade', { weaponSlot: currentWeapon });
-                }
+                
+                // Emit to server so BOTH host and clients update uniformly
+                socket.emit('player_spin_upgrade', { weaponSlot: currentWeapon });
                 txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
               }else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`;
             }
           } else if(px >= 191 && px <= 321){ // COLLECT
             if(upgradeMachineReadyToCollect){
-              upgradeMachineReadyToCollect=false;
-              while(upgHoloWeapon.children.length>0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
               socket.emit('player_collect_upgrade');
 
               weaponUpgradeLevels[upgradeMachineWeaponSlot]++;
@@ -1469,14 +1466,15 @@
         }
       } else if(upgradeMachineReadyToCollect){
         upgradeMachineTimer += 0.016;
-        upgHoloWeapon.rotation.y += 0.02;
-        upgHoloWeapon.position.y = 4.8 + Math.sin(upgradeMachineTimer * 4) * 0.15;
+        upgHoloWeapon.rotation.y += 0.06;
+        upgHoloWeapon.position.y = 4.8 + Math.sin(upgradeMachineTimer * 6) * 0.25;
         if(isHost && upgradeMachineTimer >= 10){
           upgradeMachineReadyToCollect = false;
           upgradeMachineTimer = 0;
           while(upgHoloWeapon.children.length > 0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
           gunMeshGroup.visible = true;
-          txtDiv.innerHTML = "RITUAL ALTAR TIMED OUT. RESETTING TO SPIN...";
+          socket.emit('player_collect_upgrade');
+          txtDiv.innerHTML = "RITUAL ALTAR TIMED OUT. RESETTING...";
         }
       }
 

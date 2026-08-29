@@ -174,6 +174,15 @@ io.on('connection', (socket) => {
     socket.emit('grant_mystery_box_reward');
   });
 
+  // Holo Weapon Cleanup Broadcasts
+  socket.on('request_clear_mystery_box_holo', () => {
+    io.emit('force_clear_mystery_box_holo');
+  });
+
+  socket.on('request_clear_upgrade_holo', () => {
+    io.emit('force_clear_upgrade_holo');
+  });
+
   socket.on('player_update', (data) => {
     socket.broadcast.emit('remote_player_update', { id: socket.id, ...data });
   });

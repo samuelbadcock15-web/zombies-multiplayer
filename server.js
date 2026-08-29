@@ -187,13 +187,12 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('remote_weapon_change', { id: socket.id, weaponId: data.weaponId });
   });
 
-  // Authoritative Hit Handling for Consistent Scoring & 10+/20+ Economy Caps
+  // Correct Per-Hit Scoring: 10 points for body hit, 20 points for headshot hit
   socket.on('zombie_hit', (data) => {
     io.emit('apply_zombie_hit', data);
-    let willKill = data.damage >= 3;
-    let pts = willKill ? (data.isHeadshot ? 20 : 10) : 0;
-    if (pts > 0) socket.emit('grant_points', pts);
-    socket.emit('hit_registered', { zombieIndex: data.zombieIndex, isHeadshot: data.isHeadshot, killed: willKill });
+    let pts = data.isHeadshot ? 20 : 10;
+    socket.emit('grant_points', pts);
+    socket.emit('hit_registered', { zombieId: data.zombieId, isHeadshot: data.isHeadshot, killed: data.damage >= 3 });
   });
 
   socket.on('unlock_door', (doorIndex) => {

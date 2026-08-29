@@ -1154,12 +1154,14 @@
       let er=getWeaponStat(currentWeapon,'range'),zh=raycaster.intersectObjects(zombieInteractiveMeshes,true);
       if(zh.length>0){
         if(zh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}
-        let isH=(zh[0].object.userData.hitBoxPart==="head"),tz=activeZombies[zh[0].object.userData.parentZombieIndex];
+        let isH=(zh[0].object.userData.hitBoxPart==="head");
+        let targetZombieIdx = zh[0].object.userData.parentZombieIndex;
         let zDmg = isH?getWeaponStat(currentWeapon,'headDamage'):getWeaponStat(currentWeapon,'damage');
         
-        if (isHost) {
-          if(tz&&!tz.deadAndShrinking){
-            setZombieStage(tz,tz.stage-zDmg);
+        let tz = activeZombies[targetZombieIdx];
+        if(tz && !tz.deadAndShrinking){
+          if (isHost) {
+            setZombieStage(tz, tz.stage - zDmg);
             if(tz.deadAndShrinking){
               addPoints(isH?20:10);
               txtDiv.innerHTML=isH?"CRITICAL HEADSHOT KILL! +20 CREDITS":"TARGET BANISHED! +10 CREDITS";
@@ -1168,13 +1170,14 @@
               addPoints(10);
               txtDiv.innerHTML=isH?"HEADSHOT HIT! -3 STAGES! +20 CREDITS":"HIT REGISTERED! STAGE REDUCED. +10 CREDITS";
             }
+          } else {
+            socket.emit('zombie_hit', {
+              zombieIndex: targetZombieIdx,
+              damage: zDmg,
+              isHeadshot: isH
+            });
+            txtDiv.innerHTML=isH?"HEADSHOT HIT! (SYNCING...)":"HIT REGISTERED! (SYNCING...)";
           }
-        } else {
-          socket.emit('zombie_hit', {
-            zombieIndex: zh[0].object.userData.parentZombieIndex,
-            damage: zDmg,
-            isHeadshot: isH
-          });
         }
         return;
       }

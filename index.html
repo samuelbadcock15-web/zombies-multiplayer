@@ -300,12 +300,10 @@
       c.fillStyle='#ff0';c.font='bold 20px monospace';c.fillText(`CURRENT LVL: ${toRoman(weaponUpgradeLevels[currentWeapon])}`,256,205);
       c.fillStyle='#ffd700';c.fillText(`COST: ${500+weaponUpgradeLevels[currentWeapon]*250} CREDITS`,256,238);
 
-      // Render 3 interactive buttons on screen display
       let spinActive = !upgradeMachineActive && !upgradeMachineReadyToCollect;
       let collActive = upgradeMachineReadyToCollect;
-      let resActive  = upgradeMachineActive || upgradeMachineReadyToCollect; // 3rd reset state if needed, or visual state
+      let resActive  = upgradeMachineActive || upgradeMachineReadyToCollect;
 
-      // SPIN button box
       c.fillStyle = spinActive ? '#2e7d32' : '#3a2418';
       c.fillRect(40, 305, 130, 60);
       c.strokeStyle = spinActive ? '#00ff66' : '#6b4c35';
@@ -314,7 +312,6 @@
       c.font = 'bold 22px monospace';
       c.fillText('SPIN', 105, 342);
 
-      // COLLECT button box (shines when active)
       let shine = collActive ? Math.abs(Math.sin(performance.now()*0.01))*150 : 0;
       c.fillStyle = collActive ? `rgb(${100+shine},${200+shine},50)` : '#3a2418';
       c.fillRect(191, 305, 130, 60);
@@ -324,7 +321,6 @@
       c.font = 'bold 22px monospace';
       c.fillText('COLLECT', 256, 342);
 
-      // RESET / WAITING status button box
       c.fillStyle = '#3a2418';
       c.fillRect(342, 305, 130, 60);
       c.strokeStyle = '#6b4c35';
@@ -347,12 +343,10 @@
       c.fillStyle='#ffd700';c.font='bold 20px monospace';c.fillText("COST: 350 CREDITS",256,220);
       c.fillStyle='#f36';c.font='bold 18px monospace';c.fillText(`LOC: ${boxRoomLocations[mysteryBoxCurrentRoom].name}`,256,252);
 
-      // Render 3 interactive buttons on screen display
       let spinActive = !mysteryBoxActive && !mysteryBoxReadyToCollect;
       let collActive = mysteryBoxReadyToCollect;
       let resActive  = mysteryBoxActive || mysteryBoxReadyToCollect;
 
-      // SPIN button box
       c.fillStyle = spinActive ? '#2e7d32' : '#3a2418';
       c.fillRect(40, 305, 130, 60);
       c.strokeStyle = spinActive ? '#00ff66' : '#6b4c35';
@@ -361,7 +355,6 @@
       c.font = 'bold 22px monospace';
       c.fillText('SPIN', 105, 342);
 
-      // COLLECT button box (shines when active)
       let shine = collActive ? Math.abs(Math.sin(performance.now()*0.01))*150 : 0;
       c.fillStyle = collActive ? `rgb(${100+shine},${200+shine},50)` : '#3a2418';
       c.fillRect(191, 305, 130, 60);
@@ -371,7 +364,6 @@
       c.font = 'bold 22px monospace';
       c.fillText('COLLECT', 256, 342);
 
-      // RESET / STATUS button box
       c.fillStyle = '#3a2418';
       c.fillRect(342, 305, 130, 60);
       c.strokeStyle = '#6b4c35';
@@ -823,6 +815,17 @@
       claimMysteryBoxReward();
     });
 
+    socket.on('force_clear_mystery_box_holo', () => {
+      mysteryBoxReadyToCollect = false;
+      while(boxWeaponHolo.children.length > 0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
+    });
+
+    socket.on('force_clear_upgrade_holo', () => {
+      upgradeMachineReadyToCollect = false;
+      while(upgHoloWeapon.children.length > 0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
+      gunMeshGroup.visible = true;
+    });
+
     socket.on('client_throw_grenade', data => {
       const m = MESH(SG(0.2,12,12),SM({color:0x444433,roughness:0.7}), data.x, data.y, data.z);
       scene.add(m);
@@ -1035,9 +1038,8 @@
       if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
         let uv = upgHit[0].uv;
         let px = uv.x * 512, py = (1 - uv.y) * 512;
-        // Check button bounding boxes on upgrade machine screen texture (X: 40-170 is SPIN, X: 191-321 is COLLECT, Y: 305-365)
         if(py >= 305 && py <= 365){
-          if(px >= 40 && px <= 170){ // SPIN BUTTON CLICKED
+          if(px >= 40 && px <= 170){ // SPIN
             if(!upgradeMachineActive && !upgradeMachineReadyToCollect){
               let cost=500+weaponUpgradeLevels[currentWeapon]*250;
               if(playerPoints>=cost){
@@ -1051,10 +1053,12 @@
                 txtDiv.innerHTML="RITUAL BLESSING STARTED. STAND BY.";
               }else txtDiv.innerHTML=`RITUAL REQUIRES ${cost} CREDITS FOR THIS LEVEL.`;
             }
-          } else if(px >= 191 && px <= 321){ // COLLECT BUTTON CLICKED
+          } else if(px >= 191 && px <= 321){ // COLLECT
             if(upgradeMachineReadyToCollect){
               upgradeMachineReadyToCollect=false;
-              while(upgHoloWeapon.children.length>0)upgHoloWeapon.remove(upgHoloWeapon.children[0]);
+              while(upgHoloWeapon.children.length>0) upgHoloWeapon.remove(upgHoloWeapon.children[0]);
+              socket.emit('request_clear_upgrade_holo');
+
               weaponUpgradeLevels[upgradeMachineWeaponSlot]++;
               ammoReserves[upgradeMachineWeaponSlot]=getWeaponStat(upgradeMachineWeaponSlot,'maxAmmo');
               gunMeshGroup.visible=true;
@@ -1074,7 +1078,7 @@
         let uv = boxHit[0].uv;
         let px = uv.x * 512, py = (1 - uv.y) * 512;
         if(py >= 305 && py <= 365){
-          if(px >= 40 && px <= 170){ // SPIN BUTTON CLICKED
+          if(px >= 40 && px <= 170){ // SPIN
             if(!mysteryBoxActive && !mysteryBoxReadyToCollect){
               if(playerPoints>=350){
                 playerPoints-=350;$('score-val').innerText=playerPoints;
@@ -1087,8 +1091,12 @@
                 }
               }else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS.";
             }
-          } else if(px >= 191 && px <= 321){ // COLLECT BUTTON CLICKED
+          } else if(px >= 191 && px <= 321){ // COLLECT
             if(mysteryBoxReadyToCollect){
+              mysteryBoxReadyToCollect=false;
+              while(boxWeaponHolo.children.length>0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
+              socket.emit('request_clear_mystery_box_holo');
+
               if(isHost){
                 claimMysteryBoxReward();
               } else {
@@ -1465,7 +1473,6 @@
         upgradeMachineTimer += 0.016;
         upgHoloWeapon.rotation.y += 0.02;
         upgHoloWeapon.position.y = 4.8 + Math.sin(upgradeMachineTimer * 4) * 0.15;
-        // Timeout / tie out after 10 seconds if not collected
         if(isHost && upgradeMachineTimer >= 10){
           upgradeMachineReadyToCollect = false;
           upgradeMachineTimer = 0;
@@ -1509,7 +1516,6 @@
         mysteryBoxTimer += 0.016;
         boxWeaponHolo.rotation.y += 0.03;
         boxWeaponHolo.position.y = 3.5 + Math.sin(mysteryBoxTimer * 3) * 0.15;
-        // Tie out / timeout after 10 seconds if not collected
         if(isHost && mysteryBoxTimer >= 10){
           mysteryBoxReadyToCollect = false;
           mysteryBoxTimer = 0;

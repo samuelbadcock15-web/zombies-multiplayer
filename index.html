@@ -669,7 +669,6 @@
     }
 
     socket.on('client_zombie_sync', networkZombies => {
-      if (isHost) return;
       while(activeZombies.length < networkZombies.length) {
         const zd = createZombieMesh();
         zd.head.visible = zd.body.visible = zd.arms.visible = true;
@@ -1569,6 +1568,11 @@
       }
 
       updateZombies(now);
+
+      // Continuously ensure non-host hitboxes match synchronized positions
+      if (!isHost) {
+        rebuildZombieHitboxes();
+      }
 
       if(!robotMercState.isBeingOverrun){
         if(robotMercState.active){

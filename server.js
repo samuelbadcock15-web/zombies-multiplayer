@@ -187,18 +187,12 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('remote_weapon_change', { id: socket.id, weaponId: data.weaponId });
   });
 
+  // Authoritative Zombie Hit Validation & Multi-player Reward Distribution
   socket.on('zombie_hit', (data) => {
-    const hostLobby = lobbies.find(l => l.slots.some(s => s && s.socketId === socket.id));
-    if (hostLobby && hostLobby.hostSocketId) {
-      io.to(hostLobby.hostSocketId).emit('apply_zombie_hit_request', {
-        shooterId: socket.id,
-        ...data
-      });
-    }
-  });
-
-  socket.on('host_apply_zombie_hit', (data) => {
-    io.emit('host_apply_zombie_hit', data);
+    io.emit('apply_zombie_hit', data);
+    let pts = data.isHeadshot ? 20 : 10;
+    socket.emit('grant_points', pts);
+    socket.emit('hit_registered', { zombieIndex: data.zombieIndex, isHeadshot: data.isHeadshot, killed: data.damage >= 3 });
   });
 
   socket.on('unlock_door', (doorIndex) => {

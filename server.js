@@ -187,12 +187,13 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('remote_weapon_change', { id: socket.id, weaponId: data.weaponId });
   });
 
-  // Authoritative Zombie Hit Validation & Multi-player Reward Distribution
+  // Authoritative Hit Handling for Consistent Scoring & 10+/20+ Economy Caps
   socket.on('zombie_hit', (data) => {
     io.emit('apply_zombie_hit', data);
-    let pts = data.isHeadshot ? 20 : 10;
-    socket.emit('grant_points', pts);
-    socket.emit('hit_registered', { zombieIndex: data.zombieIndex, isHeadshot: data.isHeadshot, killed: data.damage >= 3 });
+    let willKill = data.damage >= 3;
+    let pts = willKill ? (data.isHeadshot ? 20 : 10) : 0;
+    if (pts > 0) socket.emit('grant_points', pts);
+    socket.emit('hit_registered', { zombieIndex: data.zombieIndex, isHeadshot: data.isHeadshot, killed: willKill });
   });
 
   socket.on('unlock_door', (doorIndex) => {

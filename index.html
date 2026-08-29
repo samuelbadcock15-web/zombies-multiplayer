@@ -627,11 +627,11 @@
 
     function rebuildZombieHitboxes(){
       zombieInteractiveMeshes.length=0;
-      activeZombies.forEach((zb,idx)=>{
-        if(!zb.deadAndShrinking&&zb.stage>0){
+      activeZombies.forEach((zb)=>{
+        if(!zb.deadAndShrinking){
           zb.meshParts.group.traverse(c=>{
-            if(c.isMesh&&c.visible&&!c.userData.isCrater){
-              c.userData.parentZombieIndex=idx;
+            if(c.isMesh&&!c.userData.isCrater){
+              c.userData.zombieId = zb.id;
               c.userData.materialType="flesh";
               zombieInteractiveMeshes.push(c);
             }
@@ -663,34 +663,50 @@
       const zd=createZombieMesh();
       zd.group.position.set(th.globalX,th.globalY,th.globalZ);
       scene.add(zd.group);
-      activeZombies.push({meshParts:zd,speed:0.05+0.11*(currentRound/(currentRound+35))+Math.random()*0.02,stage:3,emergenceStage:0,stageProgress:0,baseY:th.globalY,deadAndShrinking:false,lastAttackTime:0});
+      const zombieId = 'z_' + Math.random().toString(36).substr(2, 9);
+      activeZombies.push({
+        id: zombieId,
+        meshParts: zd,
+        speed: 0.05 + 0.11 * (currentRound / (currentRound + 35)) + Math.random() * 0.02,
+        stage: 3,
+        emergenceStage: 0,
+        stageProgress: 0,
+        baseY: th.globalY,
+        deadAndShrinking: false,
+        lastAttackTime: 0
+      });
       zombiesToSpawnRemaining--;
       rebuildZombieHitboxes();
     }
 
     socket.on('client_zombie_sync', networkZombies => {
-      while(activeZombies.length < networkZombies.length) {
-        const zd = createZombieMesh();
-        zd.head.visible = zd.body.visible = zd.arms.visible = true;
-        zd.head.position.y = 2.4;
-        zd.body.position.y = 1.1;
-        zd.arms.position.y = 1.1;
-        scene.add(zd.group);
-        activeZombies.push({ meshParts: zd, stage: 3, deadAndShrinking: false, emergenceStage: 3 });
-      }
-      while(activeZombies.length > networkZombies.length) {
-        const removed = activeZombies.pop();
-        scene.remove(removed.meshParts.group);
-      }
-      networkZombies.forEach((nz, idx) => {
-        const localZ = activeZombies[idx];
-        if (localZ) {
-          localZ.meshParts.group.position.set(nz.x, nz.y, nz.z);
-          localZ.meshParts.group.rotation.y = nz.yaw;
-          localZ.meshParts.group.updateMatrixWorld(true);
-          setZombieStage(localZ, nz.stage);
+      const existingMap = new Map();
+      activeZombies.forEach(z => existingMap.set(z.id, z));
+      const newActiveZombies = [];
+
+      networkZombies.forEach(nz => {
+        let localZ = existingMap.get(nz.id);
+        if (!localZ) {
+          const zd = createZombieMesh();
+          zd.head.visible = zd.body.visible = zd.arms.visible = true;
+          zd.head.position.y = 2.4;
+          zd.body.position.y = 1.1;
+          zd.arms.position.y = 1.1;
+          scene.add(zd.group);
+          localZ = { id: nz.id, meshParts: zd, stage: nz.stage, deadAndShrinking: false, emergenceStage: 3 };
         }
+        
+        localZ.meshParts.group.position.set(nz.x, nz.y, nz.z);
+        localZ.meshParts.group.rotation.y = nz.yaw;
+        localZ.meshParts.group.updateMatrixWorld(true);
+        setZombieStage(localZ, nz.stage);
+        newActiveZombies.push(localZ);
+        existingMap.delete(nz.id);
       });
+
+      existingMap.forEach(z => scene.remove(z.meshParts.group));
+      activeZombies.length = 0;
+      activeZombies.push(...newActiveZombies);
       rebuildZombieHitboxes();
     });
 
@@ -712,9 +728,9 @@
       }
     });
 
-    socket.on('host_apply_zombie_hit', data => {
+    socket.on('host_apply_zombie_hit_by_id', data => {
       if (!isHost) return;
-      const tz = activeZombies[data.zombieIndex];
+      const tz = activeZombies.find(z => z.id === data.zombieId);
       if (tz && !tz.deadAndShrinking) {
         setZombieStage(tz, tz.stage - data.damage);
         if (tz.deadAndShrinking) {
@@ -1154,10 +1170,10 @@
       if(zh.length>0){
         if(zh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}
         let isH=(zh[0].object.userData.hitBoxPart==="head");
-        let targetZombieIdx = zh[0].object.userData.parentZombieIndex;
+        let targetZombieId = zh[0].object.userData.zombieId;
         let zDmg = isH?getWeaponStat(currentWeapon,'headDamage'):getWeaponStat(currentWeapon,'damage');
         
-        let tz = activeZombies[targetZombieIdx];
+        let tz = activeZombies.find(z => z.id === targetZombieId);
         if(tz && !tz.deadAndShrinking){
           if (isHost) {
             setZombieStage(tz, tz.stage - zDmg);
@@ -1170,8 +1186,8 @@
               txtDiv.innerHTML=isH?"HEADSHOT HIT! -3 STAGES! +20 CREDITS":"HIT REGISTERED! STAGE REDUCED. +10 CREDITS";
             }
           } else {
-            socket.emit('zombie_hit', {
-              zombieIndex: targetZombieIdx,
+            socket.emit('zombie_hit_by_id', {
+              zombieId: targetZombieId,
               damage: zDmg,
               isHeadshot: isH
             });
@@ -1557,6 +1573,7 @@
           });
 
           const syncPacket = activeZombies.map(z => ({
+            id: z.id,
             x: z.meshParts.group.position.x,
             y: z.meshParts.group.position.y,
             z: z.meshParts.group.position.z,
@@ -1569,7 +1586,6 @@
 
       updateZombies(now);
 
-      // Continuously ensure non-host hitboxes match synchronized positions
       if (!isHost) {
         rebuildZombieHitboxes();
       }

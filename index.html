@@ -739,6 +739,10 @@
       const tz = activeZombies.find(z => z.id === data.zombieId);
       if (tz && !tz.deadAndShrinking) {
         setZombieStage(tz, tz.stage - data.damage);
+        if (data.shooterId === myId) {
+          addPoints(data.points);
+        }
+        txtDiv.innerHTML = data.dead ? (data.isHeadshot ? "CRITICAL HEADSHOT KILL! +20 CREDITS" : "TARGET BANISHED! +10 CREDITS") : (data.isHeadshot ? "HEADSHOT HIT! +20 CREDITS" : "HIT REGISTERED! +10 CREDITS");
         rebuildZombieHitboxes();
         checkRoundEnd();
       }
@@ -1172,11 +1176,23 @@
         let zombieId = zh[0].object.userData.zombieId;
         let zDmg = isH?getWeaponStat(currentWeapon,'headDamage'):getWeaponStat(currentWeapon,'damage');
         
-        socket.emit('zombie_hit', {
-          zombieId: zombieId,
-          damage: zDmg,
-          isHeadshot: isH
-        });
+        if (isHost) {
+          const tz = activeZombies.find(z => z.id === zombieId);
+          if (tz && !tz.deadAndShrinking) {
+            setZombieStage(tz, tz.stage - zDmg);
+            let pts = isH ? 20 : 10;
+            addPoints(pts);
+            txtDiv.innerHTML = tz.deadAndShrinking ? (isH ? "CRITICAL HEADSHOT KILL! +20 CREDITS" : "TARGET BANISHED! +10 CREDITS") : (isH ? "HEADSHOT HIT! +20 CREDITS" : "HIT REGISTERED! +10 CREDITS");
+            rebuildZombieHitboxes();
+            checkRoundEnd();
+          }
+        } else {
+          socket.emit('zombie_hit', {
+            zombieId: zombieId,
+            damage: zDmg,
+            isHeadshot: isH
+          });
+        }
         return;
       }
       let eh=raycaster.intersectObjects(generalEnvironmentMeshes.filter(m=>m.visible!==false));

@@ -285,7 +285,7 @@
     let mysteryBoxActive=false,mysteryBoxReadyToCollect=false,mysteryBoxTimer=0,mysteryBoxUsesCount=0,mysteryBoxCurrentRoom=0,mysteryBoxCyclingReward="PISTOL",mysteryBoxRewardType=1,mysteryBoxFadeAlpha=1,mysteryBoxMapHologramGroup=GRP();
     const boxRoomLocations=[{name:"GRAND HAUNTED HALL",pos:new V3(0,0,-140)},{name:"BALLROOM ARENA",pos:new V3(0,0,-140)},{name:"FLOODED CRYPT",pos:new V3(0,0,-310)},{name:"UNDERGROUND CATACOMBS",pos:new V3(0,-79.8,-330)}];
 
-    // --- UPGRADE MACHINE SYSTEM (REBUILT & SMARTER) ---
+    // --- UPGRADE MACHINE SYSTEM (FOOLPROOF FIX) ---
     let upgradeActive = false;
     let upgradeReady = false;
     let upgradeTimer = 0;
@@ -814,6 +814,7 @@
 
     socket.on('grant_upgrade_success', slot => {
       upgradeReady = false;
+      upgradeActive = false;
       weaponUpgradeLevels[slot]++;
       ammoReserves[slot] = getWeaponStat(slot, 'maxAmmo');
       gunMeshGroup.visible = true;
@@ -1091,12 +1092,20 @@
         if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
       }
       
-      // UPGRADE MACHINE TOUCH INTERACTION HANDLER
+      // UPGRADE MACHINE TOUCH INTERACTION HANDLER (ROBUST UV/BOX FALLBACK)
       let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
       let upgHit = raycaster.intersectObjects([upgScreenFace],true);
       if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
         let uv = upgHit[0].uv;
-        handleUpgradeMachineClick(uv.x, uv.y);
+        if (uv && uv.x !== undefined && uv.y !== undefined) {
+          handleUpgradeMachineClick(uv.x, uv.y);
+        } else {
+          // Fallback coordinate calculation using local intersection point
+          let localPoint = upgScreenFace.worldToLocal(upgHit[0].point.clone());
+          let u = (localPoint.x + 1.1) / 2.2;
+          let v = (localPoint.y + 0.8) / 1.6;
+          handleUpgradeMachineClick(u, v);
+        }
         return;
       }
 
@@ -1105,7 +1114,8 @@
       let boxHit = raycaster.intersectObjects([boxScreenFaceFront, boxScreenFaceBack],true);
       if(boxHit.length>0 && playerRig.position.distanceTo(bwPos)<15){
         let uv = boxHit[0].uv;
-        let px = uv.x * 512, py = (1 - uv.y) * 512;
+        let px = (uv && uv.x !== undefined) ? uv.x * 512 : 256;
+        let py = (uv && uv.y !== undefined) ? (1 - uv.y) * 512 : 335;
         if(py >= 305 && py <= 365){
           if(px >= 40 && px <= 170){ // SPIN
             if(!mysteryBoxActive && !mysteryBoxReadyToCollect){
@@ -1187,7 +1197,7 @@
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
     }
 
-    // Upgrade machine screen click intercept helper
+    // Upgrade machine screen click handler
     function handleUpgradeMachineClick(uvX, uvY) {
       let px = uvX * 512, py = (1 - uvY) * 512;
       if (py >= 305 && py <= 375) {
@@ -1210,6 +1220,7 @@
           // COLLECT CLICKED
           if (upgradeReady) {
             socket.emit('collect_upgrade_reward');
+            txtDiv.innerHTML = "COLLECTING BLESSED WEAPON...";
           }
         }
       }

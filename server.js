@@ -150,12 +150,22 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('client_place_claymore', data);
   });
 
-  socket.on('request_mystery_box', () => {
+  // Authoritative Machine Action Relays to Host
+  socket.on('player_spin_mystery_box', () => {
     io.emit('trigger_mystery_box_start');
   });
 
-  socket.on('request_upgrade', (data) => {
+  socket.on('player_collect_mystery_box', () => {
+    socket.emit('grant_mystery_box_reward');
+    io.emit('force_clear_mystery_box_holo');
+  });
+
+  socket.on('player_spin_upgrade', (data) => {
     io.emit('trigger_upgrade_start', data);
+  });
+
+  socket.on('player_collect_upgrade', () => {
+    io.emit('force_clear_upgrade_holo');
   });
 
   socket.on('request_hire_robot', () => {
@@ -168,19 +178,6 @@ io.on('connection', (socket) => {
 
   socket.on('request_hidden_button', () => {
     io.emit('trigger_hidden_button');
-  });
-
-  socket.on('request_claim_mystery_box', () => {
-    socket.emit('grant_mystery_box_reward');
-  });
-
-  // Holo Weapon Cleanup Broadcasts
-  socket.on('request_clear_mystery_box_holo', () => {
-    io.emit('force_clear_mystery_box_holo');
-  });
-
-  socket.on('request_clear_upgrade_holo', () => {
-    io.emit('force_clear_upgrade_holo');
   });
 
   socket.on('player_update', (data) => {

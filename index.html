@@ -1186,13 +1186,14 @@
       if(eh.length>0){if(eh[0].distance>er){txtDiv.innerHTML="OUT OF RANGE!";return}createImpactDamageCrater(eh[0],"stone")}
     }
 
+    // Award proper points per hit: 10 for body, 20 for headshot
     socket.on('hit_registered', data => {
-      let pts = data.killed ? (data.isHeadshot ? 20 : 10) : 0;
-      if (pts > 0) addPoints(pts);
+      let pts = data.isHeadshot ? 20 : 10;
+      addPoints(pts);
       if (data.killed) {
         txtDiv.innerHTML = data.isHeadshot ? `CRITICAL HEADSHOT KILL! +${pts} CREDITS` : `TARGET BANISHED! +${pts} CREDITS`;
       } else {
-        txtDiv.innerHTML = data.isHeadshot ? `HEADSHOT HIT!` : `HIT REGISTERED!`;
+        txtDiv.innerHTML = data.isHeadshot ? `HEADSHOT HIT! +${pts} CREDITS` : `HIT REGISTERED! +${pts} CREDITS`;
       }
     });
 

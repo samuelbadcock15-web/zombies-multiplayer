@@ -187,15 +187,18 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('remote_weapon_change', { id: socket.id, weaponId: data.weaponId });
   });
 
-  socket.on('zombie_id_hit', (data) => {
-    io.emit('host_apply_zombie_hit', data);
-  });
-
   socket.on('zombie_hit', (data) => {
     const hostLobby = lobbies.find(l => l.slots.some(s => s && s.socketId === socket.id));
     if (hostLobby && hostLobby.hostSocketId) {
-      io.to(hostLobby.hostSocketId).emit('host_apply_zombie_hit', data);
+      io.to(hostLobby.hostSocketId).emit('apply_zombie_hit_request', {
+        shooterId: socket.id,
+        ...data
+      });
     }
+  });
+
+  socket.on('host_apply_zombie_hit', (data) => {
+    io.emit('host_apply_zombie_hit', data);
   });
 
   socket.on('unlock_door', (doorIndex) => {

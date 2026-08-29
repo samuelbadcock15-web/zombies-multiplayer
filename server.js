@@ -138,6 +138,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('fill_hole', (data) => {
+    socket.broadcast.emit('client_zombie_sync', data);
     socket.broadcast.emit('sync_hole_fill', data);
   });
 
@@ -169,9 +170,10 @@ io.on('connection', (socket) => {
     io.emit('trigger_hidden_button');
   });
 
-  // Non-host interactive claim requests routed to host/server
+  // Targeted individual reward claim handler
   socket.on('request_claim_mystery_box', () => {
-    io.emit('force_claim_mystery_box');
+    // Send reward confirmation ONLY to the player who requested it
+    socket.emit('grant_mystery_box_reward');
   });
 
   socket.on('player_update', (data) => {

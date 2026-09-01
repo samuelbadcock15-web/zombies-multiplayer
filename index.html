@@ -1183,7 +1183,7 @@
 
 socket.on('hit_registered', data => {
   let pts = data.pointsAwarded || (data.isHeadshot ? 40 : 20);
-  addPoints(pts);
+  // REMOVED addPoints(pts) here so it doesn't double-add!
   if (data.killed) {
     txtDiv.innerHTML = data.isHeadshot ? `CRITICAL HEADSHOT KILL! +${pts} CREDITS` : `TARGET BANISHED! +${pts} CREDITS`;
   } else {

@@ -215,12 +215,12 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('remote_weapon_change', { id: socket.id, weaponId: data.weaponId });
   });
 
-  socket.on('zombie_hit', (data) => {
-    io.emit('apply_zombie_hit', data);
-    let pts = data.isHeadshot ? 20 : 10;
-    socket.emit('grant_points', pts);
-    socket.emit('hit_registered', { zombieId: data.zombieId, isHeadshot: data.isHeadshot, killed: data.damage >= 3 });
-  });
+socket.on('zombie_hit', (data) => {
+  io.emit('apply_zombie_hit', data);
+  let pts = data.isHeadshot ? 40 : 20;
+  socket.emit('grant_points', pts);
+  socket.emit('hit_registered', { zombieId: data.zombieId, isHeadshot: data.isHeadshot, killed: data.damage >= 3, pointsAwarded: pts });
+});
 
   socket.on('unlock_door', (doorIndex) => {
     io.emit('door_unlocked', { doorIndex });

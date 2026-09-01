@@ -1181,15 +1181,15 @@
       }
     }
 
-    socket.on('hit_registered', data => {
-      let pts = data.isHeadshot ? 20 : 10;
-      addPoints(pts);
-      if (data.killed) {
-        txtDiv.innerHTML = data.isHeadshot ? `CRITICAL HEADSHOT KILL! +${pts} CREDITS` : `TARGET BANISHED! +${pts} CREDITS`;
-      } else {
-        txtDiv.innerHTML = data.isHeadshot ? `HEADSHOT HIT! +${pts} CREDITS` : `HIT REGISTERED! +${pts} CREDITS`;
-      }
-    });
+socket.on('hit_registered', data => {
+  let pts = data.pointsAwarded || (data.isHeadshot ? 40 : 20);
+  addPoints(pts);
+  if (data.killed) {
+    txtDiv.innerHTML = data.isHeadshot ? `CRITICAL HEADSHOT KILL! +${pts} CREDITS` : `TARGET BANISHED! +${pts} CREDITS`;
+  } else {
+    txtDiv.innerHTML = data.isHeadshot ? `HEADSHOT HIT! +${pts} CREDITS` : `HIT REGISTERED! +${pts} CREDITS`;
+  }
+});
 
     function createTeammateMesh(colorHex, name) {
       const g = GRP();

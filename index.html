@@ -511,6 +511,13 @@
 
     addStructuralMesh(PG(50,50),floorMat,0,0,0,-Math.PI/2,0,"floor");addStructuralMesh(PG(50,50),ceilingMat,0,16,0,Math.PI/2,0,"ceiling");addStructuralMesh(PG(12,40),floorMat,0,0,-45,-Math.PI/2,0,"floor");addStructuralMesh(PG(12,40),ceilingMat,0,16,-45,Math.PI/2,0,"ceiling");
     wallObjects.push(addStructuralMesh(PG(19,16),wallMat,-15.5,8,-25),addStructuralMesh(PG(19,16),wallMat,15.5,8,-25),addStructuralMesh(PG(50,16),wallMat,-25,8,0,0,Math.PI/2),addStructuralMesh(PG(50,16),wallMat,25,8,0,0,-Math.PI/2),addStructuralMesh(PG(50,16),wallMat,0,8,25),addStructuralMesh(PG(40,16),wallMat,-6,8,-45,0,Math.PI/2),addStructuralMesh(PG(40,16),wallMat,6,8,-45,0,-Math.PI/2));
+    
+    // Inner corner-bypassing walls for the first room (eliminates corner camping)
+    addStructuralMesh(PG(14, 16), wallMat, -17, 8, 17, 0, Math.PI / 4);
+    addStructuralMesh(PG(14, 16), wallMat, 17, 8, 17, 0, -Math.PI / 4);
+    addStructuralMesh(PG(14, 16), wallMat, -17, 8, -17, 0, -Math.PI / 4);
+    addStructuralMesh(PG(14, 16), wallMat, 17, 8, -17, 0, Math.PI / 4);
+
     addStructuralMesh(PG(150,150),floorMat,0,0,-140,-Math.PI/2,0,"floor");addStructuralMesh(PG(150,150),ceilingMat,0,30,-140,Math.PI/2,0,"ceiling");addStructuralMesh(PG(12,40),floorMat,0,0,-235,-Math.PI/2,0,"floor");addStructuralMesh(PG(12,40),ceilingMat,0,16,-235,Math.PI/2,0,"ceiling");
     wallObjects.push(addStructuralMesh(PG(69,30),wallMat,-40.5,15,-65),addStructuralMesh(PG(69,30),wallMat,40.5,15,-65),addStructuralMesh(PG(69,30),wallMat,-40.5,15,-215),addStructuralMesh(PG(69,30),wallMat,40.5,15,-215),addStructuralMesh(PG(150,30),wallMat,-75,15,-140,0,Math.PI/2),addStructuralMesh(PG(150,30),wallMat,75,15,-140,0,-Math.PI/2),addStructuralMesh(PG(40,16),wallMat,-6,8,-235,0,Math.PI/2),addStructuralMesh(PG(40,16),wallMat,6,8,-235,0,-Math.PI/2));
     addStructuralMesh(PG(150,150),floorMat,0,0,-330,-Math.PI/2,0,"floor");addStructuralMesh(PG(150,150),ceilingMat,0,30,-330,Math.PI/2,0,"ceiling");
@@ -894,7 +901,18 @@
     function getConstrainedPosition(p){
       let x=p.x,z=p.z;if(!unlockedDoors[0]&&z<-23)z=-23;if(!unlockedDoors[1]&&z<-63)z=-63;if(!unlockedDoors[2]&&z<-213)z=-213;if(!unlockedDoors[3]&&z<-254)z=-254;
       if(p.y<-40){p.x=Math.max(-115,Math.min(115,x));p.z=Math.max(-445,Math.min(-215,z));return p}
-      if(z<=25&&z>=-25){x=Math.max(-23.5,Math.min(23.5,x));if(z<-23.5&&(x<-4.5||x>4.5))z=-23.5;z=Math.max(-25,Math.min(23.5,z))}
+      
+      // First room smooth corner bypass routing
+      if(z<=25&&z>=-25){
+        x=Math.max(-23.5,Math.min(23.5,x));
+        z=Math.max(-25,Math.min(23.5,z));
+        // Prevent sticking precisely in the 4 diagonal corner pockets
+        if(x < -12 && z > 12) x = -12;
+        if(x > 12 && z > 12) x = 12;
+        if(x < -12 && z < -12) x = -12;
+        if(x > 12 && z < -12) x = 12;
+        if(z<-23.5&&(x<-4.5||x>4.5))z=-23.5;
+      }
       else if(z<-25&&z>-65){x=Math.max(-4.5,Math.min(4.5,x))}
       else if(z<=-65&&z>=-215){x=Math.max(-73.5,Math.min(73.5,x));if(z>-66.5&&(x<-4.5||x>4.5))z=-66.5;if(z<-213.5&&(x<-4.5||x>4.5))z=-213.5;z=Math.max(-215,Math.min(-65,z))}
       else if(z<-215&&z>-255){x=Math.max(-4.5,Math.min(4.5,x))}

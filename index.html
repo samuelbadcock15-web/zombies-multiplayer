@@ -509,15 +509,32 @@
     const generalEnvironmentMeshes=[],wallObjects=[],perkMachineObjects=[],outlineMat=new T.LineBasicMaterial({color:0x140d0a,linewidth:2}),wallMat=SM({map:createHauntedWallTexture(),roughness:0.6,side:T.DoubleSide}),ceilingMat=SM({color:0x332218,roughness:0.8}),floorMat=SM({map:createHauntedWoodFloorTexture(),roughness:0.5,metalness:0.1});
     function addStructuralMesh(geo,mat,px,py,pz,rx=0,ry=0,mt="stone"){const m=MESH(geo,mat,px,py,pz,rx,ry);scene.add(m);const l=new T.LineSegments(new T.EdgesGeometry(geo),outlineMat);l.position.copy(m.position);l.rotation.copy(m.rotation);scene.add(l);m.userData={materialType:mt};generalEnvironmentMeshes.push(m);return m}
 
-    addStructuralMesh(PG(50,50),floorMat,0,0,0,-Math.PI/2,0,"floor");addStructuralMesh(PG(50,50),ceilingMat,0,16,0,Math.PI/2,0,"ceiling");addStructuralMesh(PG(12,40),floorMat,0,0,-45,-Math.PI/2,0,"floor");addStructuralMesh(PG(12,40),ceilingMat,0,16,-45,Math.PI/2,0,"ceiling");
+    // Main Room 1 Floor & Ceiling
+    addStructuralMesh(PG(50,50),floorMat,0,0,0,-Math.PI/2,0,"floor");
+    addStructuralMesh(PG(50,50),ceilingMat,0,16,0,Math.PI/2,0,"ceiling");
+
+    // --- TWO RECESSED HALF-CIRCLE WALL CORRIDORS (BYPASS LOOPS) ---
+    // Left Corridor Loop
+    addStructuralMesh(PG(28,16),floorMat,-33,0,0,-Math.PI/2,0,"floor");
+    addStructuralMesh(PG(28,16),ceilingMat,-33,16,0,Math.PI/2,0,"ceiling");
+    wallObjects.push(
+      addStructuralMesh(PG(30,16),wallMat,-47,8,0,0,Math.PI/2),
+      addStructuralMesh(PG(12,16),wallMat,-33,8,14,0,0),
+      addStructuralMesh(PG(12,16),wallMat,-33,8,-14,0,0)
+    );
+
+    // Right Corridor Loop
+    addStructuralMesh(PG(28,16),floorMat,33,0,0,-Math.PI/2,0,"floor");
+    addStructuralMesh(PG(28,16),ceilingMat,33,16,0,Math.PI/2,0,"ceiling");
+    wallObjects.push(
+      addStructuralMesh(PG(30,16),wallMat,47,8,0,0,-Math.PI/2),
+      addStructuralMesh(PG(12,16),wallMat,33,8,14,0,0),
+      addStructuralMesh(PG(12,16),wallMat,33,8,-14,0,0)
+    );
+
+    addStructuralMesh(PG(12,40),floorMat,0,0,-45,-Math.PI/2,0,"floor");addStructuralMesh(PG(12,40),ceilingMat,0,16,-45,Math.PI/2,0,"ceiling");
     wallObjects.push(addStructuralMesh(PG(19,16),wallMat,-15.5,8,-25),addStructuralMesh(PG(19,16),wallMat,15.5,8,-25),addStructuralMesh(PG(50,16),wallMat,-25,8,0,0,Math.PI/2),addStructuralMesh(PG(50,16),wallMat,25,8,0,0,-Math.PI/2),addStructuralMesh(PG(50,16),wallMat,0,8,25),addStructuralMesh(PG(40,16),wallMat,-6,8,-45,0,Math.PI/2),addStructuralMesh(PG(40,16),wallMat,6,8,-45,0,-Math.PI/2));
     
-    // Inner corner-bypassing walls for the first room (eliminates corner camping)
-    addStructuralMesh(PG(14, 16), wallMat, -17, 8, 17, 0, Math.PI / 4);
-    addStructuralMesh(PG(14, 16), wallMat, 17, 8, 17, 0, -Math.PI / 4);
-    addStructuralMesh(PG(14, 16), wallMat, -17, 8, -17, 0, -Math.PI / 4);
-    addStructuralMesh(PG(14, 16), wallMat, 17, 8, -17, 0, Math.PI / 4);
-
     addStructuralMesh(PG(150,150),floorMat,0,0,-140,-Math.PI/2,0,"floor");addStructuralMesh(PG(150,150),ceilingMat,0,30,-140,Math.PI/2,0,"ceiling");addStructuralMesh(PG(12,40),floorMat,0,0,-235,-Math.PI/2,0,"floor");addStructuralMesh(PG(12,40),ceilingMat,0,16,-235,Math.PI/2,0,"ceiling");
     wallObjects.push(addStructuralMesh(PG(69,30),wallMat,-40.5,15,-65),addStructuralMesh(PG(69,30),wallMat,40.5,15,-65),addStructuralMesh(PG(69,30),wallMat,-40.5,15,-215),addStructuralMesh(PG(69,30),wallMat,40.5,15,-215),addStructuralMesh(PG(150,30),wallMat,-75,15,-140,0,Math.PI/2),addStructuralMesh(PG(150,30),wallMat,75,15,-140,0,-Math.PI/2),addStructuralMesh(PG(40,16),wallMat,-6,8,-235,0,Math.PI/2),addStructuralMesh(PG(40,16),wallMat,6,8,-235,0,-Math.PI/2));
     addStructuralMesh(PG(150,150),floorMat,0,0,-330,-Math.PI/2,0,"floor");addStructuralMesh(PG(150,150),ceilingMat,0,30,-330,Math.PI/2,0,"ceiling");
@@ -898,26 +915,41 @@
       playExplosionSound();const l=new T.PointLight(0xff5500,8,r*2);l.position.copy(pos);scene.add(l);setTimeout(()=>scene.remove(l),150);const rg=MESH(new T.RingGeometry(0.1,r,16),BM({color:0xff3300,side:T.DoubleSide}),pos.x,pos.y+0.1,pos.z,Math.PI/2);scene.add(rg);setTimeout(()=>scene.remove(rg),250);let k=false;
       activeZombies.forEach(z=>{if(!z.deadAndShrinking&&z.meshParts.group.position.distanceTo(pos)<=r){setZombieStage(z,z.stage-dmg);if(z.deadAndShrinking){addPoints(20);k=true}}});if(k){rebuildZombieHitboxes();checkRoundEnd()}
     }
+
     function getConstrainedPosition(p){
-      let x=p.x,z=p.z;if(!unlockedDoors[0]&&z<-23)z=-23;if(!unlockedDoors[1]&&z<-63)z=-63;if(!unlockedDoors[2]&&z<-213)z=-213;if(!unlockedDoors[3]&&z<-254)z=-254;
+      let x=p.x, z=p.z;
+      if(!unlockedDoors[0]&&z<-23)z=-23;
+      if(!unlockedDoors[1]&&z<-63)z=-63;
+      if(!unlockedDoors[2]&&z<-213)z=-213;
+      if(!unlockedDoors[3]&&z<-254)z=-254;
+
       if(p.y<-40){p.x=Math.max(-115,Math.min(115,x));p.z=Math.max(-445,Math.min(-215,z));return p}
-      
-      // First room smooth corner bypass routing
-      if(z<=25&&z>=-25){
-        x=Math.max(-23.5,Math.min(23.5,x));
-        z=Math.max(-25,Math.min(23.5,z));
-        // Prevent sticking precisely in the 4 diagonal corner pockets
-        if(x < -12 && z > 12) x = -12;
-        if(x > 12 && z > 12) x = 12;
-        if(x < -12 && z < -12) x = -12;
-        if(x > 12 && z < -12) x = 12;
-        if(z<-23.5&&(x<-4.5||x>4.5))z=-23.5;
+
+      // First Room bounds including the Left and Right Recessed Corridor loops
+      if(z<=25 && z>=-25){
+        let inLeftCorridor = (x >= -47 && x <= -25 && z >= -14 && z <= 14);
+        let inRightCorridor = (x >= 25 && x <= 47 && z >= -14 && z <= 14);
+        let inMainRoom = (x >= -23.5 && x <= 23.5 && z >= -25 && z <= 25);
+
+        if(!inMainRoom && !inLeftCorridor && !inRightCorridor) {
+          // Push back into bounds
+          if(x < -23.5 && x >= -47 && z >= -14 && z <= 14) {
+            // allow left corridor
+          } else if(x > 23.5 && x <= 47 && z >= -14 && z <= 14) {
+            // allow right corridor
+          } else {
+            x = Math.max(-23.5, Math.min(23.5, x));
+          }
+        }
+        z = Math.max(-25, Math.min(23.5, z));
+        if(z<-23.5 && (x<-4.5||x>4.5) && !inLeftCorridor && !inRightCorridor) z=-23.5;
       }
       else if(z<-25&&z>-65){x=Math.max(-4.5,Math.min(4.5,x))}
       else if(z<=-65&&z>=-215){x=Math.max(-73.5,Math.min(73.5,x));if(z>-66.5&&(x<-4.5||x>4.5))z=-66.5;if(z<-213.5&&(x<-4.5||x>4.5))z=-213.5;z=Math.max(-215,Math.min(-65,z))}
       else if(z<-215&&z>-255){x=Math.max(-4.5,Math.min(4.5,x))}
       else if(z<=-255&&z>=-405){x=Math.max(-73.5,Math.min(73.5,x));if(z>-256.5&&(x<-4.5||x>4.5))z=-256.5;if(z<-403.5)z=-403.5;z=Math.max(-405,Math.min(-255,z))}
-      p.x=x;p.z=z;return p;
+
+      p.x=x; p.z=z; return p;
     }
 
     function updateZombies(now){
@@ -1199,15 +1231,14 @@
       }
     }
 
-socket.on('hit_registered', data => {
-  let pts = data.pointsAwarded || (data.isHeadshot ? 40 : 20);
-  // REMOVED addPoints(pts) here so it doesn't double-add!
-  if (data.killed) {
-    txtDiv.innerHTML = data.isHeadshot ? `CRITICAL HEADSHOT KILL! +${pts} CREDITS` : `TARGET BANISHED! +${pts} CREDITS`;
-  } else {
-    txtDiv.innerHTML = data.isHeadshot ? `HEADSHOT HIT! +${pts} CREDITS` : `HIT REGISTERED! +${pts} CREDITS`;
-  }
-});
+    socket.on('hit_registered', data => {
+      let pts = data.pointsAwarded || (data.isHeadshot ? 40 : 20);
+      if (data.killed) {
+        txtDiv.innerHTML = data.isHeadshot ? `CRITICAL HEADSHOT KILL! +${pts} CREDITS` : `TARGET BANISHED! +${pts} CREDITS`;
+      } else {
+        txtDiv.innerHTML = data.isHeadshot ? `HEADSHOT HIT! +${pts} CREDITS` : `HIT REGISTERED! +${pts} CREDITS`;
+      }
+    });
 
     function createTeammateMesh(colorHex, name) {
       const g = GRP();

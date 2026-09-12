@@ -612,42 +612,83 @@
     const allBurrowHoles=[],holeInteractiveMeshes=[],dirtMaterial=SM({color:0x3a2418,roughness:0.9}),pitVoidMaterial=BM({color:0x080402});
     function createBurrowHole(sz,x,y,z){const hg=GRP();hg.position.set(x,y+0.02,z);const pb=MESH(CG(sz,sz,0.05,24),pitVoidMaterial);pb.userData={materialType:"pit_void"};hg.add(pb);const dl=[];for(let i=0;i<4;i++){let lm=MESH(CG(sz-i*0.2,sz-(i-1)*0.1,0.15,16),dirtMaterial,0,i*0.12,0);lm.userData={materialType:"dirt"};hg.add(lm);dl.push(lm)}scene.add(hg);pb.userData.holeIndex=allBurrowHoles.length;holeInteractiveMeshes.push(pb);allBurrowHoles.push({group:hg,hitMesh:pb,layers:dl,dirtCount:4,maxDirt:4,globalX:x,globalY:y,globalZ:z})}
     
-    // --- TRUE CORNER GARDEN HORROR STATUES & FLUSH BURROW HOLES ---
-    function createCornerStatue(x,y,z){
-      const g=GRP();g.position.set(x,y,z);
-      const stoneMat=SM({color:0x44484b,roughness:0.9,metalness:0.1});
-      const base=MESH(BG(2.2,0.6,2.2),stoneMat,0,0.3,0);
-      const pillar=MESH(CG(0.8,0.8,2.2,12),stoneMat,0,1.7,0);
-      const torso=MESH(BG(1.2,1.6,0.8),stoneMat,0,3.3,0);
-      const head=MESH(SG(0.5,12,12),stoneMat,0,4.4,0);
-      g.add(base,pillar,torso,head);
-      g.traverse(c=>{if(c.isMesh){c.userData={materialType:"stone"};generalEnvironmentMeshes.push(c)}});
+    // --- MEGA SCARY ZOMBIE DOG STATUE PATROLLERS IN EVERY CORNER ---
+    const zombieDogs = [];
+
+    function createMegaScaryDogStatue(x, y, z, patrolMinX, patrolMaxX, patrolMinZ, patrolMaxZ) {
+      const g = GRP();
+      g.position.set(x, y, z);
+      const furMat = SM({color: 0x1a1a1a, roughness: 0.8, metalness: 0.3});
+      const eyeMat = BM({color: 0xff0000});
+      const boneMat = SM({color: 0xcccccc, roughness: 0.5});
+
+      // Body & Spine
+      const body = MESH(BG(0.8, 0.9, 1.8), furMat, 0, 0.8, 0);
+      const head = MESH(BG(0.6, 0.6, 0.8), furMat, 0, 1.3, -0.9);
+      const snout = MESH(BG(0.4, 0.3, 0.6), furMat, 0, 1.1, -1.4);
+      
+      // Glowing Red Eyes
+      let le = MESH(SG(0.08), eyeMat, -0.2, 1.4, -1.25);
+      let re = le.clone(); re.position.x = 0.2;
+
+      // Exposed ribs/spine horror features
+      const spine1 = MESH(BG(0.2, 0.2, 0.4), boneMat, 0, 1.3, -0.2);
+      const spine2 = spine1.clone(); spine2.position.z = 0.2;
+      const spine3 = spine1.clone(); spine3.position.z = 0.6;
+
+      // Legs
+      const fl = MESH(CG(0.15, 0.1, 1.2), furMat, -0.35, 0.5, -0.6);
+      const fr = fl.clone(); fr.position.x = 0.35;
+      const bl = fl.clone(); bl.position.x = -0.35; bl.position.z = 0.6;
+      const br = fl.clone(); br.position.x = 0.35; br.position.z = 0.6;
+
+      g.add(body, head, snout, le, re, spine1, spine2, spine3, fl, fr, bl, br);
       scene.add(g);
+
+      zombieDogs.push({
+        group: g,
+        baseX: x, baseZ: z,
+        minX: patrolMinX, maxX: patrolMaxX,
+        minZ: patrolMinZ, maxZ: patrolMaxZ,
+        speed: 0.04,
+        direction: new V3(1, 0, 0)
+      });
     }
 
-    // Room 1: Starting Chamber True Corners (Tucked right into vertexes at ±22, ±22)
-    createCornerStatue(-22, 0, 22); createCornerStatue(22, 0, 22);
-    createCornerStatue(-22, 0, -22); createCornerStatue(22, 0, -22);
-    createBurrowHole(3, -16, 0, 16); createBurrowHole(3, 16, 0, 16);
-    createBurrowHole(3, -16, 0, -16); createBurrowHole(3, 16, 0, -16);
+    // Place true corner mega scary dog patrollers with tight patrolling zones that block entry
+    // Room 1 Starting Corner Dogs
+    createMegaScaryDogStatue(-22, 0, 22, -23, -15, 15, 23);
+    createMegaScaryDogStatue(22, 0, 22, 15, 23, 15, 23);
+    createMegaScaryDogStatue(-22, 0, -22, -23, -15, -23, -15);
+    createMegaScaryDogStatue(22, 0, -22, 15, 23, -23, -15);
 
-    // Room 2: Ballroom Arena True Corners (Tucked at ±68, ±68)
-    createCornerStatue(-68, 0, -75); createCornerStatue(68, 0, -75);
-    createCornerStatue(-68, 0, -205); createCornerStatue(68, 0, -205);
-    createBurrowHole(3.5, -55, 0, -85); createBurrowHole(3.5, 55, 0, -85);
-    createBurrowHole(3.5, -55, 0, -195); createBurrowHole(3.5, 55, 0, -195);
+    // Room 2 Ballroom Corner Dogs
+    createMegaScaryDogStatue(-68, 0, -75, -73, -60, -80, -70);
+    createMegaScaryDogStatue(68, 0, -75, 60, 73, -80, -70);
+    createMegaScaryDogStatue(-68, 0, -205, -73, -60, -210, -200);
+    createMegaScaryDogStatue(68, 0, -205, 60, 73, -210, -200);
 
-    // Room 3: Crypt / Pool Area True Corners
-    createCornerStatue(-68, 0, -265); createCornerStatue(68, 0, -265);
-    createCornerStatue(-68, 0, -395); createCornerStatue(68, 0, -395);
-    createBurrowHole(3.5, -55, 0, -275); createBurrowHole(3.5, 55, 0, -275);
-    createBurrowHole(3.5, -55, 0, -385); createBurrowHole(3.5, 55, 0, -385);
+    // Room 3 Crypt Corner Dogs
+    createMegaScaryDogStatue(-68, 0, -265, -73, -60, -270, -260);
+    createMegaScaryDogStatue(68, 0, -265, 60, 73, -270, -260);
+    createMegaScaryDogStatue(-68, 0, -395, -73, -60, -400, -390);
+    createMegaScaryDogStatue(68, 0, -395, 60, 73, -400, -390);
 
-    // Room 4: Underground Basement / Catacombs True Corners
-    createCornerStatue(-105, -79.8, -230); createCornerStatue(105, -79.8, -230);
-    createCornerStatue(-105, -79.8, -430); createCornerStatue(105, -79.8, -430);
-    createBurrowHole(4, -90, -79.8, -240); createBurrowHole(4, 90, -79.8, -240);
-    createBurrowHole(4, -90, -79.8, -420); createBurrowHole(4, 90, -79.8, -420);
+    // Room 4 Basement Corner Dogs
+    createMegaScaryDogStatue(-105, -79.8, -230, -112, -98, -235, -225);
+    createMegaScaryDogStatue(105, -79.8, -230, 98, 112, -235, -225);
+    createMegaScaryDogStatue(-105, -79.8, -430, -112, -98, -435, -425);
+    createMegaScaryDogStatue(105, -79.8, -430, 98, 112, -435, -425);
+
+    // Flush burrow holes right alongside the patrol zones
+    createBurrowHole(3, -18, 0, 18); createBurrowHole(3, 18, 0, 18);
+    createBurrowHole(3, -18, 0, -18); createBurrowHole(3, 18, 0, -18);
+    createBurrowHole(3.5, -55, 0, -75); createBurrowHole(3.5, 55, 0, -75);
+    createBurrowHole(3.5, -55, 0, -205); createBurrowHole(3.5, 55, 0, -205);
+    createBurrowHole(3.5, -55, 0, -265); createBurrowHole(3.5, 55, 0, -265);
+    createBurrowHole(3.5, -55, 0, -395); createBurrowHole(3.5, 55, 0, -395);
+    createBurrowHole(4, -90, -79.8, -230); createBurrowHole(4, 90, -79.8, -230);
+    createBurrowHole(4, -90, -79.8, -430); createBurrowHole(4, 90, -79.8, -430);
 
     // Original legacy center/pathway holes preserved for progression matching
     createBurrowHole(3,-12,0,10);createBurrowHole(3,12,0,-10);createBurrowHole(3.5,-30,0,-110);createBurrowHole(3.5,30,0,-170);createBurrowHole(3.5,-45,0,-300);createBurrowHole(3.5,45,0,-360);createBurrowHole(4,-45,-79.8,-345);createBurrowHole(4,45,-79.8,-315);
@@ -950,6 +991,7 @@
         if(rp.mesh) allPlayers.push({ id: rp.data.socketId, pos: rp.mesh.position });
       });
 
+      // Update Zombie Pathing
       for(let i=activeZombies.length-1;i>=0;i--){
         const zb=activeZombies[i],parts=zb.meshParts;
         if(zb.deadAndShrinking){scene.remove(parts.group);activeZombies.splice(i,1);chg=true;continue}
@@ -999,6 +1041,26 @@
           }
         }
       }
+
+      // Update Scary Corner Dog Patrollers
+      zombieDogs.forEach(dog => {
+        dog.group.position.addScaledVector(dog.direction, dog.speed);
+        if(dog.group.position.x > dog.maxX || dog.group.position.x < dog.minX) dog.direction.x *= -1;
+        if(dog.group.position.z > dog.maxZ || dog.group.position.z < dog.minZ) dog.direction.z *= -1;
+        dog.group.lookAt(dog.group.position.clone().add(dog.direction));
+
+        // If player enters the corner trap zone, attack/eat them!
+        let allPlayersCheck = [playerRig.position];
+        Object.values(remotePlayers).forEach(rp => { if(rp.mesh) allPlayersCheck.push(rp.mesh.position); });
+        allPlayersCheck.forEach(pp => {
+          if (dog.group.position.distanceTo(pp) < 3.0 && Math.abs(dog.group.position.y - pp.y) < 5.0) {
+            playZombieBiteSound();
+            damagePlayer();
+            txtDiv.innerHTML = "THE CORNER HOUND TORE THROUGH YOUR FLESH!";
+          }
+        });
+      });
+
       if(!isGameOver&&machineGroup.parent&&playerRig.position.distanceTo(machineGroup.position)<10&&now-robotMercState.lastProximitySpeechTime>15000){robotMercState.lastProximitySpeechTime=now;speakRobotVoice(getUniqueRandomLine(robotMercState.active))}
       if(chg){rebuildZombieHitboxes();checkRoundEnd()}
     }

@@ -612,77 +612,48 @@
     const allBurrowHoles=[],holeInteractiveMeshes=[],dirtMaterial=SM({color:0x3a2418,roughness:0.9}),pitVoidMaterial=BM({color:0x080402});
     function createBurrowHole(sz,x,y,z){const hg=GRP();hg.position.set(x,y+0.02,z);const pb=MESH(CG(sz,sz,0.05,24),pitVoidMaterial);pb.userData={materialType:"pit_void"};hg.add(pb);const dl=[];for(let i=0;i<4;i++){let lm=MESH(CG(sz-i*0.2,sz-(i-1)*0.1,0.15,16),dirtMaterial,0,i*0.12,0);lm.userData={materialType:"dirt"};hg.add(lm);dl.push(lm)}scene.add(hg);pb.userData.holeIndex=allBurrowHoles.length;holeInteractiveMeshes.push(pb);allBurrowHoles.push({group:hg,hitMesh:pb,layers:dl,dirtCount:4,maxDirt:4,globalX:x,globalY:y,globalZ:z})}
     
-    // --- MEGA SCARY ZOMBIE DOG STATUE PATROLLERS IN EVERY CORNER ---
-    const zombieDogs = [];
+    // --- ROTATING HORROR SAWBLADES IN EVERY CORNER ---
+    const hazardSaws = [];
 
-    function createMegaScaryDogStatue(x, y, z, patrolMinX, patrolMaxX, patrolMinZ, patrolMaxZ) {
+    function createCornerCircularSaw(x, y, z) {
       const g = GRP();
       g.position.set(x, y, z);
-      const furMat = SM({color: 0x1a1a1a, roughness: 0.8, metalness: 0.3});
-      const eyeMat = BM({color: 0xff0000});
-      const boneMat = SM({color: 0xcccccc, roughness: 0.5});
+      const bladeMat = SM({color: 0xcccccc, metalness: 0.9, roughness: 0.2});
+      const teethMat = BM({color: 0xff3300});
 
-      // Body & Spine
-      const body = MESH(BG(0.8, 0.9, 1.8), furMat, 0, 0.8, 0);
-      const head = MESH(BG(0.6, 0.6, 0.8), furMat, 0, 1.3, -0.9);
-      const snout = MESH(BG(0.4, 0.3, 0.6), furMat, 0, 1.1, -1.4);
-      
-      // Glowing Red Eyes
-      let le = MESH(SG(0.08), eyeMat, -0.2, 1.4, -1.25);
-      let re = le.clone(); re.position.x = 0.2;
+      const sawGroup = GRP();
+      // Create saw blade disc
+      const disc = MESH(new T.CylinderGeometry(1.8, 1.8, 0.1, 16), bladeMat, 0, 0.5, 0);
+      sawGroup.add(disc);
 
-      // Exposed ribs/spine horror features
-      const spine1 = MESH(BG(0.2, 0.2, 0.4), boneMat, 0, 1.3, -0.2);
-      const spine2 = spine1.clone(); spine2.position.z = 0.2;
-      const spine3 = spine1.clone(); spine3.position.z = 0.6;
-
-      // Legs
-      const fl = MESH(CG(0.15, 0.1, 1.2), furMat, -0.35, 0.5, -0.6);
-      const fr = fl.clone(); fr.position.x = 0.35;
-      const bl = fl.clone(); bl.position.x = -0.35; bl.position.z = 0.6;
-      const br = fl.clone(); br.position.x = 0.35; br.position.z = 0.6;
-
-      g.add(body, head, snout, le, re, spine1, spine2, spine3, fl, fr, bl, br);
+      g.add(sawGroup);
       scene.add(g);
 
-      zombieDogs.push({
-        group: g,
-        baseX: x, baseZ: z,
-        minX: patrolMinX, maxX: patrolMaxX,
-        minZ: patrolMinZ, maxZ: patrolMaxZ,
-        speed: 0.04,
-        direction: new V3(1, 0, 0)
+      hazardSaws.push({
+        group: sawGroup,
+        position: new V3(x, y, z),
+        angle: Math.random() * Math.PI * 2,
+        radius: 1.5,
+        speed: 0.08
       });
     }
 
-    // Place true corner mega scary dog patrollers with tight patrolling zones that block entry
-    // Room 1 Starting Corner Dogs
-    createMegaScaryDogStatue(-22, 0, 22, -23, -15, 15, 23);
-    createMegaScaryDogStatue(22, 0, 22, 15, 23, 15, 23);
-    createMegaScaryDogStatue(-22, 0, -22, -23, -15, -23, -15);
-    createMegaScaryDogStatue(22, 0, -22, 15, 23, -23, -15);
+    // Place true corner rotating circular saws
+    createCornerCircularSaw(-22, 0, 22); createCornerCircularSaw(22, 0, 22);
+    createCornerCircularSaw(-22, 0, -22); createCornerCircularSaw(22, 0, -22);
 
-    // Room 2 Ballroom Corner Dogs
-    createMegaScaryDogStatue(-68, 0, -75, -73, -60, -80, -70);
-    createMegaScaryDogStatue(68, 0, -75, 60, 73, -80, -70);
-    createMegaScaryDogStatue(-68, 0, -205, -73, -60, -210, -200);
-    createMegaScaryDogStatue(68, 0, -205, 60, 73, -210, -200);
+    createCornerCircularSaw(-68, 0, -75); createCornerCircularSaw(68, 0, -75);
+    createCornerCircularSaw(-68, 0, -205); createCornerCircularSaw(68, 0, -205);
 
-    // Room 3 Crypt Corner Dogs
-    createMegaScaryDogStatue(-68, 0, -265, -73, -60, -270, -260);
-    createMegaScaryDogStatue(68, 0, -265, 60, 73, -270, -260);
-    createMegaScaryDogStatue(-68, 0, -395, -73, -60, -400, -390);
-    createMegaScaryDogStatue(68, 0, -395, 60, 73, -400, -390);
+    createCornerCircularSaw(-68, 0, -265); createCornerCircularSaw(68, 0, -265);
+    createCornerCircularSaw(-68, 0, -395); createCornerCircularSaw(68, 0, -395);
 
-    // Room 4 Basement Corner Dogs
-    createMegaScaryDogStatue(-105, -79.8, -230, -112, -98, -235, -225);
-    createMegaScaryDogStatue(105, -79.8, -230, 98, 112, -235, -225);
-    createMegaScaryDogStatue(-105, -79.8, -430, -112, -98, -435, -425);
-    createMegaScaryDogStatue(105, -79.8, -430, 98, 112, -435, -425);
+    createCornerCircularSaw(-105, -79.8, -230); createCornerCircularSaw(105, -79.8, -230);
+    createCornerCircularSaw(-105, -79.8, -430); createCornerCircularSaw(105, -79.8, -430);
 
-    // Flush burrow holes right alongside the patrol zones
-    createBurrowHole(3, -18, 0, 18); createBurrowHole(3, 18, 0, 18);
-    createBurrowHole(3, -18, 0, -18); createBurrowHole(3, 18, 0, -18);
+    // Burrow holes embedded right beside hazards
+    createBurrowHole(3, -16, 0, 16); createBurrowHole(3, 16, 0, 16);
+    createBurrowHole(3, -16, 0, -16); createBurrowHole(3, 16, 0, -16);
     createBurrowHole(3.5, -55, 0, -75); createBurrowHole(3.5, 55, 0, -75);
     createBurrowHole(3.5, -55, 0, -205); createBurrowHole(3.5, 55, 0, -205);
     createBurrowHole(3.5, -55, 0, -265); createBurrowHole(3.5, 55, 0, -265);
@@ -991,7 +962,6 @@
         if(rp.mesh) allPlayers.push({ id: rp.data.socketId, pos: rp.mesh.position });
       });
 
-      // Update Zombie Pathing
       for(let i=activeZombies.length-1;i>=0;i--){
         const zb=activeZombies[i],parts=zb.meshParts;
         if(zb.deadAndShrinking){scene.remove(parts.group);activeZombies.splice(i,1);chg=true;continue}
@@ -1042,21 +1012,19 @@
         }
       }
 
-      // Update Scary Corner Dog Patrollers
-      zombieDogs.forEach(dog => {
-        dog.group.position.addScaledVector(dog.direction, dog.speed);
-        if(dog.group.position.x > dog.maxX || dog.group.position.x < dog.minX) dog.direction.x *= -1;
-        if(dog.group.position.z > dog.maxZ || dog.group.position.z < dog.minZ) dog.direction.z *= -1;
-        dog.group.lookAt(dog.group.position.clone().add(dog.direction));
+      // Update Rotating Circular Saws in Corners
+      hazardSaws.forEach(saw => {
+        saw.angle += saw.speed;
+        saw.group.rotation.y = saw.angle;
 
-        // If player enters the corner trap zone, attack/eat them!
+        // Check if player steps into corner saw zone
         let allPlayersCheck = [playerRig.position];
         Object.values(remotePlayers).forEach(rp => { if(rp.mesh) allPlayersCheck.push(rp.mesh.position); });
         allPlayersCheck.forEach(pp => {
-          if (dog.group.position.distanceTo(pp) < 3.0 && Math.abs(dog.group.position.y - pp.y) < 5.0) {
+          if (saw.position.distanceTo(pp) < 2.5 && Math.abs(saw.position.y - pp.y) < 5.0) {
             playZombieBiteSound();
             damagePlayer();
-            txtDiv.innerHTML = "THE CORNER HOUND TORE THROUGH YOUR FLESH!";
+            txtDiv.innerHTML = "THE CORNER SAWBLADE SLICED YOU!";
           }
         });
       });

@@ -612,54 +612,54 @@
     const allBurrowHoles=[],holeInteractiveMeshes=[],dirtMaterial=SM({color:0x3a2418,roughness:0.9}),pitVoidMaterial=BM({color:0x080402});
     function createBurrowHole(sz,x,y,z){const hg=GRP();hg.position.set(x,y+0.02,z);const pb=MESH(CG(sz,sz,0.05,24),pitVoidMaterial);pb.userData={materialType:"pit_void"};hg.add(pb);const dl=[];for(let i=0;i<4;i++){let lm=MESH(CG(sz-i*0.2,sz-(i-1)*0.1,0.15,16),dirtMaterial,0,i*0.12,0);lm.userData={materialType:"dirt"};hg.add(lm);dl.push(lm)}scene.add(hg);pb.userData.holeIndex=allBurrowHoles.length;holeInteractiveMeshes.push(pb);allBurrowHoles.push({group:hg,hitMesh:pb,layers:dl,dirtCount:4,maxDirt:4,globalX:x,globalY:y,globalZ:z})}
     
-    // --- ROTATING HORROR SAWBLADES IN EVERY CORNER ---
-    const hazardSaws = [];
+    // --- ROTATING HORROR SAWBLADES IN LARGER ROOMS ORBITING CORNERS ---
+    const orbitingSaws = [];
 
-    function createCornerCircularSaw(x, y, z) {
+    function createOrbitingSaw(centerX, centerZ, y, radius, speed) {
       const g = GRP();
-      g.position.set(x, y, z);
-      const bladeMat = SM({color: 0xcccccc, metalness: 0.9, roughness: 0.2});
-      const teethMat = BM({color: 0xff3300});
-
-      const sawGroup = GRP();
-      // Create saw blade disc
-      const disc = MESH(new T.CylinderGeometry(1.8, 1.8, 0.1, 16), bladeMat, 0, 0.5, 0);
-      sawGroup.add(disc);
-
-      g.add(sawGroup);
+      g.position.set(centerX, y, centerZ);
+      const bladeMat = SM({color:0xcccccc, metalness:0.9, roughness:0.2});
+      const disc = MESH(new T.CylinderGeometry(1.6, 1.6, 0.1, 16), bladeMat, 0, 0.4, 0);
+      g.add(disc);
       scene.add(g);
 
-      hazardSaws.push({
-        group: sawGroup,
-        position: new V3(x, y, z),
+      orbitingSaws.push({
+        group: g,
+        cx: centerX, cz: centerZ,
+        y: y,
+        radius: radius,
         angle: Math.random() * Math.PI * 2,
-        radius: 1.5,
-        speed: 0.08
+        speed: speed
       });
     }
 
-    // Place true corner rotating circular saws
-    createCornerCircularSaw(-22, 0, 22); createCornerCircularSaw(22, 0, 22);
-    createCornerCircularSaw(-22, 0, -22); createCornerCircularSaw(22, 0, -22);
+    // Room 1 (Smaller starting room - fixed corner hazard saws)
+    createBurrowHole(3, -18, 0, 18); createBurrowHole(3, 18, 0, 18);
+    createBurrowHole(3, -18, 0, -18); createBurrowHole(3, 18, 0, -18);
 
-    createCornerCircularSaw(-68, 0, -75); createCornerCircularSaw(68, 0, -75);
-    createCornerCircularSaw(-68, 0, -205); createCornerCircularSaw(68, 0, -205);
+    // Room 2 (Ballroom - Orbiting circular saws that sweep through corners)
+    createOrbitingSaw(-55, -85, 0, 12, 0.03);
+    createOrbitingSaw(55, -85, 0, 12, -0.03);
+    createOrbitingSaw(-55, -195, 0, 12, 0.03);
+    createOrbitingSaw(55, -195, 0, 12, -0.03);
+    createBurrowHole(3.5, -55, 0, -85); createBurrowHole(3.5, 55, 0, -85);
+    createBurrowHole(3.5, -55, 0, -195); createBurrowHole(3.5, 55, 0, -195);
 
-    createCornerCircularSaw(-68, 0, -265); createCornerCircularSaw(68, 0, -265);
-    createCornerCircularSaw(-68, 0, -395); createCornerCircularSaw(68, 0, -395);
+    // Room 3 (Crypt / Pool - Orbiting circular saws that sweep through corners)
+    createOrbitingSaw(-55, -275, 0, 12, -0.03);
+    createOrbitingSaw(55, -275, 0, 12, 0.03);
+    createOrbitingSaw(-55, -385, 0, 12, -0.03);
+    createOrbitingSaw(55, -385, 0, 12, 0.03);
+    createBurrowHole(3.5, -55, 0, -275); createBurrowHole(3.5, 55, 0, -275);
+    createBurrowHole(3.5, -55, 0, -385); createBurrowHole(3.5, 55, 0, -385);
 
-    createCornerCircularSaw(-105, -79.8, -230); createCornerCircularSaw(105, -79.8, -230);
-    createCornerCircularSaw(-105, -79.8, -430); createCornerCircularSaw(105, -79.8, -430);
-
-    // Burrow holes embedded right beside hazards
-    createBurrowHole(3, -16, 0, 16); createBurrowHole(3, 16, 0, 16);
-    createBurrowHole(3, -16, 0, -16); createBurrowHole(3, 16, 0, -16);
-    createBurrowHole(3.5, -55, 0, -75); createBurrowHole(3.5, 55, 0, -75);
-    createBurrowHole(3.5, -55, 0, -205); createBurrowHole(3.5, 55, 0, -205);
-    createBurrowHole(3.5, -55, 0, -265); createBurrowHole(3.5, 55, 0, -265);
-    createBurrowHole(3.5, -55, 0, -395); createBurrowHole(3.5, 55, 0, -395);
-    createBurrowHole(4, -90, -79.8, -230); createBurrowHole(4, 90, -79.8, -230);
-    createBurrowHole(4, -90, -79.8, -430); createBurrowHole(4, 90, -79.8, -430);
+    // Room 4 (Underground Basement - Orbiting circular saws that sweep through corners)
+    createOrbitingSaw(-90, -240, -79.8, 14, 0.035);
+    createOrbitingSaw(90, -240, -79.8, 14, -0.035);
+    createOrbitingSaw(-90, -420, -79.8, 14, -0.035);
+    createOrbitingSaw(90, -420, -79.8, 14, 0.035);
+    createBurrowHole(4, -90, -79.8, -240); createBurrowHole(4, 90, -79.8, -240);
+    createBurrowHole(4, -90, -79.8, -420); createBurrowHole(4, 90, -79.8, -420);
 
     // Original legacy center/pathway holes preserved for progression matching
     createBurrowHole(3,-12,0,10);createBurrowHole(3,12,0,-10);createBurrowHole(3.5,-30,0,-110);createBurrowHole(3.5,30,0,-170);createBurrowHole(3.5,-45,0,-300);createBurrowHole(3.5,45,0,-360);createBurrowHole(4,-45,-79.8,-345);createBurrowHole(4,45,-79.8,-315);
@@ -1012,19 +1012,21 @@
         }
       }
 
-      // Update Rotating Circular Saws in Corners
-      hazardSaws.forEach(saw => {
+      // Update Orbiting Saws in Larger Rooms
+      orbitingSaws.forEach(saw => {
         saw.angle += saw.speed;
-        saw.group.rotation.y = saw.angle;
+        let wx = saw.cx + Math.cos(saw.angle) * saw.radius;
+        let wz = saw.cz + Math.sin(saw.angle) * saw.radius;
+        saw.group.position.set(wx, saw.y, wz);
+        saw.group.rotation.y += 0.2;
 
-        // Check if player steps into corner saw zone
         let allPlayersCheck = [playerRig.position];
         Object.values(remotePlayers).forEach(rp => { if(rp.mesh) allPlayersCheck.push(rp.mesh.position); });
         allPlayersCheck.forEach(pp => {
-          if (saw.position.distanceTo(pp) < 2.5 && Math.abs(saw.position.y - pp.y) < 5.0) {
+          if (saw.group.position.distanceTo(pp) < 2.2 && Math.abs(saw.y - pp.y) < 5.0) {
             playZombieBiteSound();
             damagePlayer();
-            txtDiv.innerHTML = "THE CORNER SAWBLADE SLICED YOU!";
+            txtDiv.innerHTML = "THE ORBITING SAWBLADE SLICED YOU!";
           }
         });
       });

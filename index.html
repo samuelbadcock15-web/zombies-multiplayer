@@ -1109,10 +1109,31 @@
         if(t==="double_tap"){if(!hasDoubleTap){if(playerPoints>=2000){playerPoints-=2000;$('score-val').innerText=playerPoints;hasDoubleTap=true;updateTacticalHUD();updatePerkScreens();txtDiv.innerHTML="DOUBLE TAP II ACQUIRED! DAMAGE & FIRE RATE DOUBLED.";playMysteryBoxSound()}else txtDiv.innerHTML="DOUBLE TAP II COSTS 2000 CREDITS."}else txtDiv.innerHTML="ALREADY PURCHASED DOUBLE TAP II!";return}
         if(t==="stamin_up"){if(!hasStaminUp){if(playerPoints>=2000){playerPoints-=2000;$('score-val').innerText=playerPoints;hasStaminUp=true;updatePerkScreens();txtDiv.innerHTML="STAMIN-UP ACQUIRED! RUNNING SPEED INCREASED.";playMysteryBoxSound()}else txtDiv.innerHTML="STAMIN-UP COSTS 2000 CREDITS."}else txtDiv.innerHTML="ALREADY PURCHASED STAMIN-UP!";return}
       }
-      let dh=raycaster.intersectObjects(doorArray.filter((d,i)=>!unlockedDoors[i]));
-      if(dh.length>0&&dh[0].distance<12){
-        let td=dh[0].object,di=td.userData.doorIndex;
-        if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
+      
+      let dh = raycaster.intersectObjects(doorArray.filter((d, i) => !unlockedDoors[i]));
+      if (dh.length > 0 && dh[0].distance < 12) {
+        let td = dh[0].object, di = td.userData.doorIndex;
+        if (playerPoints >= 50) {
+          playerPoints -= 50;
+          $('score-val').innerText = playerPoints;
+
+          // Determine paired doors: (0 & 1) or (2 & 3)
+          let pairedDoors = [];
+          if (di === 0 || di === 1) pairedDoors = [0, 1];
+          else if (di === 2 || di === 3) pairedDoors = [2, 3];
+          else pairedDoors = [di];
+
+          // Unlock and remove both barriers from the scene
+          pairedDoors.forEach(idx => {
+            unlockedDoors[idx] = true;
+            scene.remove(doorArray[idx]);
+          });
+
+          txtDiv.innerHTML = `CORRIDOR DOORS ${pairedDoors[0] + 1} & ${pairedDoors[1] + 1} UNLOCKED! ADVANCE FORWARD.`;
+        } else {
+          txtDiv.innerHTML = "NEED 50 CREDITS TO UNLOCK THIS ROOM.";
+        }
+        return;
       }
 
       // UPGRADE MACHINE TOUCH INTERACTION HANDLER (AUTO-COLLECT)

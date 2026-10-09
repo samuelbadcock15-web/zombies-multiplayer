@@ -223,11 +223,9 @@ socket.on('zombie_hit', (data) => {
 });
 
 socket.on('unlock_door', (doorIndex) => {
-  // Find which lobby the socket is currently in
   const lobby = lobbies.find(l => l.slots.some(s => s && s.socketId === socket.id));
   if (!lobby) return;
 
-  // Corridor 1 links doors 0 & 1; Corridor 2 links doors 2 & 3
   let doorsToOpen = [];
   if (doorIndex === 0 || doorIndex === 1) {
     doorsToOpen = [0, 1];
@@ -239,12 +237,6 @@ socket.on('unlock_door', (doorIndex) => {
 
   doorsToOpen.forEach((idx) => {
     io.to(`lobby_${lobby.id}`).emit('door_unlocked', { doorIndex: idx });
-  });
-});
-
-  doorsToOpen.forEach((idx) => {
-    if (lobby.doors) lobby.doors[idx] = true;
-    io.to(lobby.id).emit('door_unlocked', { doorIndex: idx });
   });
 });
 

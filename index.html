@@ -590,26 +590,15 @@
     let doorArray=[-24.8,-64.8,-214.8,-254.8].map((z,i)=>{let d=MESH(BG(12,16,0.4),barrierMat,0,8,z);scene.add(d);d.userData={materialType:"door",doorIndex:i};return d});
 
 socket.on('door_unlocked', data => {
-  const unlockSingleDoor = (idx) => {
-    if (!unlockedDoors[idx]) {
-      unlockedDoors[idx] = true;
-      if (doorArray[idx]) scene.remove(doorArray[idx]);
-    }
-  };
-
   const idx = data.doorIndex;
-  if (idx === 0 || idx === 1) {
-    unlockSingleDoor(0);
-    unlockSingleDoor(1);
-    txtDiv.innerHTML = "DOORS 1 & 2 UNLOCKED BY SQUAD! ADVANCE!";
-  } else if (idx === 2 || idx === 3) {
-    unlockSingleDoor(2);
-    unlockSingleDoor(3);
-    txtDiv.innerHTML = "DOORS 3 & 4 UNLOCKED BY SQUAD! ADVANCE!";
-  } else {
-    unlockSingleDoor(idx);
-    txtDiv.innerHTML = `DOOR ${idx + 1} UNLOCKED BY SQUAD! ADVANCE!`;
+  unlockedDoors[idx] = true;
+
+  if (doorArray[idx] && doorArray[idx].parent) {
+    scene.remove(doorArray[idx]);
   }
+
+  const corridorName = (idx === 0 || idx === 1) ? "FIRST CORRIDOR" : "SECOND CORRIDOR";
+  txtDiv.innerHTML = `${corridorName} CLEARED! SQUAD ADVANCE!`;
 });
 
     const mysteryBoxGroup=GRP();mysteryBoxGroup.position.copy(boxRoomLocations[0].pos);scene.add(mysteryBoxGroup);

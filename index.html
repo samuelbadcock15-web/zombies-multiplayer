@@ -589,11 +589,28 @@
     let unlockedDoors=[false,false,false,false],barrierMat=SM({color:0xaa2222,transparent:true,opacity:0.6,emissive:0xff0000,emissiveIntensity:0.5});
     let doorArray=[-24.8,-64.8,-214.8,-254.8].map((z,i)=>{let d=MESH(BG(12,16,0.4),barrierMat,0,8,z);scene.add(d);d.userData={materialType:"door",doorIndex:i};return d});
 
-    socket.on('door_unlocked', data => {
-      unlockedDoors[data.doorIndex] = true;
-      scene.remove(doorArray[data.doorIndex]);
-      txtDiv.innerHTML = `DOOR ${data.doorIndex + 1} UNLOCKED BY SQUAD! ADVANCE!`;
-    });
+socket.on('door_unlocked', data => {
+  const unlockSingleDoor = (idx) => {
+    if (!unlockedDoors[idx]) {
+      unlockedDoors[idx] = true;
+      if (doorArray[idx]) scene.remove(doorArray[idx]);
+    }
+  };
+
+  const idx = data.doorIndex;
+  if (idx === 0 || idx === 1) {
+    unlockSingleDoor(0);
+    unlockSingleDoor(1);
+    txtDiv.innerHTML = "DOORS 1 & 2 UNLOCKED BY SQUAD! ADVANCE!";
+  } else if (idx === 2 || idx === 3) {
+    unlockSingleDoor(2);
+    unlockSingleDoor(3);
+    txtDiv.innerHTML = "DOORS 3 & 4 UNLOCKED BY SQUAD! ADVANCE!";
+  } else {
+    unlockSingleDoor(idx);
+    txtDiv.innerHTML = `DOOR ${idx + 1} UNLOCKED BY SQUAD! ADVANCE!`;
+  }
+});
 
     const mysteryBoxGroup=GRP();mysteryBoxGroup.position.copy(boxRoomLocations[0].pos);scene.add(mysteryBoxGroup);
     const boxBaseMesh=MESH(BG(3.6,2.2,2.2),SM({color:0x3a2418,metalness:0.5,roughness:0.4}),0,1.1,0);mysteryBoxGroup.add(boxBaseMesh);
@@ -1110,31 +1127,27 @@
         if(t==="stamin_up"){if(!hasStaminUp){if(playerPoints>=2000){playerPoints-=2000;$('score-val').innerText=playerPoints;hasStaminUp=true;updatePerkScreens();txtDiv.innerHTML="STAMIN-UP ACQUIRED! RUNNING SPEED INCREASED.";playMysteryBoxSound()}else txtDiv.innerHTML="STAMIN-UP COSTS 2000 CREDITS."}else txtDiv.innerHTML="ALREADY PURCHASED STAMIN-UP!";return}
       }
       
-      let dh = raycaster.intersectObjects(doorArray.filter((d, i) => !unlockedDoors[i]));
-      if (dh.length > 0 && dh[0].distance < 12) {
-        let td = dh[0].object, di = td.userData.doorIndex;
-        if (playerPoints >= 50) {
-          playerPoints -= 50;
-          $('score-val').innerText = playerPoints;
+      let dh=raycaster.intersectObjects(doorArray.filter((d,i)=>!unlockedDoors[i]));
+if(dh.length>0&&dh[0].distance<12){
+  let td=dh[0].object,di=td.userData.doorIndex;
+  if(playerPoints>=50){
+    playerPoints-=50;
+    $('score-val').innerText=playerPoints;
+    
+    // Determine paired door target
+    let targetIndex = di;
+    if (di === 0 || di === 1) targetIndex = 0;
+    else if (di === 2 || di === 3) targetIndex = 2;
 
-          // Determine paired doors: (0 & 1) or (2 & 3)
-          let pairedDoors = [];
-          if (di === 0 || di === 1) pairedDoors = [0, 1];
-          else if (di === 2 || di === 3) pairedDoors = [2, 3];
-          else pairedDoors = [di];
-
-          // Unlock and remove both barriers from the scene
-          pairedDoors.forEach(idx => {
-            unlockedDoors[idx] = true;
-            scene.remove(doorArray[idx]);
-          });
-
-          txtDiv.innerHTML = `CORRIDOR DOORS ${pairedDoors[0] + 1} & ${pairedDoors[1] + 1} UNLOCKED! ADVANCE FORWARD.`;
-        } else {
-          txtDiv.innerHTML = "NEED 50 CREDITS TO UNLOCK THIS ROOM.";
-        }
-        return;
-      }
+    socket.emit('unlock_door', targetIndex);
+    txtDiv.innerHTML = (targetIndex === 0) 
+      ? "CORRIDOR 1 UNLOCKED! (DOORS 1 & 2 OPENED)" 
+      : "CORRIDOR 2 UNLOCKED! (DOORS 3 & 4 OPENED)";
+  } else {
+    txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";
+  }
+  return;
+}
 
       // UPGRADE MACHINE TOUCH INTERACTION HANDLER (AUTO-COLLECT)
       let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);

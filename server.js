@@ -222,9 +222,24 @@ socket.on('zombie_hit', (data) => {
   socket.emit('hit_registered', { zombieId: data.zombieId, isHeadshot: data.isHeadshot, killed: data.damage >= 3, pointsAwarded: pts });
 });
 
-  socket.on('unlock_door', (doorIndex) => {
-    io.emit('door_unlocked', { doorIndex });
+socket.on('unlock_door', (doorIndex) => {
+  const lobby = getPlayerLobby(socket.id); // Or your server's lobby lookup
+  if (!lobby) return;
+
+  let doorsToOpen = [];
+  if (doorIndex === 0 || doorIndex === 1) {
+    doorsToOpen = [0, 1];
+  } else if (doorIndex === 2 || doorIndex === 3) {
+    doorsToOpen = [2, 3];
+  } else {
+    doorsToOpen = [doorIndex];
+  }
+
+  doorsToOpen.forEach((idx) => {
+    if (lobby.doors) lobby.doors[idx] = true;
+    io.to(lobby.id).emit('door_unlocked', { doorIndex: idx });
   });
+});
 
   socket.on('award_points', ({ socketId, amount }) => {
     io.to(socketId).emit('grant_points', amount);

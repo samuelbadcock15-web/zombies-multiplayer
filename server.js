@@ -158,6 +158,11 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('client_robot_sync', data);
   });
 
+  // --- CIRCULAR SAW SYNC ROUTE ---
+  socket.on('host_saws_sync', (data) => {
+    socket.broadcast.emit('client_saws_sync', data);
+  });
+
   socket.on('host_round_sync', (round) => {
     socket.broadcast.emit('client_round_sync', round);
   });

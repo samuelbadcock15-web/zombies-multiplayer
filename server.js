@@ -17,14 +17,11 @@ const lobbies = [
 ];
 
 const playerColors = [0x00ffcc, 0xffaa00, 0xff0055, 0x9900ff];
-
-// Player-specific Upgrade Machine States tracked by socket.id
 const upgradeStates = {};
 
 io.on('connection', (socket) => {
-  console.log(`Player connected: ${socket.id}`);
+  console.log(`Marine connected: ${socket.id}`);
 
-  // Initialize player upgrade state
   upgradeStates[socket.id] = {
     active: false,
     timer: 0,
@@ -119,7 +116,6 @@ io.on('connection', (socket) => {
     });
   });
 
-  // --- INDEPENDENT PLAYER UPGRADE RITUAL ---
   socket.on('start_upgrade_ritual', (data) => {
     let state = upgradeStates[socket.id];
     if (state && !state.active) {
@@ -146,7 +142,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Master Sync Broadcasts
   socket.on('host_zombie_sync', (data) => {
     socket.broadcast.emit('client_zombie_sync', data);
   });
@@ -167,7 +162,6 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('client_round_sync', round);
   });
 
-  // Action & Visibility Relays
   socket.on('sync_hole_dig', (data) => {
     socket.broadcast.emit('sync_hole_dig', data);
   });
@@ -276,4 +270,3 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});

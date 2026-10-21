@@ -1011,16 +1011,17 @@
       rebuildZombieHitboxes();
     }
 
-    socket.on('client_zombie_sync', networkZombies => {
 socket.on('client_saws_sync', networkSaws => {
       networkSaws.forEach(ns => {
         const localSaw = activeCircularSaws.find(s => s.id === ns.id);
         if (localSaw) {
+          // Update position across X and Z
           localSaw.group.position.set(ns.x, localSaw.yLevel, ns.z);
+          // Spin the blade visually in a circular motion matching the host
           localSaw.blade.rotation.z = ns.rot;
         }
       });
-    });      
+    });     
 const localMap = new Map();
       activeZombies.forEach(z => localMap.set(z.id, z));
 
@@ -1770,13 +1771,18 @@ const localMap = new Map();
       // Animate hazard saws
       activeCircularSaws.forEach(saw => {
         if (isHost) {
+          // Host calculates movement path
           saw.angle += delta * saw.speed;
           let sx = saw.centerX + Math.sin(saw.angle) * saw.radius;
           let sz = saw.centerZ + Math.sin(saw.angle * 2) * (saw.radius * 0.8);
           saw.group.position.set(sx, saw.yLevel, sz);
           saw.blade.rotation.z += delta * 15;
+        } else {
+          // Non-hosts continuously spin the blade locally for smoothness between network ticks
+          saw.blade.rotation.z += delta * 15;
         }
 
+        // Collision check against player
         let pPos = playerRig.position.clone();
         if (Math.abs(pPos.y - saw.yLevel) < 3.0) {
           let dist = Math.hypot(pPos.x - saw.group.position.x, pPos.z - saw.group.position.z);

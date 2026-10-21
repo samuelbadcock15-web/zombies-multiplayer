@@ -20,7 +20,7 @@ const playerColors = [0x00ffcc, 0xffaa00, 0xff0055, 0x9900ff];
 const upgradeStates = {};
 
 io.on('connection', (socket) => {
-  console.log(`Player connected: ${socket.id}`);
+  console.log(`Marine connected: ${socket.id}`);
 
   upgradeStates[socket.id] = {
     active: false,
@@ -115,7 +115,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // --- INDEPENDENT PLAYER UPGRADE RITUAL ---
+  // Independent player upgrade ritual
   socket.on('start_upgrade_ritual', (data) => {
     let state = upgradeStates[socket.id];
     if (state && !state.active) {
@@ -163,7 +163,7 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('client_round_sync', round);
   });
 
-  // Barricades & Burrow Holes
+  // Barricades & Burrow Holes Sync
   socket.on('sync_hole_dig', (data) => {
     socket.broadcast.emit('sync_hole_dig', data);
   });
@@ -265,5 +265,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Outbreak Co-op Server running on port ${PORT}`);
+  console.log(`Multiplayer Outbreak Server running on port ${PORT}`);
 });

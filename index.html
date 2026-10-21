@@ -693,6 +693,12 @@
       });
     }
 
+// Room 1 Saws (Corners of the starting area)
+    createCircularSaw(-22, 22, 1, 3.5, "saw_r1_tl");
+    createCircularSaw(22, 22, 1, 3.5, "saw_r1_tr");
+    createCircularSaw(-22, -22, 1, 3.5, "saw_r1_bl");
+    createCircularSaw(22, -22, 1, 3.5, "saw_r1_br");
+
     // Room 2 Saws
     createCircularSaw(-70, -70, 2, 6.0);
     createCircularSaw(70, -70, 2, 6.0);
@@ -1006,7 +1012,16 @@
     }
 
     socket.on('client_zombie_sync', networkZombies => {
-      const localMap = new Map();
+socket.on('client_saws_sync', networkSaws => {
+      networkSaws.forEach(ns => {
+        const localSaw = activeCircularSaws.find(s => s.id === ns.id);
+        if (localSaw) {
+          localSaw.group.position.set(ns.x, localSaw.yLevel, ns.z);
+          localSaw.blade.rotation.z = ns.rot;
+        }
+      });
+    });      
+const localMap = new Map();
       activeZombies.forEach(z => localMap.set(z.id, z));
 
       const newActiveZombies = [];
@@ -1752,23 +1767,24 @@
       if(!gameActive || isGameOver) return;
       redOrbMesh.position.y = 7 + Math.sin(t * 0.003) * 0.8;
 
-      // Animate hazard saws in other halls
+      // Animate hazard saws
       activeCircularSaws.forEach(saw => {
-        saw.angle += delta * saw.speed;
-        let sx = saw.centerX + Math.sin(saw.angle) * saw.radius;
-        let sz = saw.centerZ + Math.sin(saw.angle * 2) * (saw.radius * 0.8);
-        saw.group.position.set(sx, saw.yLevel, sz);
-        saw.blade.rotation.z += delta * 15;
+        if (isHost) {
+          saw.angle += delta * saw.speed;
+          let sx = saw.centerX + Math.sin(saw.angle) * saw.radius;
+          let sz = saw.centerZ + Math.sin(saw.angle * 2) * (saw.radius * 0.8);
+          saw.group.position.set(sx, saw.yLevel, sz);
+          saw.blade.rotation.z += delta * 15;
+        }
 
         let pPos = playerRig.position.clone();
         if (Math.abs(pPos.y - saw.yLevel) < 3.0) {
-          let dist = Math.hypot(pPos.x - sx, pPos.z - sz);
+          let dist = Math.hypot(pPos.x - saw.group.position.x, pPos.z - saw.group.position.z);
           if (dist < 2.2) {
             damagePlayer();
           }
         }
       });
-
       if(robotMercState.active){
         robotMercState.durationTimer -= 0.016;
         if(robotMercState.durationTimer <= 0){
@@ -2019,7 +2035,7 @@
 
       simulateStickmanMatch(t);
 
-      if(now - lastNetSendTime > 33){
+if(now - lastNetSendTime > 33){
         lastNetSendTime = now;
         socket.emit('player_update', {
           x: playerRig.position.x,
@@ -2027,7 +2043,25 @@
           z: playerRig.position.z,
           yaw: playerYaw,
           pitch: playerPitch
-        });
+        }); // 
+
+        const sawPacket = activeCircularSaws.map(s => ({
+          id: s.id,
+          x: s.group.position.x,
+          z: s.group.position.z,
+          rot: s.blade.rotation.z
+        }));
+        socket.emit('host_saws_sync', sawPacket);
+
+        const syncPacket = activeZombies.map(z => ({
+          id: z.id,
+          x: z.meshParts.group.position.x,
+          y: z.meshParts.group.position.y,
+          z: z.meshParts.group.position.z,
+          yaw: z.meshParts.group.rotation.y,
+          stage: z.stage
+        }));
+        socket.emit('host_zombie_sync', syncPacket);
       }
 
       renderer.render(scene, camera);

@@ -17,11 +17,14 @@ const lobbies = [
 ];
 
 const playerColors = [0x00ffcc, 0xffaa00, 0xff0055, 0x9900ff];
+
+// Player-specific Upgrade Machine States tracked by socket.id
 const upgradeStates = {};
 
 io.on('connection', (socket) => {
-  console.log(`Marine connected: ${socket.id}`);
+  console.log(`Player connected: ${socket.id}`);
 
+  // Initialize player upgrade state
   upgradeStates[socket.id] = {
     active: false,
     timer: 0,
@@ -78,6 +81,7 @@ io.on('connection', (socket) => {
       const slot = lobby.slots.find(s => s && s.socketId === socket.id);
       if (slot) {
         slot.ready = !slot.ready;
+
         const allFilled = lobby.slots.every(s => s !== null);
         const allReady = lobby.slots.every(s => s !== null && s.ready);
 
@@ -115,7 +119,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Independent player upgrade ritual
+  // --- INDEPENDENT PLAYER UPGRADE RITUAL ---
   socket.on('start_upgrade_ritual', (data) => {
     let state = upgradeStates[socket.id];
     if (state && !state.active) {
@@ -142,7 +146,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Host Authority Sync Broadcasts
+  // Master Sync Broadcasts
   socket.on('host_zombie_sync', (data) => {
     socket.broadcast.emit('client_zombie_sync', data);
   });
@@ -163,7 +167,7 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('client_round_sync', round);
   });
 
-  // Barricades & Burrow Holes Sync
+  // Action & Visibility Relays
   socket.on('sync_hole_dig', (data) => {
     socket.broadcast.emit('sync_hole_dig', data);
   });
@@ -181,7 +185,6 @@ io.on('connection', (socket) => {
     socket.emit('grant_points', 10);
   });
 
-  // Action Relays
   socket.on('throw_grenade_sync', (data) => {
     socket.broadcast.emit('client_throw_grenade', data);
   });
@@ -221,19 +224,26 @@ io.on('connection', (socket) => {
 
   socket.on('zombie_hit', (data) => {
     io.emit('apply_zombie_hit', data);
-    let pts = data.isHeadshot ? 20 : 10;
+    let pts = data.isHeadshot ? 40 : 20;
     socket.emit('grant_points', pts);
-    socket.emit('hit_registered', { zombieId: data.zombieId, isHeadshot: data.isHeadshot, pointsAwarded: pts });
+    socket.emit('hit_registered', { zombieId: data.zombieId, isHeadshot: data.isHeadshot, killed: data.damage >= 3, pointsAwarded: pts });
   });
 
   socket.on('unlock_door', (doorIndex) => {
+    const lobby = lobbies.find(l => l.slots.some(s => s && s.socketId === socket.id));
+    let target = lobby ? io.to(`lobby_${lobby.id}`) : io;
+
     let doorsToOpen = [];
-    if (doorIndex === 0 || doorIndex === 1) doorsToOpen = [0, 1];
-    else if (doorIndex === 2 || doorIndex === 3) doorsToOpen = [2, 3];
-    else doorsToOpen = [doorIndex];
+    if (doorIndex === 0 || doorIndex === 1) {
+      doorsToOpen = [0, 1];
+    } else if (doorIndex === 2 || doorIndex === 3) {
+      doorsToOpen = [2, 3];
+    } else {
+      doorsToOpen = [doorIndex];
+    }
 
     doorsToOpen.forEach((idx) => {
-      io.emit('door_unlocked', { doorIndex: idx });
+      target.emit('door_unlocked', { doorIndex: idx });
     });
   });
 
@@ -265,5 +275,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Multiplayer Outbreak Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

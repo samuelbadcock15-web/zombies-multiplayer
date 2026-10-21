@@ -19,7 +19,6 @@
     #crosshair::after{top:-10px;left:4px;width:2px;height:30px}
     #damage-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0);pointer-events:none;transition:background .1s ease;z-index:5}
 
-    /* Lobby Screen */
     #lobby-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(12,8,6,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;pointer-events:auto}
     .lobby-card{background:#1e140f;border:3px solid #8b5a2b;border-radius:12px;padding:24px;width:90%;max-width:540px;text-align:center;box-shadow:0 0 30px rgba(212,175,55,0.25)}
     .lobby-card h1{color:#d4af37;margin-top:0;font-size:24px;letter-spacing:2px}
@@ -52,7 +51,7 @@
   <div id="lobby-overlay">
     <div class="lobby-card">
       <h1>CO-OP OUTBREAK LOBBY</h1>
-      <p style="color:#f0e0d0">Select a Squad & Ready Up with Marines Worldwide</p>
+      <p style="color:#f0e0d0">Assemble Your Squad & Ready Up</p>
       <div id="lobby-list-container"></div>
     </div>
   </div>
@@ -151,7 +150,7 @@
       playerPoints += a; $('score-val').innerText = playerPoints;
     }
 
-    // Networking Lobbies UI
+    // Lobby Synchronizations
     socket.on('lobby_list', (lobbies) => {
       const container = $('lobby-list-container');
       container.innerHTML = '';
@@ -196,12 +195,12 @@
       isHost = (data.hostSocketId === socket.id);
       $('lobby-overlay').style.display = 'none';
       initAudio();
-      txtDiv.innerHTML = isHost ? "HOST AUTHORITY ACTIVE. STARTING ROUND 1." : "SYNCED TO CO-OP COMBAT SQUAD.";
+      txtDiv.innerHTML = isHost ? "HOST AUTHORITY ENGAGED. COMMENCING ROUND 1." : "CO-OP LINK ESTABLISHED WITH SQUAD.";
       if (!isMobile) document.body.requestPointerLock();
       if (isHost) startRound(1);
     });
 
-    // Three.js Scene Setup
+    // Three.js Render & World Setup
     const scene = new T.Scene(), defaultBG = new T.Color(0x120d0a), caveBG = new T.Color(0x080605);
     scene.background = defaultBG;
     const camera = new T.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -257,7 +256,7 @@
       return m;
     }
 
-    // Hall 1
+    // Room 1 (Spawn Hall)
     addStructuralMesh(new T.PlaneGeometry(50, 50), floorMat, 0, 0, 0, -Math.PI / 2);
     addStructuralMesh(new T.PlaneGeometry(50, 50), ceilingMat, 0, 16, 0, Math.PI / 2);
     addStructuralMesh(new T.PlaneGeometry(12, 40), floorMat, 0, 0, -45, -Math.PI / 2);
@@ -270,11 +269,30 @@
     addStructuralMesh(new T.PlaneGeometry(40, 16), wallMat, -6, 8, -45, 0, Math.PI / 2);
     addStructuralMesh(new T.PlaneGeometry(40, 16), wallMat, 6, 8, -45, 0, -Math.PI / 2);
 
-    // Hall 2
+    // Room 2 (Ballroom)
     addStructuralMesh(new T.PlaneGeometry(150, 150), floorMat, 0, 0, -140, -Math.PI / 2);
     addStructuralMesh(new T.PlaneGeometry(150, 150), ceilingMat, 0, 30, -140, Math.PI / 2);
     addStructuralMesh(new T.PlaneGeometry(150, 30), wallMat, -75, 15, -140, 0, Math.PI / 2);
     addStructuralMesh(new T.PlaneGeometry(150, 30), wallMat, 75, 15, -140, 0, -Math.PI / 2);
+    addStructuralMesh(new T.PlaneGeometry(69, 30), wallMat, -40.5, 15, -65);
+    addStructuralMesh(new T.PlaneGeometry(69, 30), wallMat, 40.5, 15, -65);
+    addStructuralMesh(new T.PlaneGeometry(69, 30), wallMat, -40.5, 15, -215);
+    addStructuralMesh(new T.PlaneGeometry(69, 30), wallMat, 40.5, 15, -215);
+
+    // Corridor 2
+    addStructuralMesh(new T.PlaneGeometry(12, 40), floorMat, 0, 0, -235, -Math.PI / 2);
+    addStructuralMesh(new T.PlaneGeometry(12, 40), ceilingMat, 0, 16, -235, Math.PI / 2);
+    addStructuralMesh(new T.PlaneGeometry(40, 16), wallMat, -6, 8, -235, 0, Math.PI / 2);
+    addStructuralMesh(new T.PlaneGeometry(40, 16), wallMat, 6, 8, -235, 0, -Math.PI / 2);
+
+    // Room 3 (Crypt)
+    addStructuralMesh(new T.PlaneGeometry(150, 150), floorMat, 0, 0, -330, -Math.PI / 2);
+    addStructuralMesh(new T.PlaneGeometry(150, 150), ceilingMat, 0, 30, -330, Math.PI / 2);
+    addStructuralMesh(new T.PlaneGeometry(69, 30), wallMat, -40.5, 15, -255);
+    addStructuralMesh(new T.PlaneGeometry(69, 30), wallMat, 40.5, 15, -255);
+    addStructuralMesh(new T.PlaneGeometry(150, 30), wallMat, 0, 15, -405);
+    addStructuralMesh(new T.PlaneGeometry(150, 30), wallMat, -75, 15, -330, 0, Math.PI / 2);
+    addStructuralMesh(new T.PlaneGeometry(150, 30), wallMat, 75, 15, -330, 0, -Math.PI / 2);
 
     // ==========================================
     // BARRICADED ARCHWAYS SETUP (SYNCED)
@@ -338,6 +356,16 @@
     createBarricadedArchway(45, 0, -214.8, 0);
     createBarricadedArchway(-45, 0, -65.2, Math.PI);
     createBarricadedArchway(45, 0, -65.2, Math.PI);
+    createBarricadedArchway(-74.8, 0, -110, Math.PI / 2);
+    createBarricadedArchway(-74.8, 0, -170, Math.PI / 2);
+    createBarricadedArchway(74.8, 0, -110, -Math.PI / 2);
+    createBarricadedArchway(74.8, 0, -170, -Math.PI / 2);
+
+    // Room 3 Archways
+    createBarricadedArchway(-40, 0, -404.8, 0);
+    createBarricadedArchway(40, 0, -404.8, 0);
+    createBarricadedArchway(-45, 0, -255.2, Math.PI);
+    createBarricadedArchway(45, 0, -255.2, Math.PI);
 
     // ==========================================
     // CIRCULAR SAWS SETUP (Room 1 Saws Excluded)
@@ -351,11 +379,13 @@
       scene.add(group);
       activeCircularSaws.push({ group, blade, centerX, centerZ, yLevel, radius, angle: 0, speed: 1.5 });
     }
-    // Saws in Room 2 only (None in starting room)
+    // Hazard Saws in Room 2 & 3 only
     createCircularSaw(-70, -70, 2, 6.0);
     createCircularSaw(70, -70, 2, 6.0);
     createCircularSaw(-70, -210, 2, 6.0);
     createCircularSaw(70, -210, 2, 6.0);
+    createCircularSaw(-70, -260, 2, 6.0);
+    createCircularSaw(70, -260, 2, 6.0);
 
     // Barricade Repair & Breach Sockets
     function localRepairArchway(idx) {
@@ -474,7 +504,7 @@
       zd.group.lookAt(arch.spawnPos.x, arch.posY, arch.spawnPos.z);
       scene.add(zd.group);
 
-      // Upright head and limbs matching emerged state
+      // Upright head, body, arms matching emerged state
       zd.head.visible = true; zd.head.position.set(0, 2.4, 0);
       zd.body.visible = true; zd.body.position.set(0, 1.1, 0);
       zd.arms.visible = true; zd.arms.position.set(0, 1.1, 0);
@@ -497,14 +527,14 @@
       $('round-val').innerText = toRoman(currentRound);
       zombiesToSpawnRemaining = 4 + Math.floor(currentRound * 3);
       roundActive = true;
-      txtDiv.innerHTML = `ROUND ${toRoman(currentRound)} HAS COMMENCED!`;
+      txtDiv.innerHTML = `ROUND ${toRoman(currentRound)} COMMENCED!`;
       if (isHost) socket.emit('host_round_sync', currentRound);
     }
 
     socket.on('client_round_sync', (r) => {
       currentRound = r;
       $('round-val').innerText = toRoman(currentRound);
-      txtDiv.innerHTML = `ROUND ${toRoman(currentRound)} HAS COMMENCED!`;
+      txtDiv.innerHTML = `ROUND ${toRoman(currentRound)} COMMENCED!`;
     });
 
     socket.on('grant_points', (pts) => addPoints(pts));
@@ -546,7 +576,7 @@
       }
     });
 
-    // Weapon firing
+    // Weapon firing raycasting
     function executeWeaponFireRaycast(screenX = null, screenY = null) {
       if (isGameOver || !isGameRunning) return;
       if (screenX !== null && screenY !== null) {
@@ -618,7 +648,7 @@
       if (e.code === 'KeyA') keys.a = 0; if (e.code === 'KeyD') keys.d = 0;
     });
 
-    // Main Game Loop
+    // Renderer & Animation Loop
     const renderer = new T.WebGLRenderer({antialias: true});
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
@@ -635,7 +665,7 @@
 
       if (!isGameRunning || isGameOver) return;
 
-      // Rotate hazard saws in other halls
+      // Rotate hazard saws
       activeCircularSaws.forEach(saw => {
         saw.angle += delta * saw.speed;
         let sx = saw.centerX + Math.sin(saw.angle) * saw.radius;
@@ -644,7 +674,7 @@
         saw.blade.rotation.z += delta * 15;
       });
 
-      // Host Authority: Spawn & Paced Door Breaches
+      // Host Authority: Paced Barricade Tearing (3.2s) & Spawns
       if (isHost && roundActive) {
         if (zombiesToSpawnRemaining > 0 && t - lastSpawnTime > spawnInterval) {
           spawnZombieHost(); lastSpawnTime = t;
@@ -653,7 +683,7 @@
         activeZombies.forEach(zb => {
           if (zb.deadAndShrinking) return;
 
-          // Barricade tear pace: strictly throttled to 3.2s
+          // Barricade tear pacing
           if (zb.spawnType === "archway" && !zb.breachedArchway) {
             const arch = allArchways[zb.archIndex];
             if (arch.boardsCount > 0) {
@@ -669,7 +699,7 @@
             }
           }
 
-          // Advance towards closest marine
+          // Advance towards closest player position
           let targetPos = playerRig.position.clone();
           let dir = new V3().subVectors(targetPos, zb.meshParts.group.position);
           dir.y = 0; dir.normalize();
@@ -677,7 +707,7 @@
           zb.meshParts.group.lookAt(targetPos.x, zb.meshParts.group.position.y, targetPos.z);
         });
 
-        // Broadcast zombie locations every 50ms
+        // Broadcast positions to other players every 50ms
         if (now - lastNetworkSync > 50) {
           socket.emit('host_zombie_sync', activeZombies.map(z => ({
             id: z.id, x: z.meshParts.group.position.x, y: z.meshParts.group.position.y, z: z.meshParts.group.position.z,
@@ -687,14 +717,14 @@
         }
       }
 
-      // Local player movement
+      // Player local movement
       const move = new V3();
       if (keys.w) move.z -= 1; if (keys.s) move.z += 1;
       if (keys.a) move.x -= 1; if (keys.d) move.x += 1;
       move.normalize().applyQuaternion(playerRig.quaternion); move.y = 0;
       playerRig.position.addScaledVector(move, 28 * delta);
 
-      // Transmit position to team
+      // Transmit state to squad
       socket.emit('player_update', {
         x: playerRig.position.x, y: playerRig.position.y, z: playerRig.position.z,
         yaw: playerYaw, color: myColor

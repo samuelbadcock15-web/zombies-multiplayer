@@ -19,30 +19,57 @@ const lobbies = [
 const playerColors = [0x00ffcc, 0xffaa00, 0xff0055, 0x9900ff];
 const upgradeStates = {};
 
+function getLobbyBySocket(socketId) {
+  return lobbies.find(l => l.slots.some(s => s && s.socketId === socketId));
+}
+
+function getLobbyRoom(socketId) {
+  const lobby = getLobbyBySocket(socketId);
+  return lobby ? `lobby_${lobby.id}` : null;
+}
+
+function clearUpgradeTimer(socketId) {
+  if (upgradeStates[socketId] && upgradeStates[socketId].intervalId) {
+    clearInterval(upgradeStates[socketId].intervalId);
+    upgradeStates[socketId].intervalId = null;
+  }
+}
+
 io.on('connection', (socket) => {
   console.log(`Marine connected: ${socket.id}`);
 
   upgradeStates[socket.id] = {
     active: false,
     timer: 0,
-    weaponSlot: 1
+    weaponSlot: 1,
+    intervalId: null
   };
 
   socket.emit('lobby_list', lobbies);
-  socket.emit('sync_upgrade_state', upgradeStates[socket.id]);
+  socket.emit('sync_upgrade_state', {
+    active: false,
+    timer: 0,
+    weaponSlot: 1
+  });
 
   socket.on('join_slot', ({ lobbyId, name }) => {
     const lobby = lobbies.find(l => l.id === lobbyId);
     if (!lobby || lobby.started) return;
 
+    // Leave any other slots in all lobbies first
     lobbies.forEach(l => {
       const sIdx = l.slots.findIndex(s => s && s.socketId === socket.id);
       if (sIdx !== -1) {
         l.slots[sIdx] = null;
         l.playerCount--;
+        socket.leave(`lobby_${l.id}`);
+
         if (l.playerCount === 0) {
           l.started = false;
           l.hostSocketId = null;
+        } else if (l.hostSocketId === socket.id) {
+          const nextHost = l.slots.find(s => s !== null);
+          l.hostSocketId = nextHost ? nextHost.socketId : null;
         }
       }
     });
@@ -58,11 +85,12 @@ io.on('connection', (socket) => {
     };
     lobby.playerCount++;
 
-    if (openSlotIdx === 0) {
+    if (!lobby.hostSocketId) {
       lobby.hostSocketId = socket.id;
     }
 
     socket.join(`lobby_${lobbyId}`);
+
     socket.emit('slot_joined', {
       lobbyId,
       slotNumber: openSlotIdx + 1,
@@ -106,132 +134,220 @@ io.on('connection', (socket) => {
       if (sIdx !== -1) {
         l.slots[sIdx] = null;
         l.playerCount--;
+        socket.leave(`lobby_${l.id}`);
+
         if (l.playerCount === 0) {
           l.started = false;
           l.hostSocketId = null;
+        } else if (l.hostSocketId === socket.id) {
+          const nextHost = l.slots.find(s => s !== null);
+          l.hostSocketId = nextHost ? nextHost.socketId : null;
         }
-        socket.leave(`lobby_${l.id}`);
+
         io.emit('lobby_list', lobbies);
       }
     });
   });
 
+  // --- UPGRADE ALTAR (PACK-A-PUNCH) ---
   socket.on('start_upgrade_ritual', (data) => {
-    let state = upgradeStates[socket.id];
-    if (state && !state.active) {
-      state.active = true;
-      state.timer = 0;
-      state.weaponSlot = data.weaponSlot;
+    const state = upgradeStates[socket.id];
+    if (!state || state.active) return;
 
-      let ritualInterval = setInterval(() => {
-        if (!upgradeStates[socket.id]) {
-          clearInterval(ritualInterval);
-          return;
-        }
-        state.timer += 1;
-        if (state.timer >= 5) {
-          clearInterval(ritualInterval);
-          state.active = false;
-          state.timer = 0;
-          socket.emit('grant_upgrade_success', state.weaponSlot);
-        }
-        socket.emit('sync_upgrade_state', state);
-      }, 1000);
+    clearUpgradeTimer(socket.id);
 
-      socket.emit('sync_upgrade_state', state);
+    state.active = true;
+    state.timer = 0;
+    state.weaponSlot = data.weaponSlot;
+
+    state.intervalId = setInterval(() => {
+      if (!upgradeStates[socket.id]) {
+        clearInterval(state.intervalId);
+        return;
+      }
+
+      state.timer += 1;
+      if (state.timer >= 5) {
+        clearInterval(state.intervalId);
+        state.intervalId = null;
+        state.active = false;
+        state.timer = 0;
+        socket.emit('grant_upgrade_success', state.weaponSlot);
+      }
+
+      socket.emit('sync_upgrade_state', {
+        active: state.active,
+        timer: state.timer,
+        weaponSlot: state.weaponSlot
+      });
+    }, 1000);
+
+    socket.emit('sync_upgrade_state', {
+      active: state.active,
+      timer: state.timer,
+      weaponSlot: state.weaponSlot
+    });
+  });
+
+  // --- CO-OP POSITION & ACTION SYNC ---
+  socket.on('player_update', (data) => {
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      socket.to(room).emit('remote_player_update', { id: socket.id, ...data });
     }
   });
 
-  socket.on('host_zombie_sync', (data) => {
-    socket.broadcast.emit('client_zombie_sync', data);
-  });
-
-  socket.on('host_mystery_box_sync', (data) => {
-    socket.broadcast.emit('client_mystery_box_sync', data);
-  });
-
-  socket.on('host_elevator_sync', (data) => {
-    socket.broadcast.emit('client_elevator_sync', data);
-  });
-
-  socket.on('host_robot_sync', (data) => {
-    socket.broadcast.emit('client_robot_sync', data);
-  });
-
-  // --- CIRCULAR SAW SYNC ROUTE ---
-  socket.on('host_saws_sync', (data) => {
-    socket.broadcast.emit('client_saws_sync', data);
-  });
-
-  socket.on('host_round_sync', (round) => {
-    socket.broadcast.emit('client_round_sync', round);
-  });
-
-  socket.on('sync_hole_dig', (data) => {
-    socket.broadcast.emit('sync_hole_dig', data);
-  });
-
-  socket.on('fill_hole', (data) => {
-    socket.broadcast.emit('sync_hole_fill', data);
-  });
-
-  socket.on('sync_archway_tear', (data) => {
-    socket.broadcast.emit('client_archway_tear', data);
-  });
-
-  socket.on('repair_archway', (data) => {
-    io.emit('client_archway_repaired', data);
-    socket.emit('grant_points', 10);
+  socket.on('player_weapon_change', (data) => {
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      socket.to(room).emit('remote_weapon_change', { id: socket.id, weaponId: data.weaponId });
+    }
   });
 
   socket.on('throw_grenade_sync', (data) => {
-    socket.broadcast.emit('client_throw_grenade', data);
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      socket.to(room).emit('client_throw_grenade', data);
+    }
   });
 
   socket.on('place_claymore_sync', (data) => {
-    socket.broadcast.emit('client_place_claymore', data);
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      socket.to(room).emit('client_place_claymore', data);
+    }
   });
 
+  // --- BARRICADE & BURROW HOLE SYNC ---
+  socket.on('sync_archway_tear', (data) => {
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      socket.to(room).emit('client_archway_tear', data);
+    }
+  });
+
+  socket.on('repair_archway', (data) => {
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      io.to(room).emit('client_archway_repaired', data);
+      socket.emit('grant_points', 10);
+    }
+  });
+
+  socket.on('sync_hole_dig', (data) => {
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      socket.to(room).emit('sync_hole_dig', data);
+    }
+  });
+
+  socket.on('fill_hole', (data) => {
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      socket.to(room).emit('sync_hole_fill', data);
+    }
+  });
+
+  // --- HOST WORLD SIMULATION SYNC ---
+  socket.on('host_zombie_sync', (data) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (lobby && lobby.hostSocketId === socket.id) {
+      socket.to(`lobby_${lobby.id}`).emit('client_zombie_sync', data);
+    }
+  });
+
+  socket.on('host_saws_sync', (data) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (lobby && lobby.hostSocketId === socket.id) {
+      socket.to(`lobby_${lobby.id}`).emit('client_saws_sync', data);
+    }
+  });
+
+  socket.on('host_round_sync', (round) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (lobby && lobby.hostSocketId === socket.id) {
+      socket.to(`lobby_${lobby.id}`).emit('client_round_sync', round);
+    }
+  });
+
+  socket.on('host_mystery_box_sync', (data) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (lobby && lobby.hostSocketId === socket.id) {
+      socket.to(`lobby_${lobby.id}`).emit('client_mystery_box_sync', data);
+    }
+  });
+
+  socket.on('host_elevator_sync', (data) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (lobby && lobby.hostSocketId === socket.id) {
+      socket.to(`lobby_${lobby.id}`).emit('client_elevator_sync', data);
+    }
+  });
+
+  socket.on('host_robot_sync', (data) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (lobby && lobby.hostSocketId === socket.id) {
+      socket.to(`lobby_${lobby.id}`).emit('client_robot_sync', data);
+    }
+  });
+
+  // --- INTERACTABLES & TRIGGERS ---
   socket.on('player_spin_mystery_box', () => {
-    io.emit('trigger_mystery_box_start');
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      io.to(room).emit('trigger_mystery_box_start');
+    }
   });
 
   socket.on('player_collect_mystery_box', () => {
-    socket.emit('grant_mystery_box_reward');
-    io.emit('force_clear_mystery_box_holo');
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      socket.emit('grant_mystery_box_reward');
+      io.to(room).emit('force_clear_mystery_box_holo');
+    }
   });
 
   socket.on('request_hire_robot', () => {
-    io.emit('trigger_hire_robot');
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      io.to(room).emit('trigger_hire_robot');
+    }
   });
 
   socket.on('request_elevator_trigger', (data) => {
-    io.emit('trigger_elevator_start', data);
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      io.to(room).emit('trigger_elevator_start', data);
+    }
   });
 
   socket.on('request_hidden_button', () => {
-    io.emit('trigger_hidden_button');
-  });
-
-  socket.on('player_update', (data) => {
-    socket.broadcast.emit('remote_player_update', { id: socket.id, ...data });
-  });
-
-  socket.on('player_weapon_change', (data) => {
-    socket.broadcast.emit('remote_weapon_change', { id: socket.id, weaponId: data.weaponId });
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      io.to(room).emit('trigger_hidden_button');
+    }
   });
 
   socket.on('zombie_hit', (data) => {
-    io.emit('apply_zombie_hit', data);
-    let pts = data.isHeadshot ? 40 : 20;
-    socket.emit('grant_points', pts);
-    socket.emit('hit_registered', { zombieId: data.zombieId, isHeadshot: data.isHeadshot, killed: data.damage >= 3, pointsAwarded: pts });
+    const room = getLobbyRoom(socket.id);
+    if (room) {
+      io.to(room).emit('apply_zombie_hit', data);
+      const pts = data.isHeadshot ? 40 : 20;
+      socket.emit('grant_points', pts);
+      socket.emit('hit_registered', {
+        zombieId: data.zombieId,
+        isHeadshot: data.isHeadshot,
+        killed: data.damage >= 3,
+        pointsAwarded: pts
+      });
+    }
   });
 
   socket.on('unlock_door', (doorIndex) => {
-    const lobby = lobbies.find(l => l.slots.some(s => s && s.socketId === socket.id));
-    let target = lobby ? io.to(`lobby_${lobby.id}`) : io;
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby) return;
 
+    const target = io.to(`lobby_${lobby.id}`);
     let doorsToOpen = [];
     if (doorIndex === 0 || doorIndex === 1) {
       doorsToOpen = [0, 1];
@@ -255,18 +371,26 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    clearUpgradeTimer(socket.id);
     delete upgradeStates[socket.id];
+
     lobbies.forEach(l => {
       const sIdx = l.slots.findIndex(s => s && s.socketId === socket.id);
       if (sIdx !== -1) {
         l.slots[sIdx] = null;
         l.playerCount--;
+
+        io.to(`lobby_${l.id}`).emit('player_left', socket.id);
+
         if (l.playerCount === 0) {
           l.started = false;
           l.hostSocketId = null;
+        } else if (l.hostSocketId === socket.id) {
+          const nextHost = l.slots.find(s => s !== null);
+          l.hostSocketId = nextHost ? nextHost.socketId : null;
         }
+
         io.emit('lobby_list', lobbies);
-        io.to(`lobby_${l.id}`).emit('player_left', socket.id);
       }
     });
   });

@@ -1064,6 +1064,7 @@
       }
     });
 
+    // Synchronize mystery box landing and room relocate
     socket.on('client_mystery_box_sync', data => {
       mysteryBoxActive = data.active;
       mysteryBoxReadyToCollect = data.readyToCollect;
@@ -1108,13 +1109,13 @@
       machineGroup.rotation.y = data.yaw;
     });
 
+    // Both Host & Guest start cycling together upon spin trigger
     socket.on('trigger_mystery_box_start', () => {
-      if (isHost && !mysteryBoxActive && !mysteryBoxReadyToCollect) {
-        mysteryBoxActive = true;
-        mysteryBoxTimer = 0;
-        txtDiv.innerHTML = "SUMMONING RELIC FROM THE SHADOWS...";
-        updateMysteryBoxScreen();
-      }
+      mysteryBoxActive = true;
+      mysteryBoxReadyToCollect = false;
+      mysteryBoxTimer = 0;
+      txtDiv.innerHTML = "SUMMONING RELIC FROM THE SHADOWS...";
+      updateMysteryBoxScreen();
     });
 
     socket.on('trigger_hire_robot', () => {
@@ -1207,6 +1208,48 @@
       p.x=x;p.z=z;return p;
     }
 
+    // Bidirectional smooth door and corridor waypoint pathfinding
+    function getNextZombieWaypoint(fromPos, targetPos) {
+      const zFrom = fromPos.z;
+      const zTo = targetPos.z;
+
+      // Moving from Room 1 (z > -25) to deeper rooms (z < -25)
+      if (zFrom > -24 && zTo < -24) {
+        return new V3(0, fromPos.y, -27);
+      }
+      // Moving inside Corridor 1 (-65 < z < -25) towards Room 2 (z < -65)
+      if (zFrom <= -24 && zFrom > -64 && zTo < -64) {
+        return new V3(0, fromPos.y, -67);
+      }
+      // Moving inside Corridor 1 (-65 < z < -25) backwards towards Room 1 (z > -25)
+      if (zFrom < -26 && zFrom >= -65 && zTo > -25) {
+        return new V3(0, fromPos.y, -23);
+      }
+      // Moving inside Room 2 (-215 < z < -65) backwards towards Room 1 (z > -65)
+      if (zFrom < -65 && zFrom > -215 && zTo > -65) {
+        return new V3(0, fromPos.y, -63);
+      }
+
+      // Moving from Room 2 (-215 < z < -65) towards Room 3 (z < -215)
+      if (zFrom > -214 && zTo < -214) {
+        return new V3(0, fromPos.y, -217);
+      }
+      // Moving inside Corridor 2 (-255 < z < -215) towards Room 3 (z < -255)
+      if (zFrom <= -214 && zFrom > -254 && zTo < -254) {
+        return new V3(0, fromPos.y, -257);
+      }
+      // Moving inside Corridor 2 backwards towards Room 2
+      if (zFrom < -216 && zFrom >= -255 && zTo > -215) {
+        return new V3(0, fromPos.y, -213);
+      }
+      // Moving from Room 3 backwards towards Room 2
+      if (zFrom < -255 && zTo > -255) {
+        return new V3(0, fromPos.y, -253);
+      }
+
+      return targetPos;
+    }
+
     function updateZombies(now){
       if(isGameOver||!isHost)return;
       let chg=false;
@@ -1253,12 +1296,8 @@
             if(d < minDist){ minDist = d; nearestPlayer = pl; }
           }
 
-          let tgt = nearestPlayer.pos.clone();
-          let zp=parts.group.position;
-          if(zp.z>-25&&tgt.z<-25)tgt.set(0,zp.y,-25);
-          else if(zp.z<-25&&zp.z>-65&&tgt.z<-65)tgt.set(0,zp.y,-65);
-          else if(zp.z<-65&&zp.z>-215&&tgt.z<-215)tgt.set(0,zp.y,-215);
-          else if(zp.z<-215&&zp.z>-255&&tgt.z<-255)tgt.set(0,zp.y,-255);
+          let zp = parts.group.position;
+          let tgt = getNextZombieWaypoint(zp, nearestPlayer.pos.clone());
 
           let dx = tgt.x - zp.x;
           let dz = tgt.z - zp.z;
@@ -1428,14 +1467,9 @@
             if(!mysteryBoxActive && !mysteryBoxReadyToCollect){
               if(playerPoints>=350){
                 playerPoints-=350;$('score-val').innerText=playerPoints;
-                if(isHost){
-                  mysteryBoxActive=true;mysteryBoxTimer=0;
-                  txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS...";
-                  updateMysteryBoxScreen();
-                } else {
-                  socket.emit('player_spin_mystery_box');
-                  txtDiv.innerHTML="REQUESTING RELIC SUMMON...";
-                }
+                // Emit start trigger to squad room
+                socket.emit('player_spin_mystery_box');
+                txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS...";
               }else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS.";
             }
           } else if(px >= 191 && px <= 321){
@@ -1839,10 +1873,12 @@
 
       upgReactorRing.rotation.x += 0.05;
 
+      // Both Host and Client animate the weapon cycling locally
       if(mysteryBoxActive){
         mysteryBoxTimer += 0.016;
         boxWeaponHolo.rotation.y += 0.08;
         let rpn = ["PISTOL","AUTO PISTOL","HEAVY SHOTGUN","AUTOMATIC RIFLE","RAY PISTOL","FRAG GRENADES","CLAYMORE MINE","ROBOT GOODY UPGRADE"], rpi = [1,2,3,4,5,6,7,8];
+        
         if(mysteryBoxTimer < 2.5){
           if(Math.floor(mysteryBoxTimer * 15) % 2 === 0){
             let ri = Math.floor(Math.random() * rpn.length);
@@ -1851,6 +1887,7 @@
             fillHoloGroupWithRewardModel(boxWeaponHolo, mysteryBoxRewardType);
           }
         } else if(isHost) {
+          // Host determines the final weapon and transmits to all squadmates
           mysteryBoxActive = false;
           mysteryBoxReadyToCollect = true;
           mysteryBoxTimer = 0;
@@ -1869,9 +1906,9 @@
             updateMapHologramSign();
           }
           socket.emit('host_mystery_box_sync', {
-            active: mysteryBoxActive,
-            readyToCollect: mysteryBoxReadyToCollect,
-            timer: mysteryBoxTimer,
+            active: false,
+            readyToCollect: true,
+            timer: 0,
             cyclingReward: mysteryBoxCyclingReward,
             rewardType: mysteryBoxRewardType,
             currentRoom: mysteryBoxCurrentRoom
@@ -1900,6 +1937,7 @@
         }
       }
 
+      // Universal Position Broadcast
       if (now - lastNetSendTime > 33) {
         lastNetSendTime = now;
         socket.emit('player_update', {

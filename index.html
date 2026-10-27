@@ -178,7 +178,8 @@
     $('btn-multiplayer').onclick = () => {
       initAudio();
       if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-      $('audio-overlay').style.display = 'none';$('lobby-screen').style.display = 'flex';
+      $('audio-overlay').style.display = 'none';
+      $('lobby-screen').style.display = 'flex';
     };
 
     socket.on('lobby_list', lobbies => {
@@ -233,7 +234,8 @@
       myId = data.myId;
 
       $('browser-view').style.display = 'none';
-      $('room-view').style.display = 'block';$('current-lobby-title').innerText = `LOBBY ${myLobbyId} — SQUAD ROOM`;
+      $('room-view').style.display = 'block';
+      $('current-lobby-title').innerText = `LOBBY ${myLobbyId} — SQUAD ROOM`;
     });
 
     function renderRoomSlots(lobby) {
@@ -276,6 +278,7 @@
     let lastUnhiredLineIdx=-1,lastHiredLineIdx=-1;
 
     function getUniqueRandomLine(h){let p=h?hiredLines:unhiredLines,l=h?lastHiredLineIdx:lastUnhiredLineIdx,i;do{i=Math.floor(Math.random()*p.length)}while(i===l&&p.length>1);if(h)lastHiredLineIdx=i;else lastUnhiredLineIdx=i;return p[i]}
+    
     function updatePerkScreens(){
       [{c:jugCtx,t:jugTex,b:'#220000',s:'#ff2222',n:'JUGGER-NOG',m:hasJuggerNog?"ACQUIRED (+1 HEART)":"COST: 2500 CREDITS"},{c:qrCtx,t:qrTex,b:'#001122',s:'#00a8ff',n:'QUICK REVIVE',m:hasQuickRevive?`SHIELD: ${quickReviveShield}/2`:"COST: 1500 CREDITS"},{c:dtCtx,t:dtTex,b:'#221100',s:'#ffaa00',n:'DOUBLE TAP II',m:hasDoubleTap?"ACQUIRED (2X FIRE/DMG)":"COST: 2000 CREDITS"},{c:suCtx,t:suTex,b:'#002200',s:'#ffff00',n:'STAMIN-UP',m:hasStaminUp?"ACQUIRED (SPEED BOOST)":"COST: 2000 CREDITS"}].forEach(k=>{k.c.fillStyle=k.b;k.c.fillRect(0,0,512,512);k.c.strokeStyle=k.s;k.c.lineWidth=14;k.c.strokeRect(10,10,492,492);k.c.fillStyle=k.s;k.c.font='bold 36px monospace';k.c.textAlign='center';k.c.fillText(k.n,256,80);k.c.fillStyle='#fff';k.c.font='bold 24px monospace';k.c.fillText(k.m,256,200);k.t.needsUpdate=true});
     }
@@ -498,7 +501,6 @@
     function playPistolShotSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();let pm=1+weaponUpgradeLevels[currentWeapon]*0.1;if(currentWeapon===5){o.type='sine';o.frequency.setValueAtTime(1200*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(200,audioCtx.currentTime+0.25);g.gain.setValueAtTime(0.35,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.25);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.25)}else if(currentWeapon===3||currentWeapon===4){o.type='sawtooth';o.frequency.setValueAtTime(180*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(10,audioCtx.currentTime+0.25);g.gain.setValueAtTime(0.4,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.25);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.25)}else{o.type=currentWeapon===2?'sawtooth':'triangle';o.frequency.setValueAtTime((currentWeapon===2?320:400)*pm,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(10,audioCtx.currentTime+0.08);g.gain.setValueAtTime(0.25,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.08);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.08)}}
     function playExplosionSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(120,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(10,audioCtx.currentTime+0.5);g.gain.setValueAtTime(0.6,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.5);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.5)}
     
-    // Very small sound radius for barricade and burrow operations (< 8 units)
     function playProceduralDigSound(pos){
       if(!audioCtx)return;
       if(pos && playerRig.position.distanceTo(pos) > 8) return;
@@ -527,9 +529,6 @@
     addStructuralMesh(PG(150,150),floorMat,0,0,-330,-Math.PI/2,0,"floor");addStructuralMesh(PG(150,150),ceilingMat,0,30,-330,Math.PI/2,0,"ceiling");
     wallObjects.push(addStructuralMesh(PG(69,30),wallMat,-40.5,15,-255),addStructuralMesh(PG(69,30),wallMat,40.5,15,-255),addStructuralMesh(PG(150,30),wallMat,0,15,-405),addStructuralMesh(PG(150,30),wallMat,-75,15,-330,0,Math.PI/2),addStructuralMesh(PG(150,30),wallMat,75,15,-330,0,-Math.PI/2));
 
-    // ==========================================
-    // BARRICADED BLACK ARCHWAYS SETUP (CO-OP SYNCED)
-    // ==========================================
     const allArchways = [];
     const archwayInteractiveMeshes = [];
     const archFrameMat = SM({color: 0x111111, roughness: 0.85, metalness: 0.1});
@@ -622,7 +621,7 @@
       }
     });
 
-    // ROOM 1 ARCHWAYS
+    // Room 1 Archways
     createBarricadedArchway(-18, 0, -24.8, 0);
     createBarricadedArchway(18, 0, -24.8, 0);
     createBarricadedArchway(-16, 0, 24.8, Math.PI);
@@ -632,7 +631,7 @@
     createBarricadedArchway(-24.8, 0, -20, Math.PI / 2);
     createBarricadedArchway(-24.8, 0, 20, Math.PI / 2);
 
-    // ROOM 2 ARCHWAYS
+    // Room 2 Archways
     createBarricadedArchway(-45, 0, -214.8, 0);
     createBarricadedArchway(45, 0, -214.8, 0);
     createBarricadedArchway(-45, 0, -65.2, Math.PI);
@@ -642,7 +641,7 @@
     createBarricadedArchway(74.8, 0, -110, -Math.PI / 2);
     createBarricadedArchway(74.8, 0, -170, -Math.PI / 2);
 
-    // ROOM 3 ARCHWAYS
+    // Room 3 Archways
     createBarricadedArchway(-40, 0, -404.8, 0);
     createBarricadedArchway(40, 0, -404.8, 0);
     createBarricadedArchway(-45, 0, -255.2, Math.PI);
@@ -652,7 +651,7 @@
     createBarricadedArchway(74.8, 0, -300, -Math.PI / 2);
     createBarricadedArchway(74.8, 0, -360, -Math.PI / 2);
 
-    // UNDERGROUND CATACOMBS ARCHWAYS
+    // Catacombs Archways
     createBarricadedArchway(-50, -79.8, -444.8, 0);
     createBarricadedArchway(50, -79.8, -444.8, 0);
     createBarricadedArchway(-50, -79.8, -215.2, Math.PI);
@@ -662,9 +661,6 @@
     createBarricadedArchway(114.8, -79.8, -300, -Math.PI / 2);
     createBarricadedArchway(114.8, -79.8, -360, -Math.PI / 2);
 
-    // ==========================================
-    // CIRCULAR SAW HAZARDS SETUP (CO-OP SYNCED)
-    // ==========================================
     const activeCircularSaws = [];
     function createCircularSaw(centerX, centerZ, yLevel, radius, id) {
       const group = GRP();
@@ -692,25 +688,21 @@
       });
     }
 
-    // Room 1 Saws (Corners of the starting area)
     createCircularSaw(-22, 22, 1, 3.5, "saw_r1_tl");
     createCircularSaw(22, 22, 1, 3.5, "saw_r1_tr");
     createCircularSaw(-22, -22, 1, 3.5, "saw_r1_bl");
     createCircularSaw(22, -22, 1, 3.5, "saw_r1_br");
 
-    // Room 2 Saws
     createCircularSaw(-70, -70, 2, 6.0, "saw_r2_l1");
     createCircularSaw(70, -70, 2, 6.0, "saw_r2_r1");
     createCircularSaw(-70, -210, 2, 6.0, "saw_r2_l2");
     createCircularSaw(70, -210, 2, 6.0, "saw_r2_r2");
 
-    // Room 3 Saws
     createCircularSaw(-70, -260, 2, 6.0, "saw_r3_l1");
     createCircularSaw(70, -260, 2, 6.0, "saw_r3_r1");
     createCircularSaw(-70, -400, 2, 6.0, "saw_r3_l2");
     createCircularSaw(70, -400, 2, 6.0, "saw_r3_r2");
 
-    // Catacombs Saws
     createCircularSaw(-110, -220, -78, 7.0, "saw_cat_l1");
     createCircularSaw(110, -220, -78, 7.0, "saw_cat_r1");
     createCircularSaw(-110, -440, -78, 7.0, "saw_cat_l2");
@@ -782,7 +774,6 @@
     const redOrbMesh=MESH(SG(0.7),BM({color:0xff3300}),0,7,35);caveGroup.add(redOrbMesh);redOrbMesh.userData={materialType:"escape_orb"};
     const carSpotlight=new T.SpotLight(0xff3300,8,30,Math.PI/4,0.5,1);carSpotlight.position.set(0,12,35);carSpotlight.target=bMobile;caveGroup.add(carSpotlight);
 
-    // --- UPGRADE MACHINE 3D SETUP ---
     const upgradeMachineGroup=GRP();upgradeMachineGroup.position.set(-6,0,35);caveGroup.add(upgradeMachineGroup);
     const upgBody=MESH(BG(3.2,3.8,2.2),SM({color:0x3a2418,metalness:0.5,roughness:0.4}),0,1.9,0);upgradeMachineGroup.add(upgBody);
     const upgNeonFrame=MESH(BG(3.4,0.15,2.4),SM({color:0xffd700,emissive:0xffd700,emissiveIntensity:2}),0,3.7,0),upgNeonBottom=upgNeonFrame.clone();upgNeonBottom.position.y=0.1;upgradeMachineGroup.add(upgNeonFrame,upgNeonBottom);
@@ -832,14 +823,12 @@
       }
     }
 
-    // Unified Anatomically Sound Zombie Anatomy
     const activeZombies=[],zombieInteractiveMeshes=[];
     function createZombieMesh(){
       const zg=GRP();
       zg.rotation.order = 'YXZ';
       const sm=SM({color:0x5a7360,roughness:0.8}),ct=SM({color:0x4a2323,roughness:0.6}),cb=SM({color:0x222834,roughness:0.7}),bm=SM({color:0x1a1a1a,roughness:0.9}),em=BM({color:0xff3300});
       
-      // Head placed upright at top
       const hg=GRP();
       let hb=MESH(BG(0.7,0.7,0.7),sm);
       hb.userData={hitBoxPart:"head"};
@@ -855,7 +844,6 @@
       hg.visible=false;
       zg.add(hg);
 
-      // Torso & Legs upright at body level
       const bg=GRP();
       let ut=MESH(BG(1.2,1.2,0.7),ct,0,0.5,0);
       ut.userData={hitBoxPart:"torso"};
@@ -876,7 +864,6 @@
       bg.visible=false;
       zg.add(bg);
 
-      // Arms reaching out horizontally forward
       const ag=GRP();
       let ls=MESH(BG(0.25,0.25,0.8),ct,-0.65,0.5,0.4);
       ls.userData={hitBoxPart:"limbs"};
@@ -913,7 +900,6 @@
       if(zombiesToSpawnRemaining<=0||isGameOver||!isHost)return;
       let playerInBasement = (playerRig.position.y < -40);
 
-      // 50% chance to spawn from a barricaded archway doorway
       const spawnFromArch = (Math.random() < 0.5);
 
       if (spawnFromArch) {
@@ -932,13 +918,11 @@
           const archIdx = allArchways.indexOf(arch);
           const zd = createZombieMesh();
 
-          // Spawn upright just behind the doorway facing into the room
           const backPos = new V3(arch.posX, arch.posY, arch.posZ).addScaledVector(arch.normal, -0.6);
           zd.group.position.copy(backPos);
-          zd.group.lookAt(arch.spawnPos.x, arch.posY, arch.spawnPos.z);
+          zd.group.rotation.y = Math.atan2(arch.normal.x, arch.normal.z);
           scene.add(zd.group);
 
-          // Reveal upright parts
           zd.head.visible = true;
           zd.body.visible = true;
           zd.arms.visible = true;
@@ -967,7 +951,6 @@
         }
       }
 
-      // Default: Spawn at a floor burrow hole
       let av = allBurrowHoles.filter(h => {
         if (!playerInBasement && h.globalY < -40) return false;
         if (playerInBasement && h.globalY > -40) return false;
@@ -1091,12 +1074,13 @@
       mysteryBoxGroup.position.copy(boxRoomLocations[mysteryBoxCurrentRoom].pos);
       updateMapHologramSign();
       fillHoloGroupWithWeaponModel(boxWeaponHolo, mysteryBoxRewardType, false);
+      updateMysteryBoxScreen();
     });
 
-    // --- UPGRADE MACHINE SYNC LISTENER ---
     socket.on('sync_upgrade_state', data => {
       upgradeActive = data.active;
       upgradeTimer = data.timer;
+      updateUpgradeMachineScreen();
     });
 
     socket.on('grant_upgrade_success', slot => {
@@ -1106,6 +1090,7 @@
       ammoReserves[slot] = getWeaponStat(slot, 'maxAmmo');
       switchWeapon(slot);
       playMysteryBoxSound();
+      updateUpgradeMachineScreen();
       txtDiv.innerHTML = `${baseWeaponData[slot].name} BLESSED TO LEVEL ${toRoman(weaponUpgradeLevels[slot])}!`;
     });
 
@@ -1128,6 +1113,7 @@
         mysteryBoxActive = true;
         mysteryBoxTimer = 0;
         txtDiv.innerHTML = "SUMMONING RELIC FROM THE SHADOWS...";
+        updateMysteryBoxScreen();
       }
     });
 
@@ -1169,6 +1155,7 @@
     socket.on('force_clear_mystery_box_holo', () => {
       mysteryBoxReadyToCollect = false;
       while(boxWeaponHolo.children.length > 0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
+      updateMysteryBoxScreen();
     });
 
     socket.on('client_throw_grenade', data => {
@@ -1224,16 +1211,20 @@
       if(isGameOver||!isHost)return;
       let chg=false;
 
-      let allPlayers = [{ id: myId, pos: playerRig.position }];
+      let allPlayers = [{ id: myId, pos: playerRig.position.clone() }];
       Object.values(remotePlayers).forEach(rp => {
-        if(rp.mesh) allPlayers.push({ id: rp.data.socketId, pos: rp.mesh.position });
+        if(rp.mesh) {
+          allPlayers.push({ 
+            id: rp.data.socketId, 
+            pos: new V3(rp.mesh.position.x, rp.mesh.position.y + 3.0, rp.mesh.position.z) 
+          });
+        }
       });
 
       for(let i=activeZombies.length-1;i>=0;i--){
         const zb=activeZombies[i],parts=zb.meshParts;
         if(zb.deadAndShrinking){scene.remove(parts.group);activeZombies.splice(i,1);chg=true;continue}
 
-        // Paced Barricade Tearing (3.2s)
         if (zb.spawnType === "archway" && !zb.breachedArchway) {
           const arch = allArchways[zb.archIndex];
           if (arch.boardsCount > 0) {
@@ -1256,10 +1247,11 @@
         }else{
           let nearestPlayer = allPlayers[0];
           let minDist = parts.group.position.distanceTo(nearestPlayer.pos);
-          allPlayers.forEach(pl => {
+          for(let pIdx=1; pIdx < allPlayers.length; pIdx++){
+            let pl = allPlayers[pIdx];
             let d = parts.group.position.distanceTo(pl.pos);
             if(d < minDist){ minDist = d; nearestPlayer = pl; }
-          });
+          }
 
           let tgt = nearestPlayer.pos.clone();
           let zp=parts.group.position;
@@ -1268,10 +1260,20 @@
           else if(zp.z<-65&&zp.z>-215&&tgt.z<-215)tgt.set(0,zp.y,-215);
           else if(zp.z<-215&&zp.z>-255&&tgt.z<-255)tgt.set(0,zp.y,-255);
 
-          let d=new V3().subVectors(tgt,zp);d.y=0;d.normalize();
-          let np=zp.clone().addScaledVector(d,zb.speed);parts.group.position.copy(getConstrainedPosition(np));
+          let dx = tgt.x - zp.x;
+          let dz = tgt.z - zp.z;
+          let distXZ = Math.hypot(dx, dz);
 
-          parts.group.lookAt(tgt.x,parts.group.position.y,tgt.z);
+          if (distXZ > 0.05) {
+            let ndx = dx / distXZ;
+            let ndz = dz / distXZ;
+            let np = zp.clone();
+            np.x += ndx * zb.speed;
+            np.z += ndz * zb.speed;
+            parts.group.position.copy(getConstrainedPosition(np));
+            parts.group.rotation.y = Math.atan2(ndx, ndz);
+          }
+
           parts.group.updateMatrixWorld(true);
 
           let flatZombiePos = new V3(parts.group.position.x, nearestPlayer.pos.y, parts.group.position.z);
@@ -1323,6 +1325,7 @@
       else if(mysteryBoxRewardType===7){claymoreCount=2;claymoreUpgradeLevel++;updateEquipmentUI();txtDiv.innerHTML=`RELIC CHEST: CLAYMORES LVL ${toRoman(claymoreUpgradeLevel+1)} SECURED!`}
       else if(mysteryBoxRewardType===8){robotMercState.level++;robotMercState.active=true;robotMercState.health=robotMercState.maxHealth;robotMercState.durationTimer+=30;speakRobotVoice(`Smart core upgrade to level ${robotMercState.level}! Let's party!`);txtDiv.innerHTML=`RELIC CHEST: VETERAN ROBOT UPGRADED TO LEVEL ${robotMercState.level}!`}
       playMysteryBoxSound();
+      updateMysteryBoxScreen();
     }
 
     function executeWeaponFireRaycast(clientX, clientY){
@@ -1338,7 +1341,6 @@
 
       raycaster.setFromCamera(mouse, camera);
 
-      // Check Barricade Repairs
       let ah = raycaster.intersectObjects(archwayInteractiveMeshes);
       if (ah.length > 0 && ah[0].distance < 20) {
         repairArchwayBoard(ah[0].object.userData.archIndex);
@@ -1400,7 +1402,6 @@
         if(playerPoints>=50){playerPoints-=50;$('score-val').innerText=playerPoints;socket.emit('unlock_door',di);txtDiv.innerHTML=`DOOR ${di+1} OPENED! ADVANCE FORWARD.`}else txtDiv.innerHTML="NEED 50 CREDITS TO UNLOCK THIS ROOM.";return;
       }
 
-      // UPGRADE MACHINE TOUCH INTERACTION HANDLER
       let mwPos=new V3();upgradeMachineGroup.getWorldPosition(mwPos);
       let upgHit = raycaster.intersectObjects([upgScreenFace],true);
       if(upgHit.length>0 && playerRig.position.distanceTo(mwPos)<15){
@@ -1416,7 +1417,6 @@
         return;
       }
 
-      // MYSTERY BOX TOUCH SCREEN INTERACTION CHECK
       let bwPos=new V3();mysteryBoxGroup.getWorldPosition(bwPos);
       let boxHit = raycaster.intersectObjects([boxScreenFaceFront, boxScreenFaceBack],true);
       if(boxHit.length>0 && playerRig.position.distanceTo(bwPos)<15){
@@ -1424,20 +1424,21 @@
         let px = (uv && uv.x !== undefined) ? uv.x * 512 : 256;
         let py = (uv && uv.y !== undefined) ? (1 - uv.y) * 512 : 335;
         if(py >= 305 && py <= 365){
-          if(px >= 40 && px <= 170){ // SPIN
+          if(px >= 40 && px <= 170){
             if(!mysteryBoxActive && !mysteryBoxReadyToCollect){
               if(playerPoints>=350){
                 playerPoints-=350;$('score-val').innerText=playerPoints;
                 if(isHost){
                   mysteryBoxActive=true;mysteryBoxTimer=0;
                   txtDiv.innerHTML="SUMMONING RELIC FROM THE SHADOWS...";
+                  updateMysteryBoxScreen();
                 } else {
                   socket.emit('player_spin_mystery_box');
                   txtDiv.innerHTML="REQUESTING RELIC SUMMON...";
                 }
               }else txtDiv.innerHTML="CURSED CHEST COSTS 350 CREDITS.";
             }
-          } else if(px >= 191 && px <= 321){ // COLLECT
+          } else if(px >= 191 && px <= 321){
             if(mysteryBoxReadyToCollect){
               mysteryBoxReadyToCollect=false;
               while(boxWeaponHolo.children.length>0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
@@ -1514,6 +1515,7 @@
             $('score-val').innerText = playerPoints;
             socket.emit('start_upgrade_ritual', { weaponSlot: currentWeapon });
             txtDiv.innerHTML = "OCCULT RITUAL ENGAGED. BLESSING WEAPON...";
+            updateUpgradeMachineScreen();
           } else {
             txtDiv.innerHTML = `RITUAL REQUIRES ${cost} CREDITS.`;
           }
@@ -1636,14 +1638,12 @@
       if(e.button===2){
         raycaster.setFromCamera(new T.Vector2(0,0),camera);
 
-        // Right-click repairs barricades
         let ah = raycaster.intersectObjects(archwayInteractiveMeshes);
         if (ah.length > 0 && ah[0].distance < 20) {
           repairArchwayBoard(ah[0].object.userData.archIndex);
           return;
         }
 
-        // Right-click seals floor burrow holes
         let hi=raycaster.intersectObjects(holeInteractiveMeshes);
         if(hi.length>0&&hi[0].distance<25){
           let hIdx = hi[0].object.userData.holeIndex;
@@ -1736,6 +1736,7 @@
       let sp=window.speechSynthesis&&window.speechSynthesis.speaking,mo=sp?Math.abs(Math.sin(t*0.03))*40:15;sCtx.fillRect(186,300,140,10+mo);sCtx.fillStyle="#fff";sCtx.font="bold 28px monospace";sCtx.textAlign="center";
       if(robotMercState.active){sCtx.fillText(`LVL ${toRoman(robotMercState.level)} GOODY`,256,65);sCtx.fillStyle="#fa0";sCtx.fillText(`${Math.ceil(robotMercState.durationTimer)}s REMAINING`,256,430)}
       else{sCtx.fillText(`GOODY OS LVL ${toRoman(robotMercState.level)}`,256,65);sCtx.fillStyle="#f50";sCtx.fillText("HIRE: 500 CR",256,430)}
+      arcadeScreenTexture.needsUpdate = true;
     }
     function simulateStickmanMatch(t){
       gameState.actionTimer+=0.016;const ra=Math.sin(t*0.01);stickman1.leftLeg.rotation.z=0.15+ra*0.3;stickman1.rightLeg.rotation.z=-0.15-ra*0.3;stickman2.leftLeg.rotation.z=0.15-ra*0.3;stickman2.rightLeg.rotation.z=-0.15+ra*0.3;
@@ -1748,40 +1749,41 @@
     }
 
     const renderer=new T.WebGLRenderer({antialias:true});renderer.setSize(window.innerWidth,window.innerHeight);document.body.appendChild(renderer.domElement);
-    switchWeapon(1);updatePerkScreens();
+    switchWeapon(1);updatePerkScreens();updateMysteryBoxScreen();updateUpgradeMachineScreen();
 
     let lastNetSendTime = 0;
     let lastFrameTime = performance.now();
+    let lastScreenDrawTime = 0;
 
     function animate(t){
       requestAnimationFrame(animate);
-      updateUpgradeMachineScreen(); upgScreenTexture.needsUpdate = true;
-      drawAnimatedHostScreen(t); arcadeScreenTexture.needsUpdate = true;
-      updateMysteryBoxScreen(); boxScreenTexture.needsUpdate = true;
 
       let now = performance.now();
       let delta = (now - lastFrameTime) / 1000;
       lastFrameTime = now;
       delta = Math.min(delta, 0.1);
 
+      if (now - lastScreenDrawTime > 200) {
+        lastScreenDrawTime = now;
+        drawAnimatedHostScreen(t);
+        if (upgradeActive) updateUpgradeMachineScreen();
+        if (mysteryBoxActive || mysteryBoxReadyToCollect) updateMysteryBoxScreen();
+      }
+
       if(!gameActive || isGameOver) return;
       redOrbMesh.position.y = 7 + Math.sin(t * 0.003) * 0.8;
 
-      // Animate hazard saws
       activeCircularSaws.forEach(saw => {
         if (isHost) {
-          // Host calculates movement path
           saw.angle += delta * saw.speed;
           let sx = saw.centerX + Math.sin(saw.angle) * saw.radius;
           let sz = saw.centerZ + Math.sin(saw.angle * 2) * (saw.radius * 0.8);
           saw.group.position.set(sx, saw.yLevel, sz);
           saw.blade.rotation.z += delta * 15;
         } else {
-          // Non-hosts continuously spin the blade locally for smoothness between network ticks
           saw.blade.rotation.z += delta * 15;
         }
 
-        // Collision check against player
         let pPos = playerRig.position.clone();
         if (Math.abs(pPos.y - saw.yLevel) < 3.0) {
           let dist = Math.hypot(pPos.x - saw.group.position.x, pPos.z - saw.group.position.z);
@@ -1790,6 +1792,7 @@
           }
         }
       });
+
       if(robotMercState.active){
         robotMercState.durationTimer -= 0.016;
         if(robotMercState.durationTimer <= 0){
@@ -1865,6 +1868,15 @@
             mysteryBoxGroup.position.copy(boxRoomLocations[mysteryBoxCurrentRoom].pos);
             updateMapHologramSign();
           }
+          socket.emit('host_mystery_box_sync', {
+            active: mysteryBoxActive,
+            readyToCollect: mysteryBoxReadyToCollect,
+            timer: mysteryBoxTimer,
+            cyclingReward: mysteryBoxCyclingReward,
+            rewardType: mysteryBoxRewardType,
+            currentRoom: mysteryBoxCurrentRoom
+          });
+          updateMysteryBoxScreen();
         }
       } else if(mysteryBoxReadyToCollect){
         mysteryBoxTimer += 0.016;
@@ -1876,25 +1888,29 @@
           mysteryBoxFadeAlpha = 1;
           while(boxWeaponHolo.children.length > 0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
           txtDiv.innerHTML = "RELIC TIMED OUT. CHEST RESETTING TO SPIN...";
+          socket.emit('host_mystery_box_sync', {
+            active: false,
+            readyToCollect: false,
+            timer: 0,
+            cyclingReward: mysteryBoxCyclingReward,
+            rewardType: mysteryBoxRewardType,
+            currentRoom: mysteryBoxCurrentRoom
+          });
+          updateMysteryBoxScreen();
         }
       }
 
-      if(isHost){
-        if(roundActive && zombiesToSpawnRemaining > 0 && t - lastSpawnTime > spawnInterval){
-          spawnZombieHost();
-          lastSpawnTime = t;
-        }
+      if (now - lastNetSendTime > 33) {
+        lastNetSendTime = now;
+        socket.emit('player_update', {
+          x: playerRig.position.x,
+          y: playerRig.position.y,
+          z: playerRig.position.z,
+          yaw: playerYaw,
+          pitch: playerPitch
+        });
 
-        if(now - lastNetSendTime > 33){
-          lastNetSendTime = now;
-          socket.emit('player_update', {
-            x: playerRig.position.x,
-            y: playerRig.position.y,
-            z: playerRig.position.z,
-            yaw: playerYaw,
-            pitch: playerPitch
-          });
-
+        if (isHost) {
           const sawPacket = activeCircularSaws.map(s => ({
             id: s.id,
             x: s.group.position.x,
@@ -1912,6 +1928,30 @@
             stage: z.stage
           }));
           socket.emit('host_zombie_sync', syncPacket);
+
+          socket.emit('host_robot_sync', {
+            x: machineGroup.position.x,
+            y: machineGroup.position.y,
+            z: machineGroup.position.z,
+            yaw: machineGroup.rotation.y
+          });
+
+          if(elevatorActive){
+            socket.emit('host_elevator_sync', {
+              active: elevatorActive,
+              progress: elevatorProgress,
+              targetProgress: elevatorTargetProgress,
+              permanentlyOpen: secretPermanentlyOpen,
+              secretActive: secretActive
+            });
+          }
+        }
+      }
+
+      if(isHost){
+        if(roundActive && zombiesToSpawnRemaining > 0 && t - lastSpawnTime > spawnInterval){
+          spawnZombieHost();
+          lastSpawnTime = t;
         }
       }
 

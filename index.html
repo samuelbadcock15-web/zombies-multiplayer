@@ -436,7 +436,6 @@
       if (remotePlayers[data.id]) {
         const rp = remotePlayers[data.id];
         rp.downed = true;
-        // Lay prone on floor
         rp.mesh.rotation.x = Math.PI / 2;
         rp.mesh.position.y = (playerRig.position.y < -40) ? -79.5 : 0.3;
       }
@@ -798,12 +797,6 @@
     upgBody.userData=upgScreenHousing.userData=upgScreenFace.userData={materialType:"upgrade_machine"};
 
     addStructuralMesh(PG(60,60),wallMat,-30,-50,-211);addStructuralMesh(PG(60,60),wallMat,30,-50,-211);
-    function buildHoopAssembly(zc,rot){const g=GRP();g.position.set(0,0,zc);if(rot)g.rotation.y=Math.PI;scene.add(g);g.add(MESH(BG(7,5,0.2),SM({color:0x3a2418})));let r=MESH(new T.TorusGeometry(1.1,0.08,8,24),BM({color:0x8b0000}),0,12,1.3,Math.PI/2);g.add(r)}
-    buildHoopAssembly(-203,false);buildHoopAssembly(-77,true);
-
-    function createStickman(col){const g=GRP(),m=BM({color:col}),h=MESH(SG(0.4),m,0,3.5,0),t=MESH(CG(0.08,0.08,1.4),m,0,2.4,0),ll=MESH(CG(0.06,0.06,1.3),m,-0.25,1.15,0),rl=MESH(CG(0.06,0.06,1.3),m,0.25,1.15,0),la=MESH(CG(0.05,0.05,1.1),m,-0.45,2.7,0),ra=MESH(CG(0.05,0.05,1.1),m,0.45,2.7,0);g.add(h,t,ll,rl,la,ra);scene.add(g);return {mesh:g,leftArm:la,rightArm:ra,leftLeg:ll,rightLeg:rl}}
-    const stickman1=createStickman(0xffd700),stickman2=createStickman(0x5a3d28),ballMesh=MESH(SG(0.6,32,32),SM({color:0xffd700,roughness:0.5}));scene.add(ballMesh);
-    let gameState={ballPos:new V3(0,6,-140),p1Pos:new V3(-10,0,-125),p2Pos:new V3(10,0,-155),ballHolder:1,actionTimer:0,shotStart:new V3(),shotEnd:new V3()};
 
     const machineGroup=GRP();machineGroup.position.set(0,0,5);scene.add(machineGroup);
     let mainWheelMesh=MESH(CG(1,1,0.5,32),SM({color:0x111111}),0,1,0);mainWheelMesh.rotation.z=Math.PI/2;machineGroup.add(mainWheelMesh);
@@ -1025,7 +1018,6 @@
         localZ.meshParts.group.rotation.y = nz.yaw;
         localZ.meshParts.group.updateMatrixWorld(true);
 
-        // Synchronize progressive physical emergence on clients
         localZ.emergenceStage = nz.emergenceStage;
         localZ.meshParts.head.visible = nz.emergenceStage >= 0;
         localZ.meshParts.body.visible = nz.emergenceStage >= 1;
@@ -1129,18 +1121,6 @@
       machineGroup.rotation.y = data.yaw;
     });
 
-    // Synchronize Stickman match from Host to Clients
-    socket.on('client_stickman_sync', data => {
-      if (isHost) return;
-      gameState.p1Pos.set(data.p1.x, data.p1.y, data.p1.z);
-      gameState.p2Pos.set(data.p2.x, data.p2.y, data.p2.z);
-      gameState.ballPos.set(data.ball.x, data.ball.y, data.ball.z);
-      stickman1.mesh.position.copy(gameState.p1Pos);
-      stickman2.mesh.position.copy(gameState.p2Pos);
-      ballMesh.position.copy(gameState.ballPos);
-    });
-
-    // Synchronized Squad Warp via Red Orb
     socket.on('trigger_escape_orb_warp', () => {
       playerRig.position.set(0, 3, 15);
       playerYaw = playerPitch = 0;
@@ -1306,7 +1286,6 @@
       if(isGameOver||!isHost)return;
       let chg=false;
 
-      // Filter out downed/spectating players so zombies ignore them
       let allPlayers = [];
       if (!isGameOver) {
         allPlayers.push({ id: myId, pos: playerRig.position.clone() });
@@ -1458,7 +1437,6 @@
 
       let oh=raycaster.intersectObjects([redOrbMesh]);
       if(oh.length>0&&playerRig.position.y<-40&&oh[0].distance<30){
-        // Request synchronized Squad Teleport from server
         socket.emit('request_escape_orb');
         return;
       }
@@ -1833,53 +1811,6 @@
       arcadeScreenTexture.needsUpdate = true;
     }
 
-    function simulateStickmanMatch(t){
-      if (!isHost) return;
-      gameState.actionTimer += 0.016;
-      const ra = Math.sin(t * 0.01);
-      stickman1.leftLeg.rotation.z = 0.15 + ra * 0.3;
-      stickman1.rightLeg.rotation.z = -0.15 - ra * 0.3;
-      stickman2.leftLeg.rotation.z = 0.15 - ra * 0.3;
-      stickman2.rightLeg.rotation.z = -0.15 + ra * 0.3;
-
-      if(gameState.ballHolder === 1){
-        gameState.p1Pos.z += (-193 - gameState.p1Pos.z) * 0.02;
-        gameState.p1Pos.x += (0 - gameState.p1Pos.x) * 0.02;
-        gameState.ballPos.copy(gameState.p1Pos).add(new V3(0.8, 2.5 + Math.abs(Math.sin(t * 0.015)) * 1.5, 0.5));
-        if(gameState.actionTimer > 3){
-          gameState.ballHolder = 0;
-          gameState.actionTimer = 0;
-          gameState.shotStart.copy(gameState.ballPos);
-          gameState.shotEnd.set(0, 12.5, -201.7);
-        }
-      } else if(gameState.ballHolder === 2){
-        gameState.p2Pos.z += (-75 - gameState.p2Pos.z) * 0.02;
-        gameState.p2Pos.x += (0 - gameState.p2Pos.x) * 0.02;
-        gameState.ballPos.copy(gameState.p2Pos).add(new V3(-0.8, 2.5 + Math.abs(Math.cos(t * 0.015)) * 1.5, -0.5));
-        if(gameState.actionTimer > 2.5){
-          gameState.ballHolder = 0;
-          gameState.actionTimer = 0;
-          gameState.shotStart.copy(gameState.ballPos);
-          gameState.shotEnd.set(0, 12.5, -78.3);
-        }
-      } else {
-        let p = Math.min(gameState.actionTimer * 1.2, 1);
-        gameState.ballPos.lerpVectors(gameState.shotStart, gameState.shotEnd, p);
-        gameState.ballPos.y += Math.sin(p * Math.PI) * 4.5;
-        if(p >= 1){
-          gameState.actionTimer = 0;
-          gameState.ballHolder = (Math.random() > 0.5) ? 1 : 2;
-        }
-      }
-
-      if(gameState.ballHolder !== 2) gameState.p2Pos.lerp(new V3(gameState.ballPos.x * 0.5, 0, gameState.ballPos.z + 4), 0.03);
-      if(gameState.ballHolder !== 1) gameState.p1Pos.lerp(new V3(gameState.ballPos.x * 0.5, 0, gameState.ballPos.z - 4), 0.03);
-      
-      stickman1.mesh.position.copy(gameState.p1Pos);
-      stickman2.mesh.position.copy(gameState.p2Pos);
-      ballMesh.position.copy(gameState.ballPos);
-    }
-
     const renderer=new T.WebGLRenderer({antialias:true});renderer.setSize(window.innerWidth,window.innerHeight);document.body.appendChild(renderer.domElement);
     switchWeapon(1);updatePerkScreens();updateMysteryBoxScreen();updateUpgradeMachineScreen();
 
@@ -2052,7 +1983,6 @@
           }));
           socket.emit('host_saws_sync', sawPacket);
 
-          // Includes emergenceStage to keep zombie rise sequence identical on both screens
           const syncPacket = activeZombies.map(z => ({
             id: z.id,
             x: z.meshParts.group.position.x,
@@ -2069,12 +1999,6 @@
             y: machineGroup.position.y,
             z: machineGroup.position.z,
             yaw: machineGroup.rotation.y
-          });
-
-          socket.emit('host_stickman_sync', {
-            p1: { x: gameState.p1Pos.x, y: gameState.p1Pos.y, z: gameState.p1Pos.z },
-            p2: { x: gameState.p2Pos.x, y: gameState.p2Pos.y, z: gameState.p2Pos.z },
-            ball: { x: gameState.ballPos.x, y: gameState.ballPos.y, z: gameState.ballPos.z }
           });
 
           if(elevatorActive){
@@ -2214,7 +2138,6 @@
         scene.background = defaultBG;
       }
 
-      simulateStickmanMatch(t);
       renderer.render(scene, camera);
     }
 

@@ -1077,19 +1077,6 @@
       }
     });
 
-    socket.on('client_mystery_box_sync', data => {
-      mysteryBoxActive = data.active;
-      mysteryBoxReadyToCollect = data.readyToCollect;
-      mysteryBoxTimer = data.timer;
-      mysteryBoxCyclingReward = data.cyclingReward;
-      mysteryBoxRewardType = data.rewardType;
-      mysteryBoxCurrentRoom = data.currentRoom;
-      mysteryBoxGroup.position.copy(boxRoomLocations[mysteryBoxCurrentRoom].pos);
-      updateMapHologramSign();
-      fillHoloGroupWithWeaponModel(boxWeaponHolo, mysteryBoxRewardType, false);
-      updateMysteryBoxScreen();
-    });
-
     socket.on('sync_upgrade_state', data => {
       upgradeActive = data.active;
       upgradeTimer = data.timer;
@@ -1151,11 +1138,54 @@
       playMysteryBoxSound();
     });
 
+    // 1. Spin starts: run the visual roll on ALL screens
     socket.on('trigger_mystery_box_start', () => {
       mysteryBoxActive = true;
       mysteryBoxReadyToCollect = false;
       mysteryBoxTimer = 0;
       txtDiv.innerHTML = "SUMMONING RELIC FROM THE SHADOWS...";
+      updateMysteryBoxScreen();
+    });
+
+    // 2. Server says the roll is finished & hands down the exact weapon
+    socket.on('mystery_box_landed', data => {
+      mysteryBoxActive = false;
+      mysteryBoxReadyToCollect = true;
+      mysteryBoxTimer = 0;
+      mysteryBoxRewardType = data.rewardType;
+      mysteryBoxCyclingReward = data.rewardName;
+
+      if (data.relocated) {
+        mysteryBoxCurrentRoom = data.currentRoom;
+        mysteryBoxGroup.position.copy(boxRoomLocations[mysteryBoxCurrentRoom].pos);
+        updateMapHologramSign();
+      }
+
+      fillHoloGroupWithWeaponModel(boxWeaponHolo, mysteryBoxRewardType, false);
+      let sbn = mysteryBoxCyclingReward;
+      if (mysteryBoxRewardType >= 1 && mysteryBoxRewardType <= 5) {
+        sbn += ` [LVL ${toRoman(weaponUpgradeLevels[mysteryBoxRewardType] + 1)}]`;
+      }
+      txtDiv.innerHTML = `CURSED CHEST UNLOCKED: ${sbn}! CLICK COLLECT ON SCREEN.`;
+      updateMysteryBoxScreen();
+    });
+
+    // 3. Collect granted cleanly by server
+    socket.on('grant_mystery_box_reward', data => {
+      mysteryBoxRewardType = data.rewardType;
+      mysteryBoxCyclingReward = data.rewardName;
+      claimMysteryBoxReward();
+    });
+
+    // 4. Force clear if timeout expires or collected
+    socket.on('force_clear_mystery_box_holo', () => {
+      mysteryBoxActive = false;
+      mysteryBoxReadyToCollect = false;
+      mysteryBoxTimer = 0;
+      while (boxWeaponHolo.children.length > 0) {
+        boxWeaponHolo.remove(boxWeaponHolo.children[0]);
+      }
+      txtDiv.innerHTML = "RELIC CHEST CLOSED.";
       updateMysteryBoxScreen();
     });
 
@@ -1188,16 +1218,6 @@
         hiddenButtonMesh.position.z -= 0.1; setTimeout(() => hiddenButtonMesh.position.z += 0.1, 150);
         txtDiv.innerHTML="CRYPT FLOORS RETRACTED! THE ALTAR PLATFORM HAS RISEN.";
       }
-    });
-
-    socket.on('grant_mystery_box_reward', () => {
-      claimMysteryBoxReward();
-    });
-
-    socket.on('force_clear_mystery_box_holo', () => {
-      mysteryBoxReadyToCollect = false;
-      while(boxWeaponHolo.children.length > 0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
-      updateMysteryBoxScreen();
     });
 
     socket.on('client_throw_grenade', data => {
@@ -1902,66 +1922,17 @@
 
       upgReactorRing.rotation.x += 0.05;
 
+      // Pure visual rotation & shuffle (no local authority - dictated by server)
       if(mysteryBoxActive){
-        mysteryBoxTimer += 0.016;
         boxWeaponHolo.rotation.y += 0.08;
         let rpn = ["PISTOL","AUTO PISTOL","HEAVY SHOTGUN","AUTOMATIC RIFLE","RAY PISTOL","FRAG GRENADES","CLAYMORE MINE","ROBOT GOODY UPGRADE"], rpi = [1,2,3,4,5,6,7,8];
-        
-        if(mysteryBoxTimer < 2.5){
-          if(Math.floor(mysteryBoxTimer * 15) % 2 === 0){
-            let ri = Math.floor(Math.random() * rpn.length);
-            mysteryBoxCyclingReward = rpn[ri];
-            mysteryBoxRewardType = rpi[ri];
-            fillHoloGroupWithRewardModel(boxWeaponHolo, mysteryBoxRewardType);
-          }
-        } else if(isHost) {
-          mysteryBoxActive = false;
-          mysteryBoxReadyToCollect = true;
-          mysteryBoxTimer = 0;
-          mysteryBoxUsesCount++;
-          let fr = Math.random(), fi = fr < 0.1 ? 4 : (fr < 0.35 ? Math.floor(Math.random() * 4) : (fr < 0.7 ? 5 : (fr < 0.9 ? 6 : 7)));
-          mysteryBoxCyclingReward = rpn[fi];
-          mysteryBoxRewardType = rpi[fi];
-          fillHoloGroupWithWeaponModel(boxWeaponHolo, mysteryBoxRewardType);
-          let sbn = mysteryBoxCyclingReward;
-          if(mysteryBoxRewardType >= 1 && mysteryBoxRewardType <= 5) sbn += ` [LVL ${toRoman(weaponUpgradeLevels[mysteryBoxRewardType] + 1)}]`;
-          txtDiv.innerHTML = `CURSED CHEST UNLOCKED: ${sbn}! CLICK COLLECT ON SCREEN.`;
-          if(mysteryBoxUsesCount >= 4 + Math.floor(Math.random() * 3)){
-            mysteryBoxUsesCount = 0;
-            mysteryBoxCurrentRoom = (mysteryBoxCurrentRoom + 1) % boxRoomLocations.length;
-            mysteryBoxGroup.position.copy(boxRoomLocations[mysteryBoxCurrentRoom].pos);
-            updateMapHologramSign();
-          }
-          socket.emit('host_mystery_box_sync', {
-            active: false,
-            readyToCollect: true,
-            timer: 0,
-            cyclingReward: mysteryBoxCyclingReward,
-            rewardType: mysteryBoxRewardType,
-            currentRoom: mysteryBoxCurrentRoom
-          });
-          updateMysteryBoxScreen();
-        }
+        let ri = Math.floor(Math.random() * rpn.length);
+        mysteryBoxCyclingReward = rpn[ri];
+        fillHoloGroupWithRewardModel(boxWeaponHolo, rpi[ri]);
       } else if(mysteryBoxReadyToCollect){
-        mysteryBoxTimer += 0.016;
+        mysteryBoxTimer += delta;
         boxWeaponHolo.rotation.y += 0.03;
         boxWeaponHolo.position.y = 3.5 + Math.sin(mysteryBoxTimer * 3) * 0.15;
-        if(isHost && mysteryBoxTimer >= 10){
-          mysteryBoxReadyToCollect = false;
-          mysteryBoxTimer = 0;
-          mysteryBoxFadeAlpha = 1;
-          while(boxWeaponHolo.children.length > 0) boxWeaponHolo.remove(boxWeaponHolo.children[0]);
-          txtDiv.innerHTML = "RELIC TIMED OUT. CHEST RESETTING TO SPIN...";
-          socket.emit('host_mystery_box_sync', {
-            active: false,
-            readyToCollect: false,
-            timer: 0,
-            cyclingReward: mysteryBoxCyclingReward,
-            rewardType: mysteryBoxRewardType,
-            currentRoom: mysteryBoxCurrentRoom
-          });
-          updateMysteryBoxScreen();
-        }
       }
 
       if (now - lastNetSendTime > 33) {

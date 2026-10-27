@@ -418,9 +418,25 @@
 
     function damagePlayer(){
       if(isGameOver)return;
-      if(hasQuickRevive&&quickReviveShield>0){quickReviveShield--;updateTacticalHUD();$('damage-overlay').style.backgroundColor="rgba(0,168,255,0.4)";setTimeout(()=>{$('damage-overlay').style.backgroundColor="rgba(255,0,0,0)"},150);txtDiv.innerHTML="QUICK REVIVE SHIELD ABSORBED BITE!";if(quickReviveShield<=0){hasQuickRevive=false;updateTacticalHUD();txtDiv.innerHTML="QUICK REVIVE SHIELD DEPLETED!"}return}
-      playerBites++;updateTacticalHUD();$('damage-overlay').style.backgroundColor="rgba(255,0,0,0.4)";setTimeout(()=>{$('damage-overlay').style.backgroundColor="rgba(255,0,0,0)"},150);
-      if(playerBites>=maxBites)triggerGameOver();else txtDiv.innerHTML="YOU WERE BITTEN! FALL BACK!";
+      if(hasQuickRevive&&quickReviveShield>0){
+        quickReviveShield--;
+        updateTacticalHUD();
+        $('damage-overlay').style.backgroundColor="rgba(0,168,255,0.4)";
+        setTimeout(()=>{$('damage-overlay').style.backgroundColor="rgba(255,0,0,0)"},150);
+        txtDiv.innerHTML="QUICK REVIVE SHIELD ABSORBED BITE!";
+        if(quickReviveShield<=0){
+          hasQuickRevive=false;
+          updateTacticalHUD();
+          txtDiv.innerHTML="QUICK REVIVE SHIELD DEPLETED!";
+        }
+        return;
+      }
+      playerBites++;
+      updateTacticalHUD();
+      $('damage-overlay').style.backgroundColor="rgba(255,0,0,0.4)";
+      setTimeout(()=>{$('damage-overlay').style.backgroundColor="rgba(255,0,0,0)"},150);
+      if(playerBites>=maxBites)triggerGameOver();
+      else txtDiv.innerHTML="YOU WERE BITTEN! FALL BACK!";
     }
 
     socket.on('force_damage_player', () => { damagePlayer(); });
@@ -1486,8 +1502,36 @@
       let ph=raycaster.intersectObjects(perkMachineObjects,true);
       if(ph.length>0&&ph[0].distance<12){
         let t=ph[0].object.userData.materialType;
-        if(t==="jugger_nog"){if(!hasJuggerNog){if(playerPoints>=2500){playerPoints-=2500;$('score-val').innerText=playerPoints;hasJuggerNog=true;maxBites=4;updateTacticalHUD();updatePerkScreens();txtDiv.innerHTML="JUGGER-NOG ACQUIRED! MAX HEALTH INCREASED.";playMysteryBoxSound()}else txtDiv.innerHTML="JUGGER-NOG COSTS 2500 CREDITS."}else txtDiv.innerHTML="ALREADY PURCHASED JUGGER-NOG!";return}
-        if(t==="quick_revive"){if(!hasQuickRevive){if(playerPoints>=1500){playerPoints-=1500;$('score-val').innerText=playerPoints;hasQuickRevive=true;quickReviveShield=2;updateTacticalHUD();updatePerkScreens();txtDiv.innerHTML="QUICK REVIVE SHIELD ACTIVE!";playMysteryBoxSound()}else txtDiv.innerHTML="QUICK REVIVE COSTS 1500 CREDITS."}else txtDiv.innerHTML="QUICK REVIVE SHIELD ALREADY ACTIVE!";return}
+if(t==="jugger_nog"){
+          if(!hasJuggerNog){
+            if(playerPoints>=2500){
+              playerPoints-=2500;
+              $('score-val').innerText=playerPoints;
+              hasJuggerNog=true;
+              maxBites=4;
+              updateTacticalHUD();
+              updatePerkScreens();
+              txtDiv.innerHTML="JUGGER-NOG ACQUIRED! MAX HEALTH INCREASED.";
+              playMysteryBoxSound();
+            } else txtDiv.innerHTML="JUGGER-NOG COSTS 2500 CREDITS.";
+          } else txtDiv.innerHTML="ALREADY PURCHASED JUGGER-NOG!";
+          return;
+        }
+        if(t==="quick_revive"){
+          if(!hasQuickRevive){
+            if(playerPoints>=1500){
+              playerPoints-=1500;
+              $('score-val').innerText=playerPoints;
+              hasQuickRevive=true;
+              quickReviveShield=2;
+              updateTacticalHUD();
+              updatePerkScreens();
+              txtDiv.innerHTML="QUICK REVIVE SHIELD ACTIVE!";
+              playMysteryBoxSound();
+            } else txtDiv.innerHTML="QUICK REVIVE COSTS 1500 CREDITS.";
+          } else txtDiv.innerHTML="QUICK REVIVE SHIELD ALREADY ACTIVE!";
+          return;
+        }
         if(t==="double_tap"){if(!hasDoubleTap){if(playerPoints>=2000){playerPoints-=2000;$('score-val').innerText=playerPoints;hasDoubleTap=true;updateTacticalHUD();updatePerkScreens();txtDiv.innerHTML="DOUBLE TAP II ACQUIRED! DAMAGE & FIRE RATE DOUBLED.";playMysteryBoxSound()}else txtDiv.innerHTML="DOUBLE TAP II COSTS 2000 CREDITS."}else txtDiv.innerHTML="ALREADY PURCHASED DOUBLE TAP II!";return}
         if(t==="stamin_up"){if(!hasStaminUp){if(playerPoints>=2000){playerPoints-=2000;$('score-val').innerText=playerPoints;hasStaminUp=true;updatePerkScreens();txtDiv.innerHTML="STAMIN-UP ACQUIRED! RUNNING SPEED INCREASED.";playMysteryBoxSound()}else txtDiv.innerHTML="STAMIN-UP COSTS 2000 CREDITS."}else txtDiv.innerHTML="ALREADY PURCHASED STAMIN-UP!";return}
       }
@@ -1993,7 +2037,7 @@
 
       updateZombies(now);
 
-      if(!robotMercState.isBeingOverrun){
+     if(isHost && !robotMercState.isBeingOverrun){
         if(robotMercState.active){
           let tp = playerRig.position.clone().add(new V3(0, 0, -15).applyQuaternion(playerRig.quaternion));
           tp.y = (playerRig.position.y < -40) ? -79.8 : 0;
